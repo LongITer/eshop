@@ -1,4 +1,7 @@
 {
+  "compilerOptions": {
+    "types": ["node"]
+  },
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
@@ -8,6 +11,9 @@
     },
     {
       "path": "./apps/auth-service"
+    },
+    {
+      "path": "./apps/api-gateway"
     }
   ]
 }
