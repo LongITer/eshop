@@ -3,8 +3,8 @@ import cors from 'cors';
 import proxy from 'express-http-proxy';
 import morgan from 'morgan';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
-import swaggerUi from 'swagger-ui-express';
-import axios from 'axios';
+// import swaggerUi from 'swagger-ui-express';
+// import axios from 'axios';
 import cookieParser from 'cookie-parser';
 
 
