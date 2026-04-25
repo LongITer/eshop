@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { checkOtpRestrictions, handleForgotPassword, sendOtp, trackOtpRequests, validateRegistrationData, verifyOtp } from "../utils/auth.helper";
+import { checkOtpRestrictions, handleForgotPassword, sendOtp, trackOtpRequests, validateRegistrationData, verifyForgotPasswordOtp, verifyOtp } from "../utils/auth.helper";
 import { AuthError, ValidationError } from "@packages/error-handler";
 import prisma from "@packages/libs/prisma";
 import bcrypt from "bcryptjs";
@@ -19,9 +19,9 @@ export const userRegistration = async (req: Request, res: Response, next: NextFu
         if (existingUser) {
             return next(new ValidationError("User already exists with this email!"))
         }
-
-        await checkOtpRestrictions(email, next);
-        await trackOtpRequests(email, next);
+        
+        await checkOtpRestrictions(email);
+        await trackOtpRequests(email);
         await sendOtp(name, email, "user-activation-mail");
 
         res.status(200).json({
@@ -48,7 +48,7 @@ export const verifyUser = async (req: Request, res: Response, next: NextFunction
             return next(new ValidationError("User already exists with this email!"))
         }
 
-        await verifyOtp(email, otp, next);
+        await verifyOtp(email, otp);
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -120,7 +120,7 @@ export const userForgotPassword = async (req: Request, res: Response, next: Next
 
 // Verify forgot password otp
 export const verifyUserForgotPassword = async (req: Request, res: Response, next: NextFunction) => {
-    await verifyUserForgotPassword(req, res, next);
+    await verifyForgotPasswordOtp(req, res, next, 'user');
 }
 
 // Reset user password
@@ -152,6 +152,6 @@ export const resetUserPassword = async (req: Request, res: Response, next: NextF
             message: "Password reset successfully!"
         })
     } catch (error) {
-
+        next(error);
     }
 }

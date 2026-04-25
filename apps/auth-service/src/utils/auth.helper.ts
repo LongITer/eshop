@@ -24,7 +24,7 @@ export const validateRegistrationData = (data: any, userType: "user" | "seller")
     }
 }
 
-export const checkOtpRestrictions = async (email: string, next: NextFunction) => {
+export const checkOtpRestrictions = async (email: string) => {
     if (await redis.get(`otp_lock:${email}`)) {
         throw new ValidationError("Account locked due to multiple failed attempts. Try again after 30 minutes");
     }
@@ -34,10 +34,9 @@ export const checkOtpRestrictions = async (email: string, next: NextFunction) =>
     if (await redis.get(`otp_cooldown:${email}`)) {
         throw new ValidationError("Please wait 60 seconds before requesting another OTP");
     }
-    next();
 }
 
-export const trackOtpRequests = async (email: string, next: NextFunction) => {
+export const trackOtpRequests = async (email: string) => {
     const otpRequestKey = `otp_request_count:${email}`;
     let otpRequest = parseInt((await redis.get(otpRequestKey)) || "0");
 
@@ -47,8 +46,6 @@ export const trackOtpRequests = async (email: string, next: NextFunction) => {
     }
 
     await redis.set(otpRequestKey, otpRequest + 1, 'EX', 3600);
-
-    next();
 }
 
 export const sendOtp = async (name: string, email: string, template: string) => {
@@ -58,7 +55,7 @@ export const sendOtp = async (name: string, email: string, template: string) => 
     await redis.set(`otp_cooldown:${email}`, "true", "EX", 60);
 }
 
-export const verifyOtp = async (email: string, otp: string, next: NextFunction) => {
+export const verifyOtp = async (email: string, otp: string) => {
     const storedOtp = await redis.get(`otp:${email}`);
     if (!storedOtp) {
         throw new ValidationError("Invalid or expired otp!");
@@ -78,7 +75,6 @@ export const verifyOtp = async (email: string, otp: string, next: NextFunction) 
     }
 
     await redis.del(`otp:${email}`, failedAttemptKeys, `otp_request_count:${email}`);
-    next();
 }
 
 export const handleForgotPassword = async (req: Request, res: Response, next: NextFunction, userType: 'user' | 'seller') => {
@@ -92,8 +88,8 @@ export const handleForgotPassword = async (req: Request, res: Response, next: Ne
         if (!user) throw new ValidationError(`${userType} not found`);
 
         // Check otp restrictions
-        await checkOtpRestrictions(email, next);
-        await trackOtpRequests(email, next);
+        await checkOtpRestrictions(email);
+        await trackOtpRequests(email);
         await sendOtp(user.name, email, "forgot-password");
 
         // Generate OTP and send email
@@ -112,12 +108,12 @@ export const verifyForgotPasswordOtp = async (req: Request, res: Response, next:
             throw new ValidationError("Email and otp and required!");
         }
 
-        await verifyOtp(email, otp, next);
+        await verifyOtp(email, otp);
 
         res.status(200).json({
             message: "OTP verified. You can now reset your password."
         })
     } catch (error) {
-
+        next(error);
     }
 }

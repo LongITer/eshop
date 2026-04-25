@@ -22,10 +22,13 @@
               "type": "object",
               "properties": {
                 "name": {
-                  "example": "any"
+                  "example": "Long"
                 },
                 "email": {
-                  "example": "any"
+                  "example": "longiter2004@gmail.com"
+                },
+                "password": {
+                  "example": "password"
                 }
               }
             }
@@ -49,16 +52,16 @@
               "type": "object",
               "properties": {
                 "email": {
-                  "example": "any"
+                  "example": "longiter2004@gmail.com"
                 },
                 "otp": {
-                  "example": "any"
+                  "example": "5833"
                 },
                 "password": {
-                  "example": "any"
+                  "example": "password"
                 },
                 "name": {
-                  "example": "any"
+                  "example": "Long"
                 }
               }
             }
