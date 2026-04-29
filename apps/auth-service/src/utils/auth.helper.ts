@@ -56,6 +56,10 @@ export const sendOtp = async (name: string, email: string, template: string) => 
 }
 
 export const verifyOtp = async (email: string, otp: string) => {
+    if (await redis.get(`otp_lock:${email}`)) {
+        throw new ValidationError("Too many failed attempts. Your account is locked for 30 minutes!");
+    }
+
     const storedOtp = await redis.get(`otp:${email}`);
     if (!storedOtp) {
         throw new ValidationError("Invalid or expired otp!");
@@ -90,10 +94,10 @@ export const handleForgotPassword = async (req: Request, res: Response, next: Ne
         // Check otp restrictions
         await checkOtpRestrictions(email);
         await trackOtpRequests(email);
-        await sendOtp(user.name, email, "forgot-password");
+
 
         // Generate OTP and send email
-        await sendOtp(email, user.name, "forgot-password-user-mail")
+        await sendOtp(user.name, email, "forgot-password-user-mail")
 
         res.status(200).json({ msssage: "OTP sent to mail. Please verify your account." })
     } catch (error) {

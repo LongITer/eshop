@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
@@ -14,6 +16,9 @@
     },
     {
       "path": "./apps/api-gateway"
+    },
+    {
+      "path": "./apps/user-ui"
     }
   ]
 }
