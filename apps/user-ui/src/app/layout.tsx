@@ -3,6 +3,7 @@ import './global.css';
 import { Poppins, Roboto } from 'next/font/google'
 import Provider from './providers';
 import Providers from './providers';
+import { Toaster } from 'react-hot-toast';
 
 const roboto = Roboto({
   weight: ['100', '300', '400', '500', '600', '700', '900'],
@@ -30,6 +31,7 @@ export default function RootLayout({
         <Providers>
           <Header />
           {children}
+          <Toaster position="top-right" />
         </Providers>
       </body>
     </html>

@@ -78,7 +78,7 @@ export const verifyOtp = async (email: string, otp: string) => {
         throw new ValidationError(`Incorrect OTP. ${2 - failedAttempts} attempts remaining`)
     }
 
-    await redis.del(`otp:${email}`, failedAttemptKeys, `otp_request_count:${email}`);
+    await redis.del(`otp:${email}`, failedAttemptKeys, `otp_request_count:${email}`, `otp_cooldown:${email}`);
 }
 
 export const handleForgotPassword = async (req: Request, res: Response, next: NextFunction, userType: 'user' | 'seller') => {

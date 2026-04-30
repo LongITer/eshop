@@ -1,10 +1,14 @@
+'use client'
 import Link from 'next/link'
 import React from 'react'
 import { HeartIcon, Search, ShoppingCart, User } from 'lucide-react'
 import HeaderBottom from './header-bottom'
+import useUser from '../../hooks/useUser'
 
 
 const Header = () => {
+    const { user, isLoading } = useUser();
+
     return (
         <div className='w-full bg-white'>
             <div className='w-[80%] py-5 m-auto flex items-center justify-between'>
@@ -25,15 +29,30 @@ const Header = () => {
                 </div>
                 <div className='flex items-center gap-8'>
                     <div className='flex items-center gap-2'>
-                        <Link href={"/login"}
-                            className='border-2 w-[50px] h-[50px] flex items-center justify-center rounded-full border-[#010f1c1a]'
-                        >
-                            <User />
-                        </Link>
-                        <Link href={"/login"}>
-                            <span className='block font-medium'>Hello</span>
-                            <span className='block font-medium'>Sign in</span>
-                        </Link>
+                        {!isLoading && user ? (
+                            <>
+                                <Link href={"/profile"} className='border-2 w-[50px] h-[50px] flex items-center justify-center rounded-full border-[#010f1c1a]'>
+                                    <User />
+                                </Link>
+                                <Link href={"/profile"}>
+                                    <span className='block font-medium'>Hello</span>
+                                    <span className='block font-medium'>{user?.name?.split(" ")[0]}</span>
+                                </Link>
+                            </>
+                        ) : (
+                            <>
+                                <Link href={"/login"}
+                                    className='border-2 w-[50px] h-[50px] flex items-center justify-center rounded-full border-[#010f1c1a]'
+                                >
+                                    <User />
+                                </Link>
+                                <Link href={"/login"}>
+                                    <span className='block font-medium'>Hello</span>
+                                    <span className='block font-medium'>{isLoading ? "..." : "Sign in"}</span>
+                                </Link>
+                            </>
+                        )}
+
                     </div>
                     <div className='flex items-center gap-5'>
                         <Link href={'/wishlist'} className='relative'>

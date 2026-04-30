@@ -7,6 +7,7 @@ import GoogleButton from '../../shared/components/google-button';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 type FormData = {
     name: string,
@@ -71,7 +72,7 @@ const Signup = () => {
             return response.data;
         },
         onSuccess: () => {
-            alert("Sign in successful!");
+            toast.success("Success! You can now log in.");
             router.push('/login');
         },
         onError: (error: any) => {

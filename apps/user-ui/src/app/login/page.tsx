@@ -7,6 +7,7 @@ import GoogleButton from '../../shared/components/google-button';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import axios, { AxiosError } from 'axios';
 import { useMutation } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 
 type FormData = {
     email: string,
@@ -32,6 +33,7 @@ const Login = () => {
         },
         onSuccess: () => {
             setServerError(null);
+            toast.success("Login successful!");
             router.push('/');
         },
         onError: (error: AxiosError) => {

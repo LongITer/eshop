@@ -12,6 +12,14 @@ export const errorMiddleware = (err: Error, req: Request, res: Response, next: N
         })
     }
 
+    // Handle JWT errors
+    if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+        return res.status(401).json({
+            status: "error",
+            message: "Unauthorized! Invalid or expired token."
+        })
+    }
+
     console.log("Unhandle error: ", err)
     return res.status(500).json({
         error: "Something went wrong. Please try again!"
