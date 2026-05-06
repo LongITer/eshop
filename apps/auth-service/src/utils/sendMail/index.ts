@@ -16,7 +16,7 @@ const transporter = nodemailer.createTransport({
 })
 
 // Render a EJS email template
-const renderEmailTemplete = async (templateName: string, data: Record<string, any>): Promise<string> => {
+const renderEmailTemplate = async (templateName: string, data: Record<string, any>): Promise<string> => {
     const templatePath = path.join(
         process.cwd(),
         "apps",
@@ -33,7 +33,7 @@ const renderEmailTemplete = async (templateName: string, data: Record<string, an
 // Send an email using Nodemailer
 export const sendEmail = async (to: string, subject: string, templateName: string, data: Record<string, any>) => {
     try {
-        const html = await renderEmailTemplete(templateName, data);
+        const html = await renderEmailTemplate(templateName, data);
         await transporter.sendMail({
             from: `<${process.env.SMTP_USER}>`,
             to,
