@@ -11,6 +11,8 @@
   },
   "include": [
     "src/**/*.ts",
+    "controllers/**/*.ts",
+    "routes/**/*.ts",
     "../../packages/**/*.ts"
   ],
   "exclude": []

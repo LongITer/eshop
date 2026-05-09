@@ -6,13 +6,21 @@ import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 // import swaggerUi from 'swagger-ui-express';
 // import axios from 'axios';
 import cookieParser from 'cookie-parser';
-
+import initializeSiteConfig from './libs/initizeSizeConfig';
 
 const app = express();
 
 app.use(cors({
-  origin: 'http://localhost:3000',
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: (origin, callback) => {
+    // Allow any origin during development
+    if (!origin || origin.startsWith('http://localhost')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cookie'],
   credentials: true
 }));
 
@@ -37,10 +45,16 @@ app.get('/gateway-health', (req, res) => {
   res.send({ message: 'Welcome to api-gateway!' });
 });
 
+app.use('/product', proxy("http://localhost:6002"))
 app.use('/', proxy("http://localhost:6001"))
 
 const port = process.env.PORT || 8080;
 const server = app.listen(port, () => {
   console.log(`Listening at http://localhost:${port}/gateway-health`);
+  try {
+    initializeSiteConfig();
+  } catch (error) {
+    console.error("Error initializing site config:", error);
+  }
 });
 server.on('error', console.error);
