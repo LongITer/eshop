@@ -1,13 +1,16 @@
 {
   "compilerOptions": {
     "composite": true,
+    "jsx": "preserve",
     "declarationMap": true,
     "emitDeclarationOnly": true,
     "importHelpers": true,
     "isolatedModules": true,
     "baseUrl": ".",
     "lib": [
-      "es2022"
+      "es2022",
+      "dom",
+      "dom.iterable"
     ],
     "module": "nodenext",
     "moduleResolution": "nodenext",

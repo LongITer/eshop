@@ -12,6 +12,6 @@
   "include": [
     "src/**/*.ts",
     "../../packages/**/*.ts"
-  ],
+, "../../packages/size-selector/index.tsx"  ],
   "exclude": []
 }

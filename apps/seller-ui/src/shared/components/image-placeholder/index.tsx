@@ -21,6 +21,11 @@ const ImagePlaceHolder = ({
 }) => {
   const [imagePreview, setImagePreview] = useState<string | null>(defaultImage);
 
+  React.useEffect(() => {
+    setImagePreview(defaultImage);
+  }, [defaultImage]);
+
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {

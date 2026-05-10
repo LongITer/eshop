@@ -7,7 +7,13 @@ import { ChevronRight } from "lucide-react";
 import Input from "packages/components/input";
 import CustomProperties from "packages/components/input/custom-properties";
 import CustomSpecifications from "packages/components/input/custom-specification";
-import RichTextEditor from "packages/components/rich-text-editor";
+import dynamic from "next/dynamic";
+const RichTextEditor = dynamic(
+  () => import("packages/components/rich-text-editor"),
+  { ssr: false },
+);
+
+import SizeSelector from "packages/components/size-selector";
 import React, { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
@@ -22,8 +28,9 @@ const Page = () => {
   } = useForm();
 
   const [openImageModel, setOpenImageModel] = useState(false);
-  const [isChanged, setIsChanged] = useState(false);
-  const [images, setImages] = useState<(File | null)[]>([null]);
+  const [isChanged, setIsChanged] = useState(true);
+  const [images, setImages] = useState<(File | string | null)[]>([null]);
+
   const [loading, setLoading] = useState(false);
 
   const { data, isLoading, isError } = useQuery({
@@ -40,6 +47,14 @@ const Page = () => {
     retry: 2,
   });
 
+  const { data: discountCodes = [], isLoading: discountLoading } = useQuery({
+    queryKey: ["shop-discounts"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/product/api/get-discount-code");
+      return res?.data?.discount_codes || [];
+    },
+  });
+
   const categories = data?.categories || [];
   const subCategoriesData = data?.subCategories || {};
 
@@ -54,37 +69,64 @@ const Page = () => {
     console.log(data);
   };
 
-  const handleImageChange = (file: File | null, index: number) => {
-    const updatedImages = [...images];
-    updatedImages[index] = file;
+  const convertToBase64 = async (file: File) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
 
-    if (index === images.length - 1 && images.length < 8) {
-      updatedImages.push(null);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleImageChange = async (file: File | null, index: number) => {
+    if (!file) return;
+
+    try {
+      const fileName = await convertToBase64(file);
+
+      const response = await axiosInstance.post(
+        "/product/api/upload-product-image",
+        { fileName },
+      );
+
+      const updatedImages = [...images];
+      updatedImages[index] = response.data.file_url;
+
+      if (index === images.length - 1 && images.length < 8) {
+        updatedImages.push(null);
+      }
+
+      setImages(updatedImages);
+      setValue("images", updatedImages);
+    } catch (error) {
+      console.log(error);
     }
-
-    setImages(updatedImages);
-    setValue("images", updatedImages);
   };
 
   const handleRemoveImage = (index: number) => {
-    setImages((prevImages) => {
-      let updatedImages = [...prevImages];
-      if (index === -1) {
-        updatedImages[0] = null;
-      } else {
-        updatedImages.splice(index, 1);
-      }
+    try {
+      const updatedImages = [...images];
+      const imageToDelete = updatedImages[index];
 
+      if (imageToDelete && typeof imageToDelete === "string") {
+        // Delete our image
+      }
+      updatedImages.splice(index, 1);
+
+      // Add null placeholder
       if (!updatedImages.includes(null) && updatedImages.length < 8) {
         updatedImages.push(null);
       }
 
-      return updatedImages;
-    });
-
-    setValue("images", images);
-    setIsChanged(true);
+      setImages(updatedImages);
+      setValue("images", updatedImages);
+    } catch (error) {
+      console.log(error);
+    }
   };
+
+  const handleSaveDraft = () => {};
 
   return (
     <form
@@ -107,6 +149,7 @@ const Page = () => {
         <div className="md:w-[35%]">
           {images?.length > 0 && (
             <ImagePlaceHolder
+              defaultImage={images[0] as string}
               setOpenImageModel={setOpenImageModel}
               size="765 × 850"
               small={false}
@@ -117,11 +160,12 @@ const Page = () => {
           )}
 
           <div className="grid grid-cols-2 gap-3 mt-4">
-            {images?.slice(1).map((_, index) => (
+            {images?.slice(1).map((img, index) => (
               <ImagePlaceHolder
+                defaultImage={img as string}
                 setOpenImageModel={setOpenImageModel}
                 size="765 × 850"
-                key={index}
+                key={typeof img === "string" ? img : index}
                 small={true}
                 index={index + 1}
                 onImageChange={handleImageChange}
@@ -463,7 +507,10 @@ const Page = () => {
                     required: "Stock is required",
                     valueAsNumber: true,
                     min: { value: 1, message: "Stock must be at least 1" },
-                    max: { value: 10000, message: "Stock cannot exceed 1000" },
+                    max: {
+                      value: 10000,
+                      message: "Stock cannot exceed 1000",
+                    },
                     validate: (value) => {
                       if (isNaN(value)) return "Please enter a valid number";
                       if (!Number.isInteger(value))
@@ -478,9 +525,66 @@ const Page = () => {
                   </span>
                 )}
               </div>
+
+              <div className="mt-2">
+                <SizeSelector control={control} errors={errors} />
+              </div>
+
+              <div className="mt-3">
+                <label className="block font-semibold text-gray-300 mb-1">
+                  Select Discount Code (optional)
+                </label>
+
+                {discountLoading ? (
+                  <p className="text-gray-400">Loading discount codes</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {discountCodes?.map((code: any) => (
+                      <button
+                        key={code.id}
+                        type="button"
+                        className={`px-3 py-4 rounded-md text-sm font-semibold border ${watch("discountCodes")?.includes(code.id) ? "bg-blue-600 text-white border-blue-600" : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700"}`}
+                        onClick={() => {
+                          const currentSelection = watch("discountCodes") || [];
+                          const updatedSelection = currentSelection?.includes(
+                            code.id,
+                          )
+                            ? currentSelection.filter(
+                                (id: string) => id !== code.id,
+                              )
+                            : [...currentSelection, code.id];
+                          setValue("discountCodes", updatedSelection);
+                        }}
+                      >
+                        {code?.public_name} ({code?.discountValue}
+                        {code?.discountType === "percentage" ? "%" : "$"})
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
+      </div>
+      <div className="mt-6 flex justify-end gap-3">
+        {isChanged && (
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            className="px-4 py-2 bg-gray-700 text-white rounded-md"
+          >
+            Save Draft
+          </button>
+        )}
+
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-600 text-white rounded-md"
+          disabled={isLoading}
+        >
+          {isLoading ? "Creating..." : "Create"}
+        </button>
       </div>
     </form>
   );
