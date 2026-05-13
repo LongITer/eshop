@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import ColorSelector from "apps/seller-ui/src/shared/components/color-selector";
 import ImagePlaceHolder from "apps/seller-ui/src/shared/components/image-placeholder";
 import axiosInstance from "apps/seller-ui/src/utils/axioInstance";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Wand, X } from "lucide-react";
 import Input from "packages/components/input";
 import CustomProperties from "packages/components/input/custom-properties";
 import CustomSpecifications from "packages/components/input/custom-specification";
@@ -16,6 +16,10 @@ const RichTextEditor = dynamic(
 import SizeSelector from "packages/components/size-selector";
 import React, { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import Image from "next/image";
+import { enhancements } from "apps/seller-ui/src/utils/AI.enhancement";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 const Page = () => {
   const {
@@ -28,8 +32,17 @@ const Page = () => {
   } = useForm();
 
   const [openImageModel, setOpenImageModel] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [pictureUploadingLoader, setPictureUploadingLoader] = useState(false);
   const [isChanged, setIsChanged] = useState(true);
-  const [images, setImages] = useState<(File | string | null)[]>([null]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [activeEffect, setActiveEffect] = useState<string | null>(null);
+  const router = useRouter();
+  const [images, setImages] = useState<
+    (File | { url: string; fileId: string } | null)[]
+  >([null]);
 
   const [loading, setLoading] = useState(false);
 
@@ -65,8 +78,16 @@ const Page = () => {
     return selectedCategory ? subCategoriesData[selectedCategory] || [] : [];
   }, [selectedCategory, subCategoriesData]);
 
-  const onSubmit = (data: any) => {
-    console.log(data);
+  const onSubmit = async (data: any) => {
+    try {
+      setLoading(true);
+      await axiosInstance.post("/product/api/create-product", data);
+      router.push("/dashboard/all-products");
+    } catch (error) {
+      toast.error("Failed to create product");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const convertToBase64 = async (file: File) => {
@@ -84,14 +105,17 @@ const Page = () => {
 
     try {
       const fileName = await convertToBase64(file);
-
+      setPictureUploadingLoader(true);
       const response = await axiosInstance.post(
         "/product/api/upload-product-image",
         { fileName },
       );
 
       const updatedImages = [...images];
-      updatedImages[index] = response.data.file_url;
+      updatedImages[index] = {
+        url: response.data.file_url,
+        fileId: response.data.fileName,
+      };
 
       if (index === images.length - 1 && images.length < 8) {
         updatedImages.push(null);
@@ -101,17 +125,29 @@ const Page = () => {
       setValue("images", updatedImages);
     } catch (error) {
       console.log(error);
+    } finally {
+      setPictureUploadingLoader(false);
     }
   };
 
-  const handleRemoveImage = (index: number) => {
+  const handleRemoveImage = async (index: number) => {
     try {
       const updatedImages = [...images];
       const imageToDelete = updatedImages[index];
 
-      if (imageToDelete && typeof imageToDelete === "string") {
+      if (
+        imageToDelete &&
+        typeof imageToDelete === "object" &&
+        "fileId" in imageToDelete
+      ) {
         // Delete our image
+        await axiosInstance.delete("/product/api/delete-product-image", {
+          data: {
+            fileId: imageToDelete.fileId,
+          },
+        });
       }
+
       updatedImages.splice(index, 1);
 
       // Add null placeholder
@@ -123,6 +159,84 @@ const Page = () => {
       setValue("images", updatedImages);
     } catch (error) {
       console.log(error);
+    }
+  };
+
+  const applyTransformation = async (transformation: string) => {
+    if (!selectedImage || processing) return;
+    setProcessing(true);
+    setImageLoading(true);
+    setActiveEffect(transformation);
+
+    try {
+      // Use URL object for more robust parsing if possible, fallback to string split
+      let baseUrl = "";
+      let params = new URLSearchParams();
+
+      if (selectedImage.startsWith("http")) {
+        const url = new URL(selectedImage);
+        baseUrl = `${url.protocol}//${url.host}${url.pathname}`;
+        params = new URLSearchParams(url.search);
+      } else {
+        const [path, query] = selectedImage.split("?");
+        baseUrl = path;
+        params = new URLSearchParams(query || "");
+      }
+
+      let currentTr = params.get("tr") || "";
+
+      if (currentTr) {
+        const effects = currentTr.split(",");
+        if (!effects.includes(transformation)) {
+          currentTr = `${currentTr},${transformation}`;
+        }
+      } else {
+        currentTr = transformation;
+      }
+
+      params.set("tr", currentTr);
+      // Construct URL manually to ensure commas are not double-encoded if necessary,
+      // but decoded string is usually safest for ImageKit.
+      const transformedUrl = `${baseUrl}?${decodeURIComponent(params.toString())}`;
+      setSelectedImage(transformedUrl);
+    } catch (error) {
+      console.error("Transformation error:", error);
+    } finally {
+      setProcessing(false);
+      setActiveEffect(null);
+    }
+  };
+
+  const handleSaveEnhancedImage = () => {
+    if (editingIndex !== null && selectedImage) {
+      setImages((prevImages) => {
+        const updatedImages = [...prevImages];
+        const currentImage = updatedImages[editingIndex];
+
+        // Ensure we are updating an existing image object with a URL
+        if (
+          currentImage &&
+          typeof currentImage === "object" &&
+          "url" in currentImage
+        ) {
+          updatedImages[editingIndex] = {
+            ...currentImage,
+            url: selectedImage,
+          };
+        }
+        return updatedImages;
+      });
+
+      // Also update react-hook-form
+      const currentImages = [...images];
+      const img = currentImages[editingIndex];
+      if (img && typeof img === "object" && "url" in img) {
+        currentImages[editingIndex] = { ...img, url: selectedImage };
+        setValue("images", currentImages);
+      }
+
+      setOpenImageModel(false);
+      setEditingIndex(null);
     }
   };
 
@@ -149,12 +263,25 @@ const Page = () => {
         <div className="md:w-[35%]">
           {images?.length > 0 && (
             <ImagePlaceHolder
-              defaultImage={images[0] as string}
-              setOpenImageModel={setOpenImageModel}
+              defaultImage={
+                images[0] && typeof images[0] === "object" && "url" in images[0]
+                  ? images[0].url
+                  : null
+              }
+              setOpenImageModel={(open) => {
+                setOpenImageModel(open);
+                if (open) {
+                  setEditingIndex(0);
+                  setImageLoading(true);
+                }
+              }}
               size="765 × 850"
               small={false}
+              pictureUploadingLoader={pictureUploadingLoader}
               index={0}
+              images={images}
               onImageChange={handleImageChange}
+              setSelectedImage={setSelectedImage}
               onRemove={handleRemoveImage}
             />
           )}
@@ -162,11 +289,29 @@ const Page = () => {
           <div className="grid grid-cols-2 gap-3 mt-4">
             {images?.slice(1).map((img, index) => (
               <ImagePlaceHolder
-                defaultImage={img as string}
-                setOpenImageModel={setOpenImageModel}
+                defaultImage={
+                  img && typeof img === "object" && "url" in img
+                    ? img.url
+                    : null
+                }
+                setOpenImageModel={(open) => {
+                  setOpenImageModel(open);
+                  if (open) {
+                    setEditingIndex(index + 1);
+                    setImageLoading(true);
+                  }
+                }}
                 size="765 × 850"
-                key={typeof img === "string" ? img : index}
+                pictureUploadingLoader={pictureUploadingLoader}
+                key={
+                  img && typeof img === "object" && "url" in img
+                    ? img.url
+                    : typeof img === "string"
+                      ? img
+                      : index
+                }
                 small={true}
+                setSelectedImage={setSelectedImage}
                 index={index + 1}
                 onImageChange={handleImageChange}
                 onRemove={handleRemoveImage}
@@ -201,7 +346,7 @@ const Page = () => {
                   label="Short description * (Max 150 words)"
                   placeholder="Enter product description"
                   type="textarea"
-                  {...register("description", {
+                  {...register("short_description", {
                     required: "Description is required",
                     validate: (value) => {
                       const wordCount = value.trim().split(/\s+/).length;
@@ -233,6 +378,21 @@ const Page = () => {
                 {errors.tag && (
                   <span className="text-red-500">
                     {errors.tag.message as string}
+                  </span>
+                )}
+              </div>
+
+              {/* Warranty */}
+              <div className="mt-2">
+                <Input
+                  label="Warranty *"
+                  placeholder="1 Year Warranty"
+                  {...register("warranty", { required: "Warranty is required" })}
+                />
+
+                {errors.warranty && (
+                  <span className="text-red-500">
+                    {errors.warranty.message as string}
                   </span>
                 )}
               </div>
@@ -408,7 +568,7 @@ const Page = () => {
 
               <div className="mt-2">
                 <label className="block font-semibold text-gray-300 mb-1">
-                  Detail Description * (Min 100 words)
+                  Detail Description * (Min 20 words)
                 </label>
                 <Controller
                   name="detail_description"
@@ -416,10 +576,11 @@ const Page = () => {
                   rules={{
                     required: "Detail description is required",
                     validate: (value) => {
-                      const wordCount = value?.trim().split(/\s+/).length;
+                      const text = value?.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ') || '';
+                      const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
                       return (
-                        wordCount >= 100 ||
-                        "Detail description must be at least 100 words"
+                        wordCount >= 20 ||
+                        "Detail description must be at least 20 words"
                       );
                     },
                   }}
@@ -440,13 +601,13 @@ const Page = () => {
               <div className="mt-2">
                 <Input
                   label="Video URL"
-                  placeholder="https://www.youtube.com/embed/xyz123"
+                  placeholder="https://www.youtube.com/watch?v=xyz123"
                   {...register("video_url", {
                     pattern: {
                       value:
-                        /^https:\/\/ (www\.)?youtube\.com\/embed\/[a-zA-Z0-9_-]+$/,
+                        /^https:\/\/(www\.)?(youtube\.com\/(watch\?v=|embed\/)|youtu\.be\/)[a-zA-Z0-9_-]+/,
                       message:
-                        "Invalid Youtube embed URL. Use Format: https://www.youtube.com/embed/xyz123",
+                        "Invalid Youtube URL. Please provide a valid YouTube link",
                     },
                   })}
                 />
@@ -567,6 +728,69 @@ const Page = () => {
           </div>
         </div>
       </div>
+      {openImageModel && (
+        <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-gray-800 p-6 rounded-lg w-[450px] text-white">
+            <div className="flex justify-between items-center pb-3 mb-4">
+              <h2 className="text-lg font-semibold">Enhance Product Images</h2>
+              <X
+                size={20}
+                className="cursor-pointer"
+                onClick={() => setOpenImageModel(false)}
+              />
+            </div>
+            <div className="w-full h-[250px] relative rounded-md overflow-hidden border border-gray-600 bg-black/20">
+              {selectedImage && (
+                <Image
+                  src={selectedImage}
+                  alt="product-image"
+                  fill
+                  unoptimized
+                  onLoad={() => setImageLoading(false)}
+                  className={`object-cover transition-opacity duration-300 ${processing || imageLoading ? "opacity-30 blur-sm" : "opacity-100"}`}
+                />
+              )}
+              {(processing || imageLoading) && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] transition-all">
+                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mb-2"></div>
+                  <p className="text-xs text-blue-400 font-medium animate-pulse">
+                    Processing with AI...
+                  </p>
+                </div>
+              )}
+            </div>
+            {selectedImage && (
+              <div className="mt-4 space-y-2">
+                <h3 className="text-white text-sm font-semibold">
+                  AI Enhancements
+                </h3>
+                <div className="grid grid-cols-2 gap-3 mx-h-[250px] overflow-y-auto">
+                  {enhancements?.map(({ label, effect }) => (
+                    <button
+                      key={effect}
+                      type="button"
+                      onClick={() => applyTransformation(effect)}
+                      disabled={processing}
+                      className={`p-2 rounded-md flex items-center gap-2 ${activeEffect === effect ? "bg-blue-600 text-white " : "bg-gray-700 hover:bg-gray-600"}`}
+                    >
+                      <Wand size={18} />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSaveEnhancedImage}
+                  className="w-full mt-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Apply Enhancement
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="mt-6 flex justify-end gap-3">
         {isChanged && (
           <button

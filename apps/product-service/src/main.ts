@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 // import swaggerDocument from "./swagger-output.json";
 import { errorMiddleware } from '@packages/error-handler/error-middleware';
 import router from '../routes/product.router';
+import '../jobs/product.cron-job';
 
 const app = express();
 

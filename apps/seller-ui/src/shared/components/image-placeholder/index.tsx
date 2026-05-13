@@ -6,16 +6,23 @@ const ImagePlaceHolder = ({
   size,
   small,
   onImageChange,
+  pictureUploadingLoader,
   onRemove,
   defaultImage = null,
   index = null,
+  images,
+  setSelectedImage,
   setOpenImageModel,
 }: {
   size: string;
   small?: boolean;
+  pictureUploadingLoader: boolean;
   onImageChange: (file: File | null, index: number) => void;
   onRemove?: (index: number) => void;
   defaultImage?: string | null;
+  setSelectedImage: (value: any) => void;
+
+  images?: any;
   setOpenImageModel?: (openImageModel: boolean) => void;
   index?: any;
 }) => {
@@ -25,12 +32,13 @@ const ImagePlaceHolder = ({
     setImagePreview(defaultImage);
   }, [defaultImage]);
 
-
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setImagePreview(URL.createObjectURL(file));
       onImageChange(file, index!);
+      // Reset the value so the same file can be selected again if deleted
+      event.target.value = "";
     }
   };
 
@@ -49,14 +57,21 @@ const ImagePlaceHolder = ({
         <>
           <button
             type="button"
+            disabled={pictureUploadingLoader}
             onClick={() => onRemove?.(index!)}
             className="absolute top-3 right-2 p-2 !rounded bg-red-600 shadow-lg"
           >
             <X size={16} />
           </button>
           <button
+            type="button"
+            disabled={pictureUploadingLoader}
             className="absolute top-3 right-[70px] p-2 rounded bg-blue-500 shadow-lg cursor-pointer"
-            onClick={() => setOpenImageModel?.(true)}
+            onClick={() => {
+              setOpenImageModel?.(true);
+              setSelectedImage(defaultImage);
+            }}
+
           >
             <WandSparkles size={16} />
           </button>
@@ -76,6 +91,7 @@ const ImagePlaceHolder = ({
           height={400}
           src={imagePreview}
           alt="Uploaded"
+          unoptimized
           className="w-full h-full object-cover rounded-lg "
         />
       ) : (

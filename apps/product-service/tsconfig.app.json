@@ -13,6 +13,7 @@
     "src/**/*.ts",
     "controllers/**/*.ts",
     "routes/**/*.ts",
+    "jobs/**/*.ts",
     "../../packages/**/*.ts"
 , "../../packages/size-selector/index.tsx"  ],
   "exclude": []

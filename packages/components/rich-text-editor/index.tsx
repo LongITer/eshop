@@ -27,7 +27,7 @@ const RichTextEditor = ({
   }, []);
 
   return (
-    <div className="relative">
+    <div style={{ maxWidth: "100%", width: "100%" }}>
       <ReactQuill
         theme={"snow"}
         value={editorValue}
@@ -66,6 +66,7 @@ const RichTextEditor = ({
           background: transparent !important;
           border-color: #444;
           color: white; /* Text color inside editor */
+          max-width: 100%;
         }
 
         .ql-picker {
@@ -73,6 +74,10 @@ const RichTextEditor = ({
         }
         .ql-editor {
           min-height: 200px; 
+          max-width: 100%;
+          word-wrap: break-word;
+          overflow-wrap: anywhere;
+          white-space: pre-wrap;
         }
 
         .ql-snow {
