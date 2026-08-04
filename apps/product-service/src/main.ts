@@ -1,27 +1,28 @@
-import 'dotenv/config';
-import express from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 // import swaggerUi from "swagger-ui-express";
 // import swaggerDocument from "./swagger-output.json";
-import { errorMiddleware } from '@packages/error-handler/error-middleware';
-import router from '../routes/product.router';
-import '../jobs/product.cron-job';
+import { errorMiddleware } from "@packages/error-handler/error-middleware";
+import router from "./routes/product.router";
+import "../jobs/product.cron-job";
 
 const app = express();
 
-app.use(cors({
+app.use(
+  cors({
     origin: true,
-    credentials: true
-}));
+    credentials: true,
+  }),
+);
 
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 app.use(cookieParser());
 
-
-app.get('/', (req, res) => {
-    res.send({ 'message': 'Hello Product API' });
+app.get("/", (req, res) => {
+  res.send({ message: "Hello Product API" });
 });
 // app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 // app.get("/docs-json", (req, res) => {
@@ -31,15 +32,15 @@ app.get('/', (req, res) => {
 // Routes
 app.use("/api", router);
 
-app.use(errorMiddleware)
+app.use(errorMiddleware);
 
 const port = process.env.PORT || 6002;
 const server = app.listen(port, () => {
-    console.log(`Product service is listening at http://localhost:${port}/`);
-    console.log(`Swagger json available at http://localhost:${port}/docs-json`);
-    console.log(`Swagger docs available at http://localhost:${port}/api-docs`);
+  console.log(`Product service is listening at http://localhost:${port}/`);
+  console.log(`Swagger json available at http://localhost:${port}/docs-json`);
+  console.log(`Swagger docs available at http://localhost:${port}/api-docs`);
 });
 
-server.on('error', (err) => {
-    console.error('Server error:', err);
+server.on("error", (err) => {
+  console.error("Server error:", err);
 });

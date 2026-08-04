@@ -119,13 +119,13 @@ model products {
   brand                String?
   colors               String[]
   sizes                String[]
-  
   starting_date        DateTime?
   ending_date          DateTime?
   stock                Int
   sale_price           Float
   regular_price        Float
   rating               Float         @default(5)
+  totalSales           Float         @default(0.0)
   warranty             String
   custom_specification Json?
   custom_properties    Json?

@@ -11,8 +11,8 @@
   },
   "include": [
     "src/**/*.ts",
-    "controllers/**/*.ts",
-    "routes/**/*.ts",
+    "src/controllers/**/*.ts",
+    "src/routes/**/*.ts",
     "jobs/**/*.ts",
     "../../packages/**/*.ts"
 , "../../packages/size-selector/index.tsx"  ],

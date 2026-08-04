@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import prisma from "@packages/libs/prisma";
 import { ValidationError } from "@packages/error-handler";
 import { imageKit } from "@packages/libs/imagekit";
+import { Prisma } from "@prisma/client";
 
 // Get product categories
 export const getCategories = async (
@@ -374,6 +375,68 @@ export const restoreProduct = async (
 
     return res.status(200).json({
       message: "Product restored successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get All Products
+export const getAllProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    const type = req.query.type;
+
+    const baseFilter = {
+      OR: [
+        { starting_date: null },
+        { starting_date: { isSet: false } },
+        { ending_date: null },
+        { ending_date: { isSet: false } },
+      ],
+    };
+
+    const orderBy: Prisma.productsOrderByWithRelationInput =
+      type === "latest"
+        ? { createdAt: "desc" as Prisma.SortOrder }
+        : { totalSales: "desc" as Prisma.SortOrder };
+
+    const [products, total, top10Products] = await Promise.all([
+      await prisma.products.findMany({
+        skip,
+        take: limit,
+        include: {
+          images: true,
+          shop: true,
+        },
+        where: baseFilter,
+        orderBy: {
+          totalSales: "desc",
+        },
+      }),
+
+      prisma.products.count({ where: baseFilter }),
+
+      prisma.products.findMany({
+        take: 10,
+        where: baseFilter,
+        orderBy,
+      }),
+    ]);
+
+    res.status(201).json({
+      products,
+      top10By: type === "latest" ? "latest" : "topSales",
+      top10Products,
+      total,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
     next(error);
