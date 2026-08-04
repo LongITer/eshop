@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useState } from "react";
 import Ratings from "../ratings";
-import { MapPin, MessageCircle, X } from "lucide-react";
+import { Heart, MapPin, MessageCircle, ShoppingCart, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const ProductDetailsCard = ({
@@ -15,6 +15,7 @@ const ProductDetailsCard = ({
   const [activeImage, setActiveImage] = useState(0);
   const [isSelected, setIsSelected] = useState(data?.colors?.[0] || "");
   const [isSizeSelected, setIsSizeSelected] = useState(data?.sizes?.[0] || "");
+  const [quantity, setQuantity] = useState(1);
 
   const router = useRouter();
   return (
@@ -172,6 +173,41 @@ const ProductDetailsCard = ({
                     ${data.regular_price}
                   </h3>
                 )}
+              </div>
+
+              <div className="mt-5 flex items-center gap-4 flex-wrap">
+                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden shadow-sm">
+                  <button
+                    className="w-9 h-9 flex items-center justify-center cursor-pointer text-gray-700 text-lg font-bold bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors disabled:opacity-40"
+                    onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                    disabled={quantity <= 1}
+                  >
+                    −
+                  </button>
+
+                  <span className="w-10 text-center text-sm font-semibold text-gray-800 select-none bg-white">
+                    {quantity}
+                  </span>
+
+                  <button
+                    className="w-9 h-9 flex items-center justify-center cursor-pointer text-gray-700 text-lg font-bold bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors"
+                    onClick={() => setQuantity((prev) => prev + 1)}
+                  >
+                    +
+                  </button>
+                </div>
+
+                <button
+                  className={`flex items-center gap-2 px-4 py-2 bg-[#ff5722] hover:bg-[#e64a19] text-white font-medium rounded-lg transition`}
+                >
+                  <ShoppingCart size={18} />
+                  Add to Cart
+                </button>
+
+                <button className="opacity-[.7] cursor-pointer">
+                  <Heart size={30} fill="red" color="black" />
+                  Add to Wishlist
+                </button>
               </div>
             </div>
           </div>
