@@ -185,12 +185,16 @@ export const createProduct = async (
       sale_price,
       regular_price,
       subCategory,
-      custom_properties = {},
+      custom_properties,
+      customProperties, // UI sends this
+      custom_specifications, // UI sends this
       images = [],
     } = req.body;
 
     const finalTags = tags || tag;
     const finalDiscountCodes = discount_codes || discountCodes || [];
+    const finalCustomProperties = custom_properties || customProperties || {};
+    const finalCustomSpecifications = custom_specification || custom_specifications || [];
 
     if (
       !title ||
@@ -245,8 +249,8 @@ export const createProduct = async (
         stock: parseInt(stock),
         sale_price: parseFloat(sale_price),
         regular_price: parseFloat(regular_price),
-        custom_properties: custom_properties || {},
-        custom_specification: custom_specification || [],
+        custom_properties: finalCustomProperties,
+        custom_specification: finalCustomSpecifications,
         images: {
           create: images
             .filter((img: any) => img && img.fileId && img.url) // UI sends img.url

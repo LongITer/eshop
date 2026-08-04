@@ -83,8 +83,9 @@ const Page = () => {
       setLoading(true);
       await axiosInstance.post("/product/api/create-product", data);
       router.push("/dashboard/all-products");
-    } catch (error) {
-      toast.error("Failed to create product");
+    } catch (error: any) {
+      console.error("Create product error:", error.response?.data || error);
+      toast.error(error.response?.data?.message || "Failed to create product");
     } finally {
       setLoading(false);
     }

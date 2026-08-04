@@ -1,7 +1,9 @@
 import axios from "axios";
 
+// Use empty baseURL so requests go through Next.js rewrites (which correctly proxy cookies)
+// Seller UI rewrites: /api/* -> gateway/api/*, /product/* -> gateway/product/*
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:8080",
+  baseURL: typeof window !== "undefined" ? "" : "http://localhost:8080",
   withCredentials: true,
 });
 
