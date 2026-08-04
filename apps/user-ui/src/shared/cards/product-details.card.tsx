@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useState } from "react";
 import Ratings from "../ratings";
-import { MapPin, MessageCircle } from "lucide-react";
+import { MapPin, MessageCircle, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const ProductDetailsCard = ({
@@ -13,6 +13,9 @@ const ProductDetailsCard = ({
   setOpen: (open: boolean) => void;
 }) => {
   const [activeImage, setActiveImage] = useState(0);
+  const [isSelected, setIsSelected] = useState(data?.colors?.[0] || "");
+  const [isSizeSelected, setIsSizeSelected] = useState(data?.sizes?.[0] || "");
+
   const router = useRouter();
   return (
     <div
@@ -93,17 +96,83 @@ const ProductDetailsCard = ({
               </div>
 
               {/* Chat with seller button*/}
-                <button
-                  className="flex cursor-pointer items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-full shadow-md hover:shadow-lg transition-all active:scale-95 whitespace-nowrap ml-auto"
-                  onClick={() =>
-                    router.push(
-                      `/inbox?shopId=${data?.shop?._id}&userId=${data?.user?._id}`,
-                    )
-                  }
-                >
-                  <MessageCircle size={16} />
-                  Chat with Seller
-                </button>
+              <button
+                className="flex cursor-pointer items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-full shadow-md hover:shadow-lg transition-all active:scale-95 whitespace-nowrap ml-auto"
+                onClick={() =>
+                  router.push(
+                    `/inbox?shopId=${data?.shop?._id}&userId=${data?.user?._id}`,
+                  )
+                }
+              >
+                <MessageCircle size={16} />
+                Chat with Seller
+              </button>
+
+              <button className="w-full absolute cursor-pointer right-[-5px] top-[-5px] flex justify-end my-2 mt-[-10px]">
+                <X size={20} onClick={() => setOpen(false)} />
+              </button>
+            </div>
+
+            <h3 className="text-xl font-semibold mt-3">{data?.title}</h3>
+            <p className="mt-2 text-gray-700 whitespace-pre-wrap w-full">
+              {data?.short_description}{" "}
+            </p>
+
+            {/* Brand */}
+            {data?.brand && (
+              <p className="mt-2">
+                <strong>Brand: </strong> {data.brand}
+              </p>
+            )}
+            {/* Color & Size Selection */}
+            <div className="flex flex-col md:flex-row  items-start gap-5 mt-4">
+              {/* Color Option */}
+              {data?.colors?.length > 0 && (
+                <div>
+                  <strong>Color: </strong>
+                  <div className="flex gap-2 mt-1">
+                    {data?.colors?.map((color: string, index: number) => (
+                      <button
+                        key={index}
+                        className={`w-8 h-8 cursor-pointer rounded-full border-2 ${isSelected === color ? "border-blue-500" : "border-transparent"}`}
+                        onClick={() => setIsSelected(color)}
+                        style={{ backgroundColor: color }}
+                      ></button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Size Options */}
+              {data?.sizes?.length > 0 && (
+                <div>
+                  <strong>Size: </strong>
+                  <div className="flex gap-2 mt-1">
+                    {data?.sizes.map((size: string, index: number) => (
+                      <button
+                        key={index}
+                        className={`px-4 py-1 cursor-pointer rounded-md transition-all
+                                ${isSizeSelected === size ? "bg-gray-800 text-white" : "bg-gray-300 text-black"}`}
+                        onClick={() => setIsSizeSelected(size)}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Price section */}
+              <div className="mt-5 flex items-center gap-4">
+                <h3 className="text-2xl font-semibold text-gray-900">
+                  ${data?.sale_price}
+                </h3>
+                {data?.regular_price && (
+                  <h3 className="text-lg text-red-600 line-through">
+                    ${data.regular_price}
+                  </h3>
+                )}
+              </div>
             </div>
           </div>
         </div>
