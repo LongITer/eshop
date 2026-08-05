@@ -28,6 +28,7 @@ const ProductCard = ({
   const wishlist = useStore((state: any) => state.wishlist);
   const isWishlisted = wishlist.some((item: any) => item.id === product.id);
   const cart = useStore((state: any) => state.cart);
+  const isInCart = cart.some((item: any) => item.id === product.id);
 
   useEffect(() => {
     if (isEvent && product?.ending_date) {
@@ -147,7 +148,19 @@ const ProductCard = ({
         <div className="bg-white rounded-full p-[6px] shadow-md">
           <ShoppingBag
             size={22}
-            className="cursor-pointer text-[#4b5563] hover:scale-110 transition"
+            className="cursor-pointer hover:scale-110 transition"
+            fill={isInCart ? "#4b5563" : "none"}
+            stroke={isInCart ? "#4b5563" : "#4b5563"}
+            onClick={() =>
+              isInCart
+                ? removeFromCart(product.id, user, location, deviceInfo)
+                : addToCart(
+                    { ...product, quantity: 1 },
+                    user,
+                    location,
+                    deviceInfo,
+                  )
+            }
           />
         </div>
       </div>

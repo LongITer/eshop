@@ -4,6 +4,10 @@ import React, { useState } from "react";
 import Ratings from "../ratings";
 import { Heart, MapPin, MessageCircle, ShoppingCart, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import useUser from "../../hooks/useUser";
+import useLocationTracking from "../../hooks/useLocationTracking";
+import useDeviceTracking from "../../hooks/useDeviceTracking";
+import { useStore } from "../../store";
 
 const ProductDetailsCard = ({
   data,
@@ -16,6 +20,20 @@ const ProductDetailsCard = ({
   const [isSelected, setIsSelected] = useState(data?.colors?.[0] || "");
   const [isSizeSelected, setIsSizeSelected] = useState(data?.sizes?.[0] || "");
   const [quantity, setQuantity] = useState(1);
+
+  const [timeLeft, setTimeLeft] = useState("");
+
+  const user = useUser();
+  const location = useLocationTracking();
+  const deviceInfo = useDeviceTracking();
+  const addtoWishlist = useStore((state: any) => state.addToWishlist);
+  const addToCart = useStore((state: any) => state.addToCart);
+  const removeFromCart = useStore((state: any) => state.removeFromCart);
+  const removeFromWishlist = useStore((state: any) => state.removeFromWishlist);
+  const wishlist = useStore((state: any) => state.wishlist);
+  const isWishlisted = wishlist.some((item: any) => item.id === data.id);
+  const cart = useStore((state: any) => state.cart);
+  const isInCart = cart.some((item: any) => item.id === data.id);
 
   const estimatedDelivery = new Date();
   estimatedDelivery.setDate(estimatedDelivery.getDate() + 5);
@@ -157,7 +175,7 @@ const ProductDetailsCard = ({
                         key={index}
                         className={`px-4 py-1 cursor-pointer rounded-md transition-all
                                 ${isSizeSelected === size ? "bg-gray-800 text-white" : "bg-gray-300 text-black"}`}
-                        onClick={() => setIsSizeSelected(true)}
+                        onClick={() => setIsSizeSelected(size)}
                       >
                         {size}
                       </button>
@@ -200,15 +218,47 @@ const ProductDetailsCard = ({
                 </div>
 
                 <button
-                  className={`flex items-center gap-2 px-4 py-2 bg-[#ff5722] hover:bg-[#e64a19] text-white font-medium rounded-lg transition`}
+                  disabled={isInCart}
+                  onClick={() =>
+                    addToCart(
+                      {
+                        ...data,
+                        quantity,
+                        selectedOptions: {
+                          color: isSelected,
+                          size: isSizeSelected,
+                        },
+                      },
+                      user,
+                      location,
+                      deviceInfo,
+                    )
+                  }
+                  className={`flex items-center gap-2 px-4 py-2 bg-[#ff5722] hover:bg-[#e64a19] text-white font-medium rounded-lg transition ${isInCart ? "cursor-not-allowed opacity-70" : "cursor-pointer"} `}
                 >
                   <ShoppingCart size={18} />
-                  Add to Cart
+                  {isInCart ? "In Cart" : "Add to Cart"}
                 </button>
 
-                <button className="opacity-[.7] cursor-pointer">
-                  <Heart size={30} fill="red" color="transparent" />
-                  {/* Add to Wishlist */}
+                <button
+                  className="cursor-pointer"
+                  onClick={() =>
+                    isWishlisted
+                      ? removeFromWishlist(data.id, user, location, deviceInfo)
+                      : addtoWishlist(
+                          { ...data, quantity: 1 },
+                          user,
+                          location,
+                          deviceInfo,
+                        )
+                  }
+                >
+                  <Heart
+                    size={30}
+                    fill={isWishlisted ? "red" : "none"}
+                    stroke={isWishlisted ? "red" : "#4b5563"}
+                    className="hover:scale-110 transition"
+                  />
                 </button>
               </div>
               <div className="mt-3">
