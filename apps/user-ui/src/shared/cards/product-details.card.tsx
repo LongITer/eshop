@@ -17,6 +17,9 @@ const ProductDetailsCard = ({
   const [isSizeSelected, setIsSizeSelected] = useState(data?.sizes?.[0] || "");
   const [quantity, setQuantity] = useState(1);
 
+  const estimatedDelivery = new Date();
+  estimatedDelivery.setDate(estimatedDelivery.getDate() + 5);
+
   const router = useRouter();
   return (
     <div
@@ -154,7 +157,7 @@ const ProductDetailsCard = ({
                         key={index}
                         className={`px-4 py-1 cursor-pointer rounded-md transition-all
                                 ${isSizeSelected === size ? "bg-gray-800 text-white" : "bg-gray-300 text-black"}`}
-                        onClick={() => setIsSizeSelected(size)}
+                        onClick={() => setIsSizeSelected(true)}
                       >
                         {size}
                       </button>
@@ -162,7 +165,8 @@ const ProductDetailsCard = ({
                   </div>
                 </div>
               )}
-
+            </div>
+            <div>
               {/* Price section */}
               <div className="mt-5 flex items-center gap-4">
                 <h3 className="text-2xl font-semibold text-gray-900">
@@ -174,23 +178,21 @@ const ProductDetailsCard = ({
                   </h3>
                 )}
               </div>
-
-              <div className="mt-5 flex items-center gap-4 flex-wrap">
-                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden shadow-sm">
+              <div className="mt-5 flex items-center gap-5">
+                <div className="flex items-center rounded-md">
                   <button
-                    className="w-9 h-9 flex items-center justify-center cursor-pointer text-gray-700 text-lg font-bold bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors disabled:opacity-40"
+                    className="px-3 cursor-pointer py-1 bg-gray-300 hover:bg-gray-400 text-black font-semibold rounded-l-md"
                     onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-                    disabled={quantity <= 1}
                   >
-                    −
+                    -
                   </button>
 
-                  <span className="w-10 text-center text-sm font-semibold text-gray-800 select-none bg-white">
+                  <span className="px-3 cursor-pointer py-1 bg-gray-300 text-black font-semibold">
                     {quantity}
                   </span>
 
                   <button
-                    className="w-9 h-9 flex items-center justify-center cursor-pointer text-gray-700 text-lg font-bold bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors"
+                    className="px-3 cursor-pointer py-1 bg-gray-300 hover:bg-gray-400 text-black font-semibold rounded-r-md"
                     onClick={() => setQuantity((prev) => prev + 1)}
                   >
                     +
@@ -205,9 +207,22 @@ const ProductDetailsCard = ({
                 </button>
 
                 <button className="opacity-[.7] cursor-pointer">
-                  <Heart size={30} fill="red" color="black" />
-                  Add to Wishlist
+                  <Heart size={30} fill="red" color="transparent" />
+                  {/* Add to Wishlist */}
                 </button>
+              </div>
+              <div className="mt-3">
+                {data.stock > 0 ? (
+                  <span className="text-green-600 font-semibold">In Stock</span>
+                ) : (
+                  <span className="text-red-600 font-semibold">
+                    Out of Stock
+                  </span>
+                )}
+              </div>{" "}
+              <div className="mt-3 text-gray-600 text-sm">
+                Estimated delivery :{" "}
+                <strong>{estimatedDelivery.toDateString()}</strong>
               </div>
             </div>
           </div>
