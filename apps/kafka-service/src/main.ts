@@ -1,5 +1,6 @@
 import { kafka } from "@packages/utils/kafka";
 import { updateUserAnalytics } from "./services/analytics.service";
+import { updateProductAnalytics } from "./services/analytics.service";
 
 const consumer = kafka.consumer({ groupId: "user-events-group" });
 
@@ -20,6 +21,7 @@ const processQueue = async () => {
       "add_to_wishlist",
       "add_to_cart",
       "product_view",
+      "remove_from_cart",
       "remove_from_wishlist",
     ];
 
@@ -29,6 +31,7 @@ const processQueue = async () => {
 
     try {
       await updateUserAnalytics(event);
+      await updateProductAnalytics(event);
     } catch (error) {
       console.log("Error processing event: ", error);
     }

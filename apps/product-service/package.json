@@ -12,14 +12,15 @@
         ],
         "options": {
           "buildTarget": "@./product-service:build",
-          "runBuildTargetDependencies": false
+          "runBuildTargetDependencies": false,
+          "inspect": false
         },
         "configurations": {
           "development": {
-            "buildTarget": "@./product-service:build:development"
+            "buildTarget": "@./product-service:build"
           },
           "production": {
-            "buildTarget": "@./product-service:build:production"
+            "buildTarget": "@./product-service:build"
           }
         }
       }

@@ -12,14 +12,15 @@
         ],
         "options": {
           "buildTarget": "@./api-gateway:build",
-          "runBuildTargetDependencies": false
+          "runBuildTargetDependencies": false,
+          "inspect": false
         },
         "configurations": {
           "development": {
-            "buildTarget": "@./api-gateway:build:development"
+            "buildTarget": "@./api-gateway:build"
           },
           "production": {
-            "buildTarget": "@./api-gateway:build:production"
+            "buildTarget": "@./api-gateway:build"
           }
         }
       }

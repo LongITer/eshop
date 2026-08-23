@@ -18,14 +18,15 @@
         ],
         "options": {
           "buildTarget": "auth-service:build",
-          "runBuildTargetDependencies": true
+          "runBuildTargetDependencies": true,
+          "inspect": false
         },
-        "configuration": {
+        "configurations": {
           "development": {
-            "buildTarget": "auth-service:build:development"
+            "buildTarget": "auth-service:build"
           },
           "production": {
-            "buildTarget": "auth-service:build:production"
+            "buildTarget": "auth-service:build"
           }
         }
       },

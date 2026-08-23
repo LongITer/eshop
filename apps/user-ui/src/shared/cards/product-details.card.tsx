@@ -23,7 +23,7 @@ const ProductDetailsCard = ({
 
   const [timeLeft, setTimeLeft] = useState("");
 
-  const user = useUser();
+  const { user } = useUser();
   const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
   const addtoWishlist = useStore((state: any) => state.addToWishlist);

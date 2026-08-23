@@ -12,14 +12,15 @@
         ],
         "options": {
           "buildTarget": "@./kafka-service:build",
-          "runBuildTargetDependencies": false
+          "runBuildTargetDependencies": false,
+          "inspect": false
         },
         "configurations": {
           "development": {
-            "buildTarget": "@./kafka-service:build:development"
+            "buildTarget": "@./kafka-service:build"
           },
           "production": {
-            "buildTarget": "@./kafka-service:build:production"
+            "buildTarget": "@./kafka-service:build"
           }
         }
       }

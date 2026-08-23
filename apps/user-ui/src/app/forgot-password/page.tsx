@@ -53,8 +53,9 @@ const ForgotPassword = () => {
             setCanResend(false);
         },
         onError: (error: AxiosError) => {
+            console.log("Forgot password error:", error.response?.status, error.response?.data);
             const errorMessage = (error.response?.data as { message?: string })?.message
-                || "Invalid OTP. Please try again.";
+                || "Failed to send OTP. Please try again.";
             setServerError(errorMessage);
         }
     })
@@ -71,6 +72,7 @@ const ForgotPassword = () => {
             setServerError(null);
         },
         onError: (error: AxiosError) => {
+            console.log("Verify OTP error:", error.response?.status, error.response?.data);
             const errorMessage = (error.response?.data as { message?: string })?.message
                 || "Invalid OTP. Please try again.";
             setServerError(errorMessage);

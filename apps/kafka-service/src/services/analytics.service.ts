@@ -1,12 +1,12 @@
 import prisma from "@packages/libs/prisma";
 
-
 export const updateUserAnalytics = async (event: any) => {
   try {
     const existingData = await prisma.userAnalytics.findUnique({
       where: {
         userId: event.userId,
       },
+      select: { actions: true },
     });
 
     let updatedOptions: any = existingData?.actions || [];
@@ -91,7 +91,9 @@ export const updateUserAnalytics = async (event: any) => {
     });
 
     // Also update product analytics
-  } catch (error) {}
+  } catch (error) {
+    console.error("Error updating user analytics:", error);
+  }
 };
 
 export const updateProductAnalytics = async (event: any) => {

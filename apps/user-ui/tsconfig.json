@@ -25,14 +25,20 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@packages/*": [
+        "../../packages/*"
       ]
     },
+    "baseUrl": ".",
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "../../",
     "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
   },
   "include": [
     "../../apps/user-ui/.next/types/**/*.ts",
+    "../../packages/components/**/*.tsx",
+    "../../packages/utils/**/*.ts",
     "../../dist/apps/user-ui/.next/types/**/*.ts",
     "next-env.d.ts",
     "src/**/*.js",
