@@ -11,6 +11,7 @@ import {
   uploadProductImages,
   deleteProduct,
   getAllProducts,
+  getProductDetails,
 } from "../controllers/product.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 
@@ -34,5 +35,6 @@ router.post("/delete-product/:id", isAuthenticated, deleteProduct);
 router.post("/restore-product/:id", isAuthenticated, restoreProduct);
 // All products
 router.get("/get-all-products", getAllProducts);
-
+// Find product by slug
+router.get("/get-product/:slug", getProductDetails);
 export default router;

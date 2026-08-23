@@ -194,7 +194,8 @@ export const createProduct = async (
     const finalTags = tags || tag;
     const finalDiscountCodes = discount_codes || discountCodes || [];
     const finalCustomProperties = custom_properties || customProperties || {};
-    const finalCustomSpecifications = custom_specification || custom_specifications || [];
+    const finalCustomSpecifications =
+      custom_specification || custom_specifications || [];
 
     if (
       !title ||
@@ -444,5 +445,28 @@ export const getAllProducts = async (
     });
   } catch (error) {
     next(error);
+  }
+};
+
+// Get product details
+export const getProductDetails = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const product = await prisma.products.findUnique({
+      where: { slug: req.params.slug },
+      include: {
+        images: true,
+        shop: true,
+      },
+    });
+    return res.status(200).json({
+      success: true,
+      product,
+    });
+  } catch (error) {
+    return next(error);
   }
 };
