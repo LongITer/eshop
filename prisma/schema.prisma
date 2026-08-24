@@ -35,6 +35,7 @@ model users {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   shopReviews shopReviews[]
+  orders      orders[]
 }
 
 model shopReviews {
@@ -65,6 +66,7 @@ model shops {
   sellerId      String        @unique @db.ObjectId
   sellers       sellers       @relation(fields: [sellerId], references: [id])
   products      products[]
+  orders        orders[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -138,6 +140,70 @@ model products {
   updatedAt            DateTime      @updatedAt
   shopId               String        @db.ObjectId
   shop                 shops         @relation(fields: [shopId], references: [id])
+  orderItems           orderItems[]
+}
+
+enum orderStatus {
+  Pending
+  Confirmed
+  Processing
+  Shipped
+  Delivered
+  Cancelled
+  Returned
+  Refunded
+}
+
+enum paymentStatus {
+  Pending
+  Paid
+  Failed
+  Refunded
+}
+
+model orders {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  orderNumber     String        @unique
+  userId          String        @db.ObjectId
+  user            users         @relation(fields: [userId], references: [id])
+  shopId          String        @db.ObjectId
+  shop            shops         @relation(fields: [shopId], references: [id])
+  items           orderItems[]
+  subTotal        Float
+  shippingFee     Float         @default(0)
+  discount        Float         @default(0)
+  discountCodeId  String?       @db.ObjectId
+  totalAmount     Float
+  status          orderStatus   @default(Pending)
+  paymentStatus   paymentStatus @default(Pending)
+  paymentMethod   String?
+  stripePaymentId String?
+  shippingAddress Json
+  note            String?
+  trackingNumber  String?
+  estimatedDelivery DateTime?
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model orderItems {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId     String   @db.ObjectId
+  order       orders   @relation(fields: [orderId], references: [id])
+  productId   String   @db.ObjectId
+  product     products @relation(fields: [productId], references: [id])
+  title       String
+  image       String?
+  color       String?
+  size        String?
+  quantity    Int
+  unitPrice   Float
+  totalPrice  Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model userAnalytics {
