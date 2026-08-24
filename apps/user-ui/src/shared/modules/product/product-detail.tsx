@@ -6,7 +6,15 @@ import useUser from "@/hooks/useUser";
 import ImageMagnifier from "@/shared/components/image-magnifier";
 import Ratings from "@/shared/ratings";
 import { useStore } from "@/store";
-import { ChevronLeft, Heart, ShoppingCart } from "lucide-react";
+import {
+  ChevronLeft,
+  Heart,
+  MapPin,
+  MessageSquareText,
+  Package,
+  ShoppingCart,
+  WalletMinimal,
+} from "lucide-react";
 import Link from "next/link";
 import React, { useState } from "react";
 
@@ -260,8 +268,83 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
             </div>
           </div>
         </div>
-        {/* Right column */}
-        <div></div>
+        {/* Right column - Seller information*/}
+        <div className="bg-[#fafafa] -mt-6 ">
+          <div className="mb-1 p-3 border-b border-b-gray-100">
+            <span className="text-sm text-gray-600">Delivery options</span>
+            <div className="flex items-center text-gray-600 gap-1">
+              <MapPin size={18} className="ml-[-5px]" />
+              <span className="text-lg font-normal">
+                {location?.city + ", " + location?.country}
+              </span>
+            </div>
+          </div>
+          <div className="mb-1 px-3 border-b border-b-gray-100">
+            <span className="text-sm text-gray-600">Return & Warranty</span>
+            <div className="flex items-center text-gray-600 gap-1">
+              <Package size={18} className="ml-[-5px]" />
+              <span className="text-base font-normal">7 Days Returns</span>
+            </div>
+            <div className="flex items-center py-2 text-gray-600 gap-1">
+              <WalletMinimal size={18} className="ml-[-5px]" />
+              <span className="text-base font-normal">
+                Warranty not available
+              </span>
+            </div>
+          </div>
+          <div className="px-3 py-1">
+            <div className="w-[85%] rounded-lg">
+              {/* Sold by section */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm text-gray-600 font-light">
+                    Sold by
+                  </span>
+                  <span className="block max-w-[150px] truncate font-medium text-lg">
+                    {productDetails?.shop?.name}
+                  </span>
+                </div>
+                <Link
+                  href={"#"}
+                  className="text-blue-500 text-sm flex items-center gap-1"
+                >
+                  <MessageSquareText size={18} />
+                  Chat now
+                </Link>
+              </div>
+
+              {/* Seller performance stats */}
+              <div className="grid grid-cols-3 gap-2 border-t border-t-gray-200 mt-3 pt-3">
+                <div>
+                  <p className="text-[12px] text-gray-500">
+                    Positive Seller Ratings
+                  </p>
+                  <p className="text-lg font-semibold">80%</p>
+                </div>
+                <div>
+                  <p className="text-[12px] text-gray-500">Ship on time</p>
+                  <p className="text-lg font-semibold">100%</p>
+                </div>
+                <div>
+                  <p className="text-[12px] text-gray-500">
+                    Chat Response Rate
+                  </p>
+                  <p className="text-lg font-semibold">100%</p>
+                </div>
+              </div>
+
+              {/* Go to Store */}
+              <div className="text-center mt-4 border-t border-t-gray-200 pt-2">
+                <Link
+                  href={`/shop/${productDetails?.shop.id}`}
+                  className="text-blue-500 font-medium text-sm hover:underline"
+                >
+                  GO TO STORE
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
