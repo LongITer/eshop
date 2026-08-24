@@ -3,9 +3,11 @@
 import useDeviceTracking from "@/hooks/useDeviceTracking";
 import useLocationTracking from "@/hooks/useLocationTracking";
 import useUser from "@/hooks/useUser";
+import ProductCard from "@/shared/cards/product-card";
 import ImageMagnifier from "@/shared/components/image-magnifier";
 import Ratings from "@/shared/ratings";
 import { useStore } from "@/store";
+import axiosInstance from "@/utils/axioInstance";
 import {
   ChevronLeft,
   Heart,
@@ -16,7 +18,7 @@ import {
   WalletMinimal,
 } from "lucide-react";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   const mainImage = productDetails?.images?.[0]?.url || "/default-image.jpg";
@@ -75,6 +77,27 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
       productDetails.regular_price) *
       100,
   );
+
+  const fetchFilteredProducts = async () => {
+    try {
+      const query = new URLSearchParams();
+
+      query.set("priceRange", priceRange.join(","));
+      query.set("page", "1");
+      query.set("limit", "5");
+
+      const res = await axiosInstance.get(
+        `/product/api/get-filtered-products?${query.toString()}`,
+      );
+      setRecommendedProducts(res.data.products);
+    } catch (error) {
+      console.error("Failed to fetch filtered products", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchFilteredProducts();
+  }, [priceRange]);
 
   return (
     <div className="w-full bg-[#f5f5f5] py-5 ">
@@ -343,6 +366,39 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                 </Link>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+      <div className="w-[90%] lg:w-[80%] mx-auto mt-5">
+        <div className="bg-white min-h-[60vh] h-full p-5">
+          <h3 className="text-lg font-semibold">
+            Product detail of: {productDetails?.title}
+          </h3>
+          <div
+            className="prose prose-sm text-slate-200 max-w-none"
+            dangerouslySetInnerHTML={{
+              __html: productDetails?.detailed_description,
+            }}
+          />
+        </div>
+      </div>
+      <div className="w-[90%] lg:w-[80%] mx-auto">
+        <div className="bg-white min-h-[50vh] h-full mt-5 p-5">
+          <h3 className="text-lg font-semibold">
+            Ratings & Reviews of {productDetails?.title}
+          </h3>
+          <p className="text-center text-gray-500 pt-14">
+            No Review Available yet!
+          </p>
+        </div>
+      </div>
+      <div className="w-[90%] lg:w-[80%] mx-auto">
+        <div className="w-full h-full my-5 p-5">
+          <h3 className="text-xl font-semibold mb-2">You may also like</h3>
+          <div className="m-auto grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+            {recommendedProducts.map((i: any) => (
+              <ProductCard key={i.id} product={i} />
+            ))}
           </div>
         </div>
       </div>

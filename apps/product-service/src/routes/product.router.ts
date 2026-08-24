@@ -12,6 +12,10 @@ import {
   deleteProduct,
   getAllProducts,
   getProductDetails,
+  getFilteredProducts,
+  getFilteredShops,
+  searchProducts,
+  getFilteredEvents,
 } from "../controllers/product.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 
@@ -37,4 +41,10 @@ router.post("/restore-product/:id", isAuthenticated, restoreProduct);
 router.get("/get-all-products", getAllProducts);
 // Find product by slug
 router.get("/get-product/:slug", getProductDetails);
+//
+router.get("/get-filtered-products", getFilteredProducts);
+router.get("/get-filtered-offers", getFilteredEvents);
+router.get("/get-filtered-shops", getFilteredShops);
+router.get("/search-products", searchProducts);
+
 export default router;
