@@ -483,6 +483,7 @@ export const getFilteredProducts = async (
       categories = [],
       colors = [],
       sizes = [],
+      excludeId = "",
       page = 1,
       limit = 12,
     } = req.query;
@@ -502,8 +503,18 @@ export const getFilteredProducts = async (
         gte: parsedPriceRange[0],
         lte: parsedPriceRange[1],
       },
-      starting_date: null,
+      OR: [
+        { starting_date: null },
+        { starting_date: { isSet: false } },
+      ],
     };
+
+    // Exclude current product from recommendations
+    if (excludeId && typeof excludeId === "string") {
+      filters.id = {
+        not: excludeId,
+      };
+    }
 
     if (categories && (categories as string[]).length > 0) {
       filters.category = {
