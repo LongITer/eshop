@@ -82,11 +82,13 @@ const ProductCard = ({
           height={300}
           className="w-full h-[200px] object-cover mx-auto rounded-t-md"
         />
-        {product?.shop?.name}
+        <span className="block px-2 text-sm text-blue-500 font-semibold mt-2">
+          {product?.shop?.name}
+        </span>
       </Link>
 
       <Link href={`/product/${product?.slug}`}>
-        <h3 className="text-base font-semibold px-2 text-gray-800 mt-2">
+        <h3 className="text-base font-bold px-2 text-gray-900 mt-1">
           {product?.title}
         </h3>
       </Link>
