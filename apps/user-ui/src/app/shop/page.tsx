@@ -50,6 +50,10 @@ const ProductListingPage = () => {
     const params = new URLSearchParams();
     if (selectedCategories.length > 0)
       selectedCategories.forEach((cat) => params.append("categories", cat));
+    if (selectedCountries.length > 0)
+      selectedCountries.forEach((country) =>
+        params.append("countries", country),
+      );
 
     params.set("page", page.toString());
 
@@ -63,6 +67,8 @@ const ProductListingPage = () => {
 
       if (selectedCategories.length > 0)
         query.set("categories", selectedCategories.join(","));
+      if (selectedCountries.length > 0)
+        query.set("countries", selectedCountries.join(","));
       query.set("page", page.toString());
       query.set("limit", "12");
 
@@ -81,7 +87,7 @@ const ProductListingPage = () => {
   useEffect(() => {
     updateURL();
     fetchFilteredShops();
-  }, [selectedCategories, page]);
+  }, [selectedCategories, selectedCountries, page]);
 
   return (
     <div className="w-full bg-[#f5f5f5] pb-10">

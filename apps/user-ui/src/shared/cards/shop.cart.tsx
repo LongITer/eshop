@@ -17,12 +17,12 @@ interface ShopCardProps {
 
 const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
   return (
-    <div className="w-full rounded-full cursor-pointer bg-white border border-gray-200 shadow-sm overflow-hidden transition">
+    <div className="w-full rounded-sm cursor-pointer bg-white border border-gray-200 shadow-sm transition">
       {/* Cover */}
       <Image
         src={
-          shop?.coverBanner ||
-          "https://cdn-media.sforum.vn/storage/app/media/ctvseo_maihue/hinh-nen-1920-1080/hinh-nen-1920-1080-thumbnail.jpg"
+          shop.coverBanner ||
+          "https://thiepmung.com/images/theme/ngam-va-tai-hinh-nen-dep-cho-may-tinh-556444149b46f6.jpg"
         }
         alt="Cover"
         width={500}

@@ -667,12 +667,21 @@ export const getFilteredShops = async (
         in: Array.isArray(categories)
           ? categories
           : String(categories).split(","),
+        mode: "insensitive",
       };
     }
 
     if (countries && String(countries).length > 0) {
-      filters.country = {
-        in: Array.isArray(countries) ? countries : String(countries).split(","),
+      const countryArray = Array.isArray(countries)
+        ? countries
+        : String(countries).split(",");
+      filters.sellers = {
+        is: {
+          country: {
+            in: countryArray,
+            mode: "insensitive",
+          },
+        },
       };
     }
 
@@ -682,7 +691,6 @@ export const getFilteredShops = async (
         skip,
         take: parsedLimit,
         include: {
-          sellers: true,
           // followers: true,
           products: true,
         },
