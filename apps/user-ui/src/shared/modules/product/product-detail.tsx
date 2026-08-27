@@ -18,7 +18,7 @@ import {
   WalletMinimal,
 } from "lucide-react";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 
 const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   const mainImage = productDetails?.images?.[0]?.url || "/default-image.jpg";
@@ -42,8 +42,8 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   const [quantity, setQuantity] = useState(1);
 
   const [priceRange, setPriceRange] = useState([
-    productDetails?.sale_price,
-    1199,
+    0,
+    2000,
   ]);
 
   const [recommendedProducts, setRecommendedProducts] = useState([]);
@@ -78,13 +78,23 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
       100,
   );
 
-  const fetchFilteredProducts = async () => {
+  const fetchFilteredProducts = useCallback(async () => {
     try {
       const query = new URLSearchParams();
 
       query.set("priceRange", priceRange.join(","));
       query.set("page", "1");
-      query.set("limit", "5");
+      query.set("limit", "10");
+
+      // Filter by same category for better recommendations
+      if (productDetails?.category) {
+        query.set("categories", productDetails.category);
+      }
+
+      // Exclude current product
+      if (productDetails?.id) {
+        query.set("excludeId", productDetails.id);
+      }
 
       const res = await axiosInstance.get(
         `/product/api/get-filtered-products?${query.toString()}`,
@@ -93,11 +103,11 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
     } catch (error) {
       console.error("Failed to fetch filtered products", error);
     }
-  };
+  }, [priceRange, productDetails?.category, productDetails?.id]);
 
   useEffect(() => {
     fetchFilteredProducts();
-  }, [priceRange]);
+  }, [fetchFilteredProducts]);
 
   return (
     <div className="w-full bg-[#f5f5f5] py-5 ">
