@@ -800,11 +800,35 @@ export const topShops = async (
       },
     });
 
+    // Include recently created shops when there are not enough shops with sales yet.
+    const fallbackShops = await prisma.shops.findMany({
+      where: {
+        id: {
+          notIn: shopIds,
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: Math.max(0, 10 - shops.length),
+      select: {
+        id: true,
+        name: true,
+        avatar: true,
+        coverBanner: true,
+        address: true,
+        ratings: true,
+        category: true,
+      },
+    });
+
     // Merge sales with shop data
-    const enrichedShops = shops.map((shop) => {
+    const enrichedShops = [...shops, ...fallbackShops].map((shop) => {
       const salesData = topShopsData.find((s) => s.shopId === shop.id);
       return {
         ...shop,
+        avatar: shop.avatar[0]?.url ?? "",
+        rating: shop.ratings ?? 0,
         totalSales: salesData?._sum.totalAmount ?? 0,
       };
     });

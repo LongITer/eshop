@@ -1,4 +1,4 @@
-import Header from '../shared/widgets';
+import Header, { Footer } from '../shared/widgets';
 import './global.css';
 import { Poppins, Roboto } from 'next/font/google'
 import Provider from './providers';
@@ -31,6 +31,7 @@ export default function RootLayout({
         <Providers>
           <Header />
           {children}
+          <Footer />
           <Toaster position="top-right" />
         </Providers>
       </body>
