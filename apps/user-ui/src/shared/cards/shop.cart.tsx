@@ -29,6 +29,22 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
         height={500}
         className="object-cover w-full h-full"
       />
+
+      {/* Shop Avatar */}
+      <div className="relative flex justify-center -mt-8">
+        <div className="w-16 h-16 rounded-full border-4 border-white overflow-hidden">
+          <Image
+            src={
+              shop.avatar ||
+              "https://png.pngtree.com/png-vector/20191101/ourmid/pngtree-cartoon-color-simple-male-avatar-png-image_1934459.jpg"
+            }
+            alt={shop.name}
+            width={64}
+            height={64}
+            className="object-cover"
+          />
+        </div>
+      </div>
     </div>
   );
 };
