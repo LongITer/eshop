@@ -1,4 +1,5 @@
 "use client";
+import ProductCard from "@/shared/cards/product-card";
 import axiosInstance from "@/utils/axioInstance";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -132,8 +133,8 @@ const ProductListingPage = () => {
                 step={100}
                 min={MIN}
                 max={MAX}
-                values={priceRange}
-                onChange={(e) => setPriceRange(e)}
+                values={tempPriceRange}
+                onChange={(e) => setTempPriceRange(e)}
                 renderTrack={({ props, children }) => {
                   const [min, max] = tempPriceRange;
                   const percentageLeft = ((min - MIN) / (MAX - MIN)) * 100;
@@ -261,6 +262,42 @@ const ProductListingPage = () => {
               )}
             </ul>
           </aside>
+
+          {/* Product grid */}
+          <div className="flex-1 px-2 lg:px-3">
+            {isProductLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2">
+                {Array.from({ length: 10 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-[250px] bg-gray-300 animate-pulse rounded-xl"
+                  ></div>
+                ))}
+              </div>
+            ) : products.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2">
+                {products.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            ) : (
+              <p>No Products found!</p>
+            )}
+
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-8 gap-2">
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <button
+                    key={i + 1}
+                    onClick={() => setPage(i + 1)}
+                    className={`px-3 py-1 !rounded border border-gray-200 text-sm ${page === i + 1 ? "bg-blue-600 text-white" : "bg-white text-black"}`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
