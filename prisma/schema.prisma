@@ -36,6 +36,7 @@ model users {
   updatedAt   DateTime      @updatedAt
   shopReviews shopReviews[]
   orders      orders[]
+  addresses   address[]
 }
 
 model shopReviews {
@@ -228,4 +229,19 @@ model productAnalytics {
   lastViewedAt DateTime
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model address {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      users    @relation(fields: [userId], references: [id])
+  label     String
+  name      String
+  street    String
+  city      String
+  zip       String
+  country   String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
