@@ -23,7 +23,7 @@ const Page = () => {
     staleTime: 1000 * 60 * 2,
   });
 
-  const { data: latestProducts } = useQuery({
+  const { data: latestProducts, isLoading: latestProductLoading } = useQuery({
     queryKey: ["latest-products"],
     queryFn: async () => {
       const res = await axiosInstance.get(
@@ -38,6 +38,17 @@ const Page = () => {
     queryFn: async () => {
       const res = await axiosInstance.get("/product/api/top-shops");
       return res.data.shops;
+    },
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const { data: offers, isLoading: offersLoading } = useQuery({
+    queryKey: ["offers"],
+    queryFn: async () => {
+      const res = await axiosInstance.get(
+        "/product/api/get-all-events?page=1&limit=10",
+      );
+      return res.data.events;
     },
     staleTime: 1000 * 60 * 2,
   });
@@ -90,7 +101,7 @@ const Page = () => {
           <SectionTitle title="Latest Products" />
         </div>
 
-        {!isLoading && !isError && (
+        {!latestProductLoading && !isError && (
           <div className="m-auto grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 2xl:grid-cols-5 ">
             {latestProducts?.map((product: any) => (
               <div key={product.id}>
@@ -120,6 +131,24 @@ const Page = () => {
           <div className="m-auto grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 2xl:grid-cols-5">
             {shops?.map((shop: any) => (
               <ShopCard key={shop.id} shop={shop} />
+            ))}
+          </div>
+        )}
+
+        {shops?.length === 0 && (
+          <p className="text-center text-lg text-slate-500">
+            No Shops available yet!.
+          </p>
+        )}
+
+        <div className="my-8 block">
+          <SectionTitle title="Top Offers" />
+        </div>
+
+        {!offersLoading && !isError && (
+          <div className="m-auto grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 2xl:grid-cols-5">
+            {offers?.map((product: any) => (
+              <ProductCard key={product.id} product={product} isEvent={true} />
             ))}
           </div>
         )}

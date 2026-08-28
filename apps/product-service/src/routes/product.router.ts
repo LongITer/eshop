@@ -17,6 +17,7 @@ import {
   searchProducts,
   getFilteredEvents,
   topShops,
+  getAllEvents,
 } from "../controllers/product.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 
@@ -48,5 +49,6 @@ router.get("/get-filtered-offers", getFilteredEvents);
 router.get("/get-filtered-shops", getFilteredShops);
 router.get("/search-products", searchProducts);
 router.get("/top-shops", topShops);
+router.get("/get-all-events", getAllEvents);
 
 export default router;

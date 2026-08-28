@@ -503,10 +503,7 @@ export const getFilteredProducts = async (
         gte: parsedPriceRange[0],
         lte: parsedPriceRange[1],
       },
-      OR: [
-        { starting_date: null },
-        { starting_date: { isSet: false } },
-      ],
+      OR: [{ starting_date: null }, { starting_date: { isSet: false } }],
     };
 
     // Exclude current product from recommendations
@@ -840,6 +837,57 @@ export const topShops = async (
     return res.status(200).json({ shops: top10Shops });
   } catch (error) {
     console.error("Error fetching top shop: ", error);
+    return next(error);
+  }
+};
+
+// Get All Events
+export const getAllEvents = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const skip = (page - 1) * limit;
+
+    const baseFilter = {
+      AND: [{ starting_date: { not: null } }, { ending_date: { not: null } }],
+    };
+
+    const [events, total, top10BySales] = await Promise.all([
+      prisma.products.findMany({
+        skip,
+        take: limit,
+        where: baseFilter,
+        include: {
+          images: true,
+          shop: true,
+        },
+        orderBy: {
+          totalSales: "desc",
+        },
+      }),
+      prisma.products.count({ where: baseFilter }),
+      prisma.products.findMany({
+        where: baseFilter,
+        take: 10,
+        orderBy: {
+          totalSales: "desc",
+        },
+      }),
+    ]);
+
+    res.status(200).json({
+      events,
+      top10BySales,
+      total,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    console.error("Error fetching all events: ", error);
     return next(error);
   }
 };
