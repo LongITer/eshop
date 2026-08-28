@@ -27,6 +27,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axioInstance";
 import Image from "next/image";
 import QuickActionCard from "@/shared/cards/quick-action.card";
+import ShippingAddressSection from "@/shared/cards/shipping-address.card";
 
 const page = () => {
   const { user, isLoading } = useUser();
@@ -169,12 +170,14 @@ const page = () => {
                   {user.points || 0}
                 </p>
               </div>
+            ) : activeTab === "Shipping Address" ? (
+              <ShippingAddressSection />
             ) : (
               <div></div>
             )}
           </div>
 
-          {/* Right Quich Panel */}
+          {/* Right Quick Panel */}
           <div className="w-full md:w-1/4 space-y-4">
             <QuickActionCard
               Icon={Gift}
