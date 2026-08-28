@@ -31,6 +31,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'thiepmung.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'hunggiaco.com',
+      },
     ],
   },
 };
