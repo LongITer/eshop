@@ -26,17 +26,18 @@ model images {
 }
 
 model users {
-  id          String        @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  email       String        @unique
-  password    String?
-  following   String[]
-  avatar      images[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  shopReviews shopReviews[]
-  orders      orders[]
-  addresses   address[]
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  email         String          @unique
+  password      String?
+  following     String[]
+  avatar        images[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  shopReviews   shopReviews[]
+  orders        orders[]
+  addresses     address[]
+  notifications notifications[]
 }
 
 model shopReviews {
@@ -73,16 +74,17 @@ model shops {
 }
 
 model sellers {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  name         String
-  email        String   @unique
-  phone_number String
-  country      String
-  password     String?
-  stripe_id    String?
-  shop         shops?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  email         String          @unique
+  phone_number  String
+  country       String
+  password      String?
+  stripe_id     String?
+  shop          shops?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  notifications notifications[]
 }
 
 model site_config {
@@ -244,4 +246,34 @@ model address {
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum notificationType {
+  NewOrder
+  OrderConfirmed
+  OrderShipped
+  OrderDelivered
+  OrderCancelled
+  OrderRefunded
+  Promotion
+  NewReview
+  LowStock
+  System
+}
+
+model notifications {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  message     String
+  type        notificationType
+  isRead      Boolean          @default(false)
+  redirectUrl String?
+  userId      String?          @db.ObjectId
+  user        users?           @relation(fields: [userId], references: [id])
+  sellerId    String?          @db.ObjectId
+  seller      sellers?         @relation(fields: [sellerId], references: [id])
+  orderId     String?          @db.ObjectId
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 }

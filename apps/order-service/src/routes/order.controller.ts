@@ -5,6 +5,7 @@ import crypto from "crypto";
 import { NextFunction, Request, Response } from "express";
 import Stripe from "stripe";
 import { Prisma } from "@prisma/client";
+import { sendEmail } from "../utils/send-email";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-04-22.dahlia",
@@ -338,19 +339,61 @@ export const createOrder = async (
         }
 
         // Send email for user
-        // await sendEmail(
-        //   email,
-        //   "🛍️ Your Eshop Order Confirmation",
-        //   "order-confirmation",
-        //   {
-        //     name,
-        //     cart,
-        //     totalAmount: coupon?.discountAmount
-        //       ? totalAmount - coupon?.discountAmount
-        //       : totalAmount,
-        //     trackingUrl: `https://eshop.com/order/${sessionId}`,
-        //   },
-        // );
+        await sendEmail(
+          email,
+          "🛍️ Your Eshop Order Confirmation",
+          "order-confirmation",
+          {
+            name,
+            cart,
+            totalAmount: coupon?.discountAmount
+              ? totalAmount - coupon?.discountAmount
+              : totalAmount,
+            trackingUrl: `https://eshop.com/order/${sessionId}`,
+          },
+        );
+
+        const createdShopIds = Object.keys(shopGrouped).map(Number);
+
+        const sellerShops = await prisma.shops.findMany({
+          where: {
+            id: { in: createdShopIds },
+          },
+          select: {
+            id: true,
+            sellerId: true,
+            name: true,
+          },
+        });
+
+        for (const shop of sellerShops) {
+          const firstProduct = shopGrouped[shop.id][0];
+          const productTitle = firstProduct?.title || "new item";
+
+          await prisma.notifications.create({
+            data: {
+              title: "🛒 New Order Received",
+              message: `A customer just ordered ${productTitle} from your shop.`,
+              creatorId: userId,
+              receiverId: shop.sellerId,
+              redirect_link: `https://eshop.com/order/${sessionId}`,
+            },
+          });
+        }
+
+        // Create notification for admin
+        await prisma.notifications.create({
+          data: {
+            title: "📦 Platform Order Alert",
+            message: `A new order was placed by ${name}.`,
+            creatorId: userId,
+            receiverId: "admin",
+            redirect_link: `https://eshop.com/order/${sessionId}`,
+          },
+        });
+
+        // Delete session
+        await redis.del(sessionKey);
       }
 
       return res.status(200).json({ received: true });
@@ -359,6 +402,7 @@ export const createOrder = async (
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
   } catch (error) {
+    console.log(error);
     next(error);
   }
 };
