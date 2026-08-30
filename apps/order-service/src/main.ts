@@ -3,6 +3,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 import { errorMiddleware } from "@packages/error-handler/error-middleware";
+import router from "./routes/order.route";
 const app = express();
 
 app.use(
@@ -16,9 +17,7 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-app.get("/", (req, res) => {
-  res.send({ message: "Welcome to order-service!" });
-});
+app.get("/", router);
 
 const port = process.env.PORT || 6004;
 const server = app.listen(port, () => {
