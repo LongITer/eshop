@@ -39,7 +39,9 @@ export const createPaymentIntent = async (
     res.send({
       clientSecret: paymentIntent.client_secret,
     });
-  } catch (error) {}
+  } catch (error) {
+    next(error);
+  }
 };
 
 // Create payment session
@@ -232,13 +234,33 @@ export const createOrder = async (
           return acc;
         }, {});
 
+        // Fetch shipping address
+        let shippingAddressData: any = {};
+        if (shippingAddressId) {
+          const addr = await prisma.address.findUnique({
+            where: { id: shippingAddressId },
+          });
+          if (addr) {
+            shippingAddressData = {
+              name: addr.name,
+              street: addr.street,
+              city: addr.city,
+              zip: addr.zip,
+              country: addr.country,
+              label: addr.label,
+            };
+          }
+        }
+
         for (const shopId in shopGrouped) {
           const orderItems = shopGrouped[shopId];
 
-          let orderTotal = orderItems.reduce(
+          const subTotal = orderItems.reduce(
             (sum: number, p: any) => sum + p.quantity * p.sale_price,
             0,
           );
+
+          let discount = 0;
 
           // Apply discount if applicable
           if (
@@ -252,27 +274,40 @@ export const createOrder = async (
               (item: any) => item.id === coupon.discountedProductId,
             );
 
-            const discountAmount = discountedItem.sale_price * 0.1;
-
-            orderTotal -= discountAmount;
+            if (coupon.discountType === "percentage") {
+              discount =
+                discountedItem.sale_price * (coupon.discountValue / 100);
+            } else {
+              discount = coupon.discountValue;
+            }
           }
+
+          const orderTotal = subTotal - discount;
+          const orderNumber = `ORD-${Date.now()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
 
           // Create order
           await prisma.orders.create({
             data: {
+              orderNumber,
               userId,
               shopId,
-              total: orderTotal,
-              status: "Paid",
-              shippingAddressId: shippingAddressId || null,
-              couponCode: coupon?.code || null,
-              discountAmount: coupon?.discountAmount || 0,
+              subTotal,
+              discount,
+              totalAmount: orderTotal,
+              paymentStatus: "Paid",
+              paymentMethod: "card",
+              stripePaymentId: paymentIntent.id,
+              shippingAddress: shippingAddressData,
               items: {
                 create: orderItems.map((item: any) => ({
                   productId: item.id,
+                  title: item.title || "Untitled Product",
+                  image: item.image || null,
+                  color: item.selectedOptions?.color || null,
+                  size: item.selectedOptions?.size || null,
                   quantity: item.quantity,
-                  price: item.sale_price,
-                  selectedOptions: item.selectedOptions,
+                  unitPrice: item.sale_price,
+                  totalPrice: item.quantity * item.sale_price,
                 })),
               },
             },
@@ -353,7 +388,7 @@ export const createOrder = async (
           },
         );
 
-        const createdShopIds = Object.keys(shopGrouped).map(Number);
+        const createdShopIds = Object.keys(shopGrouped);
 
         const sellerShops = await prisma.shops.findMany({
           where: {
@@ -374,21 +409,22 @@ export const createOrder = async (
             data: {
               title: "🛒 New Order Received",
               message: `A customer just ordered ${productTitle} from your shop.`,
-              creatorId: userId,
-              receiverId: shop.sellerId,
-              redirect_link: `https://eshop.com/order/${sessionId}`,
+              type: "NewOrder",
+              sellerId: shop.sellerId,
+              redirectUrl: `/order/${sessionId}`,
+              metadata: { buyerId: userId },
             },
           });
         }
 
-        // Create notification for admin
+        // Create notification for buyer
         await prisma.notifications.create({
           data: {
-            title: "📦 Platform Order Alert",
-            message: `A new order was placed by ${name}.`,
-            creatorId: userId,
-            receiverId: "admin",
-            redirect_link: `https://eshop.com/order/${sessionId}`,
+            title: "📦 Order Placed Successfully",
+            message: `Your order has been placed successfully.`,
+            type: "NewOrder",
+            userId,
+            redirectUrl: `/order/${sessionId}`,
           },
         });
 

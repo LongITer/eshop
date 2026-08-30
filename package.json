@@ -12,6 +12,8 @@
   "private": true,
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@stripe/react-stripe-js": "^6.8.2",
+    "@stripe/stripe-js": "^9.14.0",
     "@tanstack/react-query": "^5.100.1",
     "@tanstack/react-table": "^8.21.3",
     "axios": "^1.15.0",
