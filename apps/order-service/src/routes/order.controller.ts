@@ -4,6 +4,7 @@ import redis from "@packages/libs/redis";
 import crypto from "crypto";
 import { NextFunction, Request, Response } from "express";
 import Stripe from "stripe";
+import { Prisma } from "@prisma/client";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-04-22.dahlia",
@@ -50,7 +51,7 @@ export const createPaymentSession = async (
     const { cart, selectedAddressId, coupon } = req.body;
     const userId = req.user.id;
 
-    if (cart || !Array.isArray(cart) || cart.length === 0) {
+    if (!cart || !Array.isArray(cart) || cart.length === 0) {
       return next(new ValidationError("Cart is empty or invalid."));
     }
 
@@ -63,12 +64,12 @@ export const createPaymentSession = async (
           shopId: item.shopId,
           selectedOptions: item.selectedOptions || {},
         }))
-        .sort((a, b) => a.id.localCompare(b.id)),
+        .sort((a, b) => a.id.localeCompare(b.id)),
     );
 
     const keys = await redis.keys("payment-session:*");
 
-    for (const key in keys) {
+    for (const key of keys) {
       const data = await redis.get(key);
       if (data) {
         const session = JSON.parse(data);
@@ -104,8 +105,11 @@ export const createPaymentSession = async (
       },
       select: {
         id: true,
+        sellerId: true,
         sellers: {
-          stripeId: true,
+          select: {
+            stripe_id: true,
+          },
         },
       },
     });
@@ -113,7 +117,7 @@ export const createPaymentSession = async (
     const sellerData = shops.map((shop) => ({
       shopId: shop.id,
       sellerId: shop.sellerId,
-      stripeAccountId: shop?.sellers?.stripeId,
+      stripeAccountId: shop?.sellers?.stripe_id,
     }));
 
     // Calculate total
@@ -200,7 +204,7 @@ export const createOrder = async (
       );
 
       if (event.type === "payment_intent.succeeded") {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        const paymentIntent = event.data.object;
         const sessionId = paymentIntent.metadata.sessionId;
         const userId = paymentIntent.metadata.userId;
 
@@ -251,103 +255,105 @@ export const createOrder = async (
 
             orderTotal -= discountAmount;
           }
-        }
-      }
 
-      // Create order
-      await prisma.orders.create({
-        data: {
-          userId,
-          shopId,
-          total: orderTotal,
-          status: "Paid",
-          shippingAddressId: shippingAddressId || null,
-          couponCode: coupon?.code || null,
-          discountAmount: coupon?.discountAmount || 0,
-          items: {
-            create: orderItems.map((item: any) => ({
-              productId: item.id,
-              quantity: item.quantity,
-              price: item.sale_price,
-              selectedOptions: item.selectedOptions,
-            })),
-          },
-        },
-      });
-
-      // Update product & analytics
-      for (const item of orderItems) {
-        const { id: productId, quantity } = item;
-
-        await prisma.products.update({
-          where: { id: productId },
-          data: {
-            stock: { decrement: quantity },
-            totalSales: { increment: quantity },
-          },
-        });
-
-        await prisma.productAnalytics.upsert({
-          where: { productId },
-          create: {
-            productId,
-            shopId,
-            purchases: quantity,
-            lastViewedAt: new Date(),
-          },
-          update: {
-            purchases: { increment: quantity },
-          },
-        });
-
-        const existingAnalytics = await prisma.userAnalytics.findUnique({
-          where: { userId },
-        });
-
-        const newAction = {
-          productId,
-          shopId,
-          action: "purchase",
-          timestamp: Date.now(),
-        };
-
-        const currentActions = Array.isArray(existingAnalytics?.actions)
-          ? (existingAnalytics.actions as Prisma.JsonArray)
-          : [];
-
-        if (existingAnalytics) {
-          await prisma.userAnalytics.update({
-            where: { userId },
-            data: {
-              lastVisited: new Date(),
-              actions: [...currentActions, newAction],
-            },
-          });
-        } else {
-          await prisma.userAnalytics.create({
+          // Create order
+          await prisma.orders.create({
             data: {
               userId,
-              lastVisited: new Date(),
-              actions: [newAction],
+              shopId,
+              total: orderTotal,
+              status: "Paid",
+              shippingAddressId: shippingAddressId || null,
+              couponCode: coupon?.code || null,
+              discountAmount: coupon?.discountAmount || 0,
+              items: {
+                create: orderItems.map((item: any) => ({
+                  productId: item.id,
+                  quantity: item.quantity,
+                  price: item.sale_price,
+                  selectedOptions: item.selectedOptions,
+                })),
+              },
             },
           });
+
+          // Update product & analytics
+          for (const item of orderItems) {
+            const { id: productId, quantity } = item;
+
+            await prisma.products.update({
+              where: { id: productId },
+              data: {
+                stock: { decrement: quantity },
+                totalSales: { increment: quantity },
+              },
+            });
+
+            await prisma.productAnalytics.upsert({
+              where: { productId },
+              create: {
+                productId,
+                shopId,
+                purchases: quantity,
+                lastViewedAt: new Date(),
+              },
+              update: {
+                purchases: { increment: quantity },
+              },
+            });
+
+            const existingAnalytics = await prisma.userAnalytics.findUnique({
+              where: { userId },
+            });
+
+            const newAction = {
+              productId,
+              shopId,
+              action: "purchase",
+              timestamp: Date.now(),
+            };
+
+            const currentActions = Array.isArray(existingAnalytics?.actions)
+              ? (existingAnalytics.actions as Prisma.JsonArray)
+              : [];
+
+            if (existingAnalytics) {
+              await prisma.userAnalytics.update({
+                where: { userId },
+                data: {
+                  lastVisited: new Date(),
+                  actions: [...currentActions, newAction],
+                },
+              });
+            } else {
+              await prisma.userAnalytics.create({
+                data: {
+                  userId,
+                  lastVisited: new Date(),
+                  actions: [newAction],
+                },
+              });
+            }
+          }
         }
+
+        // Send email for user
+        // await sendEmail(
+        //   email,
+        //   "🛍️ Your Eshop Order Confirmation",
+        //   "order-confirmation",
+        //   {
+        //     name,
+        //     cart,
+        //     totalAmount: coupon?.discountAmount
+        //       ? totalAmount - coupon?.discountAmount
+        //       : totalAmount,
+        //     trackingUrl: `https://eshop.com/order/${sessionId}`,
+        //   },
+        // );
       }
 
-      // Send email for user
-      // await sendEmail(
-      //   email,
-      //   "🛍️ Your Eshop Order Confirmation",
-      //   "order-confirmation",
-      //   {
-      //     name,
-      //     cart,
-      //     totalAmount: coupon?.discountAmount
-      //       ? totalAmount - coupon?.discountAmount
-      //       : totalAmount,
-      //     trackingUrl: `https://eshop.com/order/${sessionId}`,
-      //   },
-      );
+      return res.status(200).json({ received: true });
     } catch (err: any) {
       console.error("Webhook signature verification failed.", err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);

@@ -17,7 +17,7 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-app.get("/", router);
+app.use("/", router);
 
 const port = process.env.PORT || 6004;
 const server = app.listen(port, () => {
