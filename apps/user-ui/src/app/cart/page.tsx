@@ -10,6 +10,7 @@ import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import axiosInstance from "@/utils/axioInstance";
 import { useQuery } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 const CartPage = () => {
   const router = useRouter();
@@ -25,6 +26,27 @@ const CartPage = () => {
   const [discountAmount, setDiscountAmount] = useState(0);
   const [couponCode, setCouponCode] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState("");
+
+  const createPaymentSession = async () => {
+    setLoading(true);
+    try {
+      const res = await axiosInstance.post(
+        "/order/api/create-payment-session",
+        {
+          cart,
+          selectedAddressId,
+          coupon: {},
+        },
+      );
+
+      const sessionId = res.data.sessionId;
+      router.push(`/checkout?sessionId=${sessionId}`);
+    } catch (error: any) {
+      toast.error("Something went wrong. Please try again!");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const decreaseQuantity = (id: string) => {
     useStore.setState((state: any) => ({
@@ -304,6 +326,7 @@ const CartPage = () => {
                 </div>
 
                 <button
+                  onClick={createPaymentSession}
                   disabled={loading}
                   className="w-full flex cursor-pointer items-center justify-center gap-2 mt-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-[15px] font-medium rounded-full shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
                 >
