@@ -27,6 +27,14 @@ const proxyOptions = {
   },
 };
 
+app.post(
+  "/api/create-order",
+  proxy("http://localhost:6004", {
+    ...proxyOptions,
+    proxyReqPathResolver: () => "/api/create-order",
+  }),
+);
+
 app.use(
   cors({
     origin: (origin, callback) => {

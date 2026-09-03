@@ -126,10 +126,16 @@ const CheckoutForm = ({
         <button
           type="submit"
           disabled={!stripe || !paymentElementReady || loading}
-          className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 cursor-pointer"
+          className="w-full min-h-11 inline-flex items-center justify-center gap-2 bg-blue-600 px-4 py-2 text-white rounded-lg font-medium transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
         >
-          {loading && <Loader2 className="animate-spin w-5 h-5" />}
-          {loading ? "Processing..." : "Pay Now"}
+          {loading ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+              <span>Processing...</span>
+            </>
+          ) : (
+            <span>{paymentElementReady ? "Pay Now" : "Loading payment..."}</span>
+          )}
         </button>
 
         {errorMsg && (
