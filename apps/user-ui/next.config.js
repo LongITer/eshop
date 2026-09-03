@@ -37,6 +37,22 @@ const nextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:8080/api/:path*',
+      },
+      {
+        source: '/order/:path*',
+        destination: 'http://localhost:8080/order/:path*',
+      },
+      {
+        source: '/product/:path*',
+        destination: 'http://localhost:8080/product/:path*',
+      },
+    ];
+  },
 };
 
 const plugins = [

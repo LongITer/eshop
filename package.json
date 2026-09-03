@@ -43,7 +43,7 @@
     "react-hot-toast": "^2.6.0",
     "react-quill-new": "^3.8.3",
     "react-range": "^1.10.0",
-    "stripe": "^22.1.0",
+    "stripe": "^22.6.0",
     "styled-components": "^6.4.1",
     "swagger-autogen": "^2.23.7",
     "swagger-ui-express": "^5.0.1",

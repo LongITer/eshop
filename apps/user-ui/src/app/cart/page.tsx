@@ -21,9 +21,9 @@ const CartPage = () => {
   const cart = useStore((state: any) => state.cart);
   const removeFromCart = useStore((state: any) => state.removeFromCart);
   const [loading, setLoading] = useState(false);
-  const [discountedProductId, setDiscountedProductId] = useState("");
-  const [discountPercent, setDiscountPercent] = useState(0);
-  const [discountAmount, setDiscountAmount] = useState(0);
+  const [discountedProductId] = useState("");
+  const [discountPercent] = useState(0);
+  const [discountAmount] = useState(0);
   const [couponCode, setCouponCode] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState("");
 
@@ -31,7 +31,7 @@ const CartPage = () => {
     setLoading(true);
     try {
       const res = await axiosInstance.post(
-        "/order/api/create-payment-session",
+        "/order/create-payment-session",
         {
           cart,
           selectedAddressId,
@@ -43,6 +43,7 @@ const CartPage = () => {
       router.push(`/checkout?sessionId=${sessionId}`);
     } catch (error: any) {
       toast.error("Something went wrong. Please try again!");
+      console.log(error);
     } finally {
       setLoading(false);
     }
@@ -75,7 +76,7 @@ const CartPage = () => {
   const { data: addresses = [] } = useQuery<any[], Error>({
     queryKey: ["shipping-addresses"],
     queryFn: async () => {
-      const res = await axiosInstance.get("/user/api/shipping-addresses");
+      const res = await axiosInstance.get("/api/shipping-addresses");
       return res.data.addresses;
     },
   });

@@ -8,7 +8,7 @@ import { Prisma } from "@prisma/client";
 import { sendEmail } from "../utils/send-email";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2026-04-22.dahlia",
+  apiVersion: "2026-08-26.dahlia",
 });
 
 // Create payment intent
@@ -17,30 +17,56 @@ export const createPaymentIntent = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const { amount, sellerStripeAccountId, sessionId } = req.body;
-
-  const customerAmount = Math.round(amount * 100);
-  const platformFee = Math.floor(customerAmount * 0.1);
-
   try {
-    const paymentIntent = await stripe.paymentIntents.create({
+    const { sessionId } = req.body;
+    if (typeof sessionId !== "string" || !sessionId) {
+      return next(new ValidationError("Payment session is required."));
+    }
+
+    const sessionData = await redis.get(`payment-session:${sessionId}`);
+    if (!sessionData) {
+      return next(new ValidationError("Payment session has expired."));
+    }
+
+    const session = JSON.parse(sessionData);
+    if (session.userId !== req.user.id) {
+      return next(new ValidationError("Payment session does not belong to you."));
+    }
+
+    const customerAmount = Math.round(session.totalAmount * 100);
+    if (!Number.isSafeInteger(customerAmount) || customerAmount <= 0) {
+      return next(new ValidationError("Payment amount is invalid."));
+    }
+    const platformFee = Math.floor(customerAmount * 0.1);
+
+    const intentData: Stripe.PaymentIntentCreateParams = {
       amount: customerAmount,
       currency: "usd",
       payment_method_types: ["card"],
-      application_fee_amount: platformFee,
-      transfer_data: {
-        destination: sellerStripeAccountId,
-      },
       metadata: {
         sessionId,
         userId: req.user.id,
       },
-    });
+    };
+
+    // Only split payment if seller has a connected Stripe account
+    const sellerAccountIds = session.seller
+      .map((seller: { stripeAccountId?: string }) => seller.stripeAccountId)
+      .filter((accountId: string | undefined): accountId is string =>
+        Boolean(accountId?.startsWith("acct_")),
+      );
+
+    if (sellerAccountIds.length === 1 && session.seller.length === 1) {
+      intentData.application_fee_amount = platformFee;
+      intentData.transfer_data = { destination: sellerAccountIds[0] };
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create(intentData);
     res.send({
       clientSecret: paymentIntent.client_secret,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -58,8 +84,74 @@ export const createPaymentSession = async (
       return next(new ValidationError("Cart is empty or invalid."));
     }
 
+    const requestedItems = cart.map((item: any) => ({
+      id: item?.id,
+      quantity: Number(item?.quantity),
+      selectedOptions: item?.selectedOptions || {},
+    }));
+
+    if (
+      requestedItems.some(
+        (item: any) =>
+          typeof item.id !== "string" ||
+          !Number.isInteger(item.quantity) ||
+          item.quantity <= 0,
+      )
+    ) {
+      return next(new ValidationError("Cart contains invalid items."));
+    }
+
+    const productIds = requestedItems.map((item: any) => item.id);
+    if (new Set(productIds).size !== productIds.length) {
+      return next(new ValidationError("Cart contains duplicate products."));
+    }
+
+    const products = await prisma.products.findMany({
+      where: { id: { in: productIds }, isDeleted: false, status: "Active" },
+      select: {
+        id: true,
+        title: true,
+        sale_price: true,
+        stock: true,
+        shopId: true,
+        images: { select: { url: true } },
+      },
+    });
+    const productById = new Map(products.map((product) => [product.id, product]));
+    if (
+      products.length !== requestedItems.length ||
+      requestedItems.some(
+        (item: any) =>
+          !productById.has(item.id) ||
+          productById.get(item.id)!.stock < item.quantity,
+      )
+    ) {
+      return next(new ValidationError("A product is unavailable or out of stock."));
+    }
+
+    if (selectedAddressId) {
+      const address = await prisma.address.findFirst({
+        where: { id: selectedAddressId, userId },
+        select: { id: true },
+      });
+      if (!address) {
+        return next(new ValidationError("Shipping address is invalid."));
+      }
+    }
+
+    const trustedCart = requestedItems.map((item: any) => {
+      const product = productById.get(item.id)!;
+      return {
+        ...item,
+        title: product.title,
+        sale_price: product.sale_price,
+        shopId: product.shopId,
+        image: product.images[0]?.url || null,
+      };
+    });
+
     const normalizedCart = JSON.stringify(
-      cart
+      trustedCart
         .map((item: any) => ({
           id: item.id,
           quantity: item.quantity,
@@ -98,7 +190,7 @@ export const createPaymentSession = async (
       }
     }
     // Fetch all seller and their stripe account
-    const uniqueShopIds = [...new Set(cart.map((item: any) => item.shopId))];
+    const uniqueShopIds = [...new Set(trustedCart.map((item: any) => item.shopId))];
 
     const shops = await prisma.shops.findMany({
       where: {
@@ -124,7 +216,7 @@ export const createPaymentSession = async (
     }));
 
     // Calculate total
-    const totalAmount = cart.reduce((total: number, item: any) => {
+    const totalAmount = trustedCart.reduce((total: number, item: any) => {
       return total + item.quantity * item.sale_price;
     }, 0);
 
@@ -133,7 +225,7 @@ export const createPaymentSession = async (
 
     const sessionData = {
       userId,
-      cart,
+      cart: trustedCart,
       seller: sellerData,
       totalAmount,
       shippingAddressId: selectedAddressId || null,
@@ -148,7 +240,7 @@ export const createPaymentSession = async (
 
     return res.status(200).json({ sessionId });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -180,7 +272,7 @@ export const verifyPaymentSession = async (
       session,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -211,6 +303,24 @@ export const createOrder = async (
         const sessionId = paymentIntent.metadata.sessionId;
         const userId = paymentIntent.metadata.userId;
 
+        if (!sessionId || !userId || paymentIntent.amount_received !== paymentIntent.amount) {
+          return res.status(400).send("Invalid payment metadata or amount");
+        }
+
+        const existingOrder = await prisma.orders.findFirst({
+          where: { stripePaymentId: paymentIntent.id },
+          select: { id: true },
+        });
+        if (existingOrder) {
+          return res.status(200).json({ received: true, duplicate: true });
+        }
+
+        const lockKey = `payment-processing:${paymentIntent.id}`;
+        const lockAcquired = await redis.set(lockKey, "1", "EX", 300, "NX");
+        if (lockAcquired !== "OK") {
+          return res.status(200).json({ received: true, processing: true });
+        }
+
         const sessionKey = `payment-session:${sessionId}`;
         const sessionData = await redis.get(sessionKey);
 
@@ -221,8 +331,14 @@ export const createOrder = async (
             .send("No session found, skipping order creation");
         }
 
-        const { cart, totalAmount, shippingAddressId, coupon } =
-          JSON.parse(sessionData);
+        const { cart, totalAmount, shippingAddressId, coupon } = JSON.parse(sessionData);
+        const expectedAmount = Math.round(
+          (coupon?.discountAmount ? totalAmount - coupon.discountAmount : totalAmount) *
+            100,
+        );
+        if (paymentIntent.amount_received !== expectedAmount) {
+          return res.status(400).send("Payment amount does not match order");
+        }
 
         const user = await prisma.users.findUnique({ where: { id: userId } });
         const name = user?.name!;
@@ -349,8 +465,8 @@ export const createOrder = async (
               timestamp: Date.now(),
             };
 
-            const currentActions = Array.isArray(existingAnalytics?.actions)
-              ? (existingAnalytics.actions as Prisma.JsonArray)
+                    const currentActions = Array.isArray(existingAnalytics?.actions)
+                      ? (existingAnalytics.actions as Prisma.InputJsonValue[])
               : [];
 
             if (existingAnalytics) {
@@ -417,14 +533,14 @@ export const createOrder = async (
           });
         }
 
-        // Create notification for buyer
+        // Create notification for admin
         await prisma.notifications.create({
           data: {
-            title: "📦 Order Placed Successfully",
-            message: `Your order has been placed successfully.`,
-            type: "NewOrder",
+            title: "📦 Platform Order Alert",
+            message: `A new order was placed by ${name}.`,
+            type: "System",
             userId,
-            redirectUrl: `/order/${sessionId}`,
+            redirectUrl: `https://eshop.com/order/${sessionId}`,
           },
         });
 
@@ -439,6 +555,6 @@ export const createOrder = async (
     }
   } catch (error) {
     console.log(error);
-    next(error);
+    return next(error);
   }
 };

@@ -4,7 +4,7 @@ import {
   useStripe,
 } from "@stripe/react-stripe-js";
 import { CheckCircle, Loader2, XCircle } from "lucide-react";
-import React, { lazy, useState } from "react";
+import React, { useState } from "react";
 
 const CheckoutForm = ({
   clientSecret,
@@ -21,6 +21,7 @@ const CheckoutForm = ({
   const elements = useElements();
 
   const [loading, setLoading] = useState(false);
+  const [paymentElementReady, setPaymentElementReady] = useState(false);
   const [status, setStatus] = useState<"success" | "failed" | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -29,32 +30,43 @@ const CheckoutForm = ({
     setLoading(true);
     setErrorMsg(null);
 
-    if (!stripe || !elements) {
+    if (!stripe || !elements || !paymentElementReady) {
+      setErrorMsg("Payment form is not ready. Please wait and try again.");
       setLoading(false);
       return;
     }
 
-    const result = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/payment-success?sessionId=${sessionId}`,
-      },
-    });
+    try {
+      const result = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/payment-success?sessionId=${sessionId}`,
+        },
+      });
 
-    if (result.error) {
+      if (result.error) {
+        setStatus("failed");
+        setErrorMsg(result.error.message || "Something went wrong!");
+      } else {
+        setStatus("success");
+      }
+    } catch (error) {
+      console.error(error);
       setStatus("failed");
-      setErrorMsg(result.error.message || "Something went wrong!");
-    } else {
-      setStatus("success");
+      setErrorMsg("Unable to submit payment. Please reload and try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const total = cartItems.reduce(
     (sum, item) => sum + item.sale_price * item.quantity,
     0,
   );
+
+  if (!clientSecret) {
+    return null;
+  }
 
   return (
     <div className="flex justify-center items-center min-h-[80vh] px-4 my-10">
@@ -78,11 +90,11 @@ const CheckoutForm = ({
           ))}
 
           <div className="flex justify-between font-semibold pt-2 border-t border-t-gray-200">
-            {coupon?.discountAmount !== 0 && (
+            {(coupon?.discountAmount ?? 0) > 0 && (
               <>
                 <span>Discount</span>
                 <span className="text-green-600">
-                  ${(coupon?.discountAmount).toFixed(2)}
+                  -${coupon.discountAmount.toFixed(2)}
                 </span>
               </>
             )}
@@ -90,15 +102,31 @@ const CheckoutForm = ({
 
           <div className="flex justify-between font-semibold mt-2">
             <span>Total</span>
-            <span>${(total - coupon?.discountAmount).toFixed(2)}</span>
+            <span>${(total - (coupon?.discountAmount ?? 0)).toFixed(2)}</span>
           </div>
         </div>
 
-        <PaymentElement />
+        {stripe && elements ? (
+          <PaymentElement
+            onReady={() => setPaymentElementReady(true)}
+            onLoadError={(event) => {
+              setPaymentElementReady(false);
+              setStatus("failed");
+              setErrorMsg(
+                event.error.message ||
+                  "Unable to load the payment form. Please check your Stripe configuration.",
+              );
+            }}
+          />
+        ) : (
+          <div className="flex items-center justify-center py-4 text-sm text-gray-500">
+            Loading payment form...
+          </div>
+        )}
         <button
           type="submit"
-          disabled={!stripe || loading}
-          className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700"
+          disabled={!stripe || !paymentElementReady || loading}
+          className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 cursor-pointer"
         >
           {loading && <Loader2 className="animate-spin w-5 h-5" />}
           {loading ? "Processing..." : "Pay Now"}

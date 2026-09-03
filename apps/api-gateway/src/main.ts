@@ -10,6 +10,23 @@ import initializeSiteConfig from "./libs/initizeSizeConfig";
 
 const app = express();
 
+const proxyOptions = {
+  proxyReqOptDecorator: (proxyReqOpts: any, srcReq: any) => {
+    proxyReqOpts.headers = {
+      ...proxyReqOpts.headers,
+      ...srcReq.headers,
+      host: srcReq.headers.host,
+    };
+    return proxyReqOpts;
+  },
+  userResHeaderDecorator: (headers: any) => {
+    return {
+      ...headers,
+      "access-control-allow-credentials": "true",
+    };
+  },
+};
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -54,9 +71,9 @@ app.get("/gateway-health", (req, res) => {
   res.send({ message: "Welcome to api-gateway!" });
 });
 
-app.use("/product", proxy("http://localhost:6002"));
-app.use("/order", proxy("http://localhost:6004"));
-app.use("/", proxy("http://localhost:6001"));
+app.use("/product", proxy("http://localhost:6002", proxyOptions));
+app.use("/order", proxy("http://localhost:6004", proxyOptions));
+app.use("/", proxy("http://localhost:6001", proxyOptions));
 
 const port = process.env.PORT || 8080;
 const server = app.listen(port, () => {

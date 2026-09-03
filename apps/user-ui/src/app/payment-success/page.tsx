@@ -1,7 +1,8 @@
+"use client";
 import { useStore } from "@/store";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect } from "react";
-import { confetti } from "canvas-confetti";
+import confetti from "canvas-confetti";
 import { CheckCircle, Truck } from "lucide-react";
 const PagementSuccessPage = () => {
   const searchParams = useSearchParams();

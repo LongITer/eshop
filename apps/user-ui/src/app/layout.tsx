@@ -1,7 +1,6 @@
 import Header, { Footer } from '../shared/widgets';
 import './global.css';
 import { Poppins, Roboto } from 'next/font/google'
-import Provider from './providers';
 import Providers from './providers';
 import { Toaster } from 'react-hot-toast';
 

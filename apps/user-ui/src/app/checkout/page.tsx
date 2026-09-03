@@ -8,7 +8,9 @@ import { XCircle } from "lucide-react";
 import { Elements } from "@stripe/react-stripe-js";
 import CheckoutForm from "@/shared/components/checkout/checkoutForm";
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY!);
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY)
+  : null;
 
 const Page = () => {
   const [clientSecret, setClientSecret] = useState("");
@@ -30,36 +32,37 @@ const Page = () => {
 
       try {
         const verifyRes = await axiosInstance.get(
-          `/order/api/verifying-payment-session?sessionId=${sessionId}`,
+          `/order/verify-payment-session?sessionId=${sessionId}`,
         );
 
-        const { totalAmount, sellers, cart, coupon } = verifyRes.data.session;
+        const { totalAmount: sessionTotal, cart, coupon } = verifyRes.data.session;
 
         if (
-          !sellers ||
-          sellers.length === 0 ||
-          totalAmount === undefined ||
-          totalAmount === null
+          sessionTotal === undefined ||
+          sessionTotal === null ||
+          !Array.isArray(cart) ||
+          cart.length === 0
         ) {
           throw new Error("Invalid payment session data.");
         }
 
         setCartItems(cart);
         setCoupon(coupon);
-        const sellerStripeAccountId = sellers[0].stripeAccountId;
 
         const intentRes = await axiosInstance.post(
-          "/order/api/create-payment-intent",
+          "/order/create-payment-intent",
           {
-            amount: coupon?.discountAmount
-              ? totalAmount - coupon?.discountAmount
-              : totalAmount,
-            sellerStripeAccountId,
             sessionId,
           },
         );
 
-        setClientSecret(intentRes.data.clientSecret);
+        const secret = intentRes?.data?.clientSecret;
+
+        if (typeof secret !== "string" || !secret.trim()) {
+          throw new Error("Payment initialization failed: missing client secret.");
+        }
+
+        setClientSecret(secret);
       } catch (err: any) {
         console.error(err);
         setError("Something went wrong while preparing your payment.");
@@ -71,8 +74,10 @@ const Page = () => {
     fetchSessionAndClientSecret();
   }, [sessionId]);
 
-  const appearance: any = {
-    theme: "stripe",
+  const appearance = {
+    theme: "stripe" as const,
+  } satisfies {
+    theme: "stripe" | "night" | "flat";
   };
 
   if (loading) {
@@ -107,17 +112,23 @@ const Page = () => {
     );
   }
 
+  if (!stripePromise || !clientSecret) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh] px-4 text-center text-red-600">
+        Unable to initialize the payment form. Please check the Stripe configuration.
+      </div>
+    );
+  }
+
   return (
-    clientSecret && (
-      <Elements stripe={stripePromise} options={{ clientSecret, appearance }}>
-        <CheckoutForm
-          clientSecret={clientSecret}
-          cartItems={cartItems}
-          coupon={coupon}
-          sessionId={sessionId}
-        />
-      </Elements>
-    )
+    <Elements stripe={stripePromise} options={{ clientSecret, appearance }}>
+      <CheckoutForm
+        clientSecret={clientSecret}
+        cartItems={cartItems}
+        coupon={coupon}
+        sessionId={sessionId}
+      />
+    </Elements>
   );
 };
 
