@@ -1,5 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
+  "ignoreDeprecations": "6.0",
   "compilerOptions": {
     "outDir": "dist",
     "types": [

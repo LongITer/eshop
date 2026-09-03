@@ -30,7 +30,9 @@ export const createPaymentIntent = async (
 
     const session = JSON.parse(sessionData);
     if (session.userId !== req.user.id) {
-      return next(new ValidationError("Payment session does not belong to you."));
+      return next(
+        new ValidationError("Payment session does not belong to you."),
+      );
     }
 
     const customerAmount = Math.round(session.totalAmount * 100);
@@ -117,7 +119,9 @@ export const createPaymentSession = async (
         images: { select: { url: true } },
       },
     });
-    const productById = new Map(products.map((product) => [product.id, product]));
+    const productById = new Map(
+      products.map((product) => [product.id, product]),
+    );
     if (
       products.length !== requestedItems.length ||
       requestedItems.some(
@@ -126,7 +130,9 @@ export const createPaymentSession = async (
           productById.get(item.id)!.stock < item.quantity,
       )
     ) {
-      return next(new ValidationError("A product is unavailable or out of stock."));
+      return next(
+        new ValidationError("A product is unavailable or out of stock."),
+      );
     }
 
     if (selectedAddressId) {
@@ -190,7 +196,9 @@ export const createPaymentSession = async (
       }
     }
     // Fetch all seller and their stripe account
-    const uniqueShopIds = [...new Set(trustedCart.map((item: any) => item.shopId))];
+    const uniqueShopIds = [
+      ...new Set(trustedCart.map((item: any) => item.shopId)),
+    ];
 
     const shops = await prisma.shops.findMany({
       where: {
@@ -303,7 +311,11 @@ export const createOrder = async (
         const sessionId = paymentIntent.metadata.sessionId;
         const userId = paymentIntent.metadata.userId;
 
-        if (!sessionId || !userId || paymentIntent.amount_received !== paymentIntent.amount) {
+        if (
+          !sessionId ||
+          !userId ||
+          paymentIntent.amount_received !== paymentIntent.amount
+        ) {
           return res.status(400).send("Invalid payment metadata or amount");
         }
 
@@ -331,10 +343,12 @@ export const createOrder = async (
             .send("No session found, skipping order creation");
         }
 
-        const { cart, totalAmount, shippingAddressId, coupon } = JSON.parse(sessionData);
+        const { cart, totalAmount, shippingAddressId, coupon } =
+          JSON.parse(sessionData);
         const expectedAmount = Math.round(
-          (coupon?.discountAmount ? totalAmount - coupon.discountAmount : totalAmount) *
-            100,
+          (coupon?.discountAmount
+            ? totalAmount - coupon.discountAmount
+            : totalAmount) * 100,
         );
         if (paymentIntent.amount_received !== expectedAmount) {
           return res.status(400).send("Payment amount does not match order");
@@ -465,8 +479,8 @@ export const createOrder = async (
               timestamp: Date.now(),
             };
 
-                    const currentActions = Array.isArray(existingAnalytics?.actions)
-                      ? (existingAnalytics.actions as Prisma.InputJsonValue[])
+            const currentActions = Array.isArray(existingAnalytics?.actions)
+              ? (existingAnalytics.actions as Prisma.InputJsonValue[])
               : [];
 
             if (existingAnalytics) {
@@ -555,6 +569,44 @@ export const createOrder = async (
     }
   } catch (error) {
     console.log(error);
+    return next(error);
+  }
+};
+
+// Get Seller Orders
+export const getSellerOrders = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const shop = await prisma.shops.findUnique({
+      where: {
+        sellerId: req.seller.id,
+      },
+    });
+
+    // Fetch order for this shop
+    const orders = await prisma.orders.findMany({
+      where: {
+        shopId: shop?.id,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    return res.status(200).json(orders);
+  } catch (error) {
     return next(error);
   }
 };
