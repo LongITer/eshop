@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "apps/seller-ui/src/utils/axioInstance";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -26,9 +26,22 @@ const formatAddress = (address: Record<string, unknown> | null | undefined) =>
 
 const OrderDetails = () => {
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["seller-orders"],
     queryFn: fetchOrders,
+  });
+  const updateStatusMutation = useMutation({
+    mutationFn: async (status: string) => {
+      const response = await axiosInstance.patch(
+        `/order/update-order-status/${id}`,
+        { status },
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["seller-orders"] });
+    },
   });
   const order = orders.find((item: any) => item.id === id);
 
@@ -74,14 +87,22 @@ const OrderDetails = () => {
               deliveryStages.find((stage) => stage.statuses.includes(order.status))
                 ?.statuses[0] ?? "Pending"
             }
-            className="rounded border border-slate-500 bg-[#111827] px-3 py-1.5 text-white outline-none focus:border-blue-400"
+            onChange={(event) => updateStatusMutation.mutate(event.target.value)}
+            disabled={updateStatusMutation.isPending}
+            className="min-w-[108px] rounded-md border border-slate-500 bg-[#111827] px-3 py-1.5 text-white outline-none transition focus:border-blue-400"
           >
-            {deliveryStages.map((stage) => (
+            {deliveryStages.filter((stage) => stage.statuses.length > 0).map((stage) => (
               <option key={stage.label} value={stage.statuses[0] ?? stage.label}>
                 {stage.label}
               </option>
             ))}
           </select>
+          {updateStatusMutation.isPending && (
+            <span className="text-xs text-slate-400">Saving...</span>
+          )}
+          {updateStatusMutation.isError && (
+            <span className="text-xs text-red-400">Could not update status.</span>
+          )}
         </div>
 
         <div className="mb-7 overflow-x-auto pb-2">
@@ -93,20 +114,29 @@ const OrderDetails = () => {
             />
             {deliveryStages.map((stage, index) => {
               const complete = index <= activeIndex;
+              const isCurrent = index === activeIndex;
               return (
                 <div key={stage.label} className="relative text-center">
                   <div
                     className={`relative z-10 mx-auto h-3 w-3 rounded-full ring-4 ring-[#080d1a] ${
-                      complete ? "bg-blue-500" : "bg-slate-200"
+                      isCurrent
+                        ? "bg-blue-500"
+                        : complete
+                          ? "bg-emerald-500"
+                          : "bg-slate-200"
                     } ${
-                      index === activeIndex
+                      isCurrent
                         ? "shadow-[0_0_0_2px_rgba(59,130,246,0.35)]"
                         : ""
                     }`}
                   />
                   <p
                     className={`mt-3 text-xs ${
-                      index === activeIndex ? "font-medium text-blue-500" : "text-slate-300"
+                      isCurrent
+                        ? "font-medium text-blue-500"
+                        : complete
+                          ? "font-medium text-emerald-400"
+                          : "text-slate-300"
                     }`}
                   >
                     {stage.label}

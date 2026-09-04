@@ -1,10 +1,10 @@
-import { ValidationError } from "@packages/error-handler";
+import { NotFoundError, ValidationError } from "@packages/error-handler";
 import prisma from "@packages/libs/prisma";
 import redis from "@packages/libs/redis";
 import crypto from "crypto";
 import { NextFunction, Request, Response } from "express";
 import Stripe from "stripe";
-import { Prisma } from "@prisma/client";
+import { Prisma, orderStatus } from "@prisma/client";
 import { sendEmail } from "../utils/send-email";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -607,6 +607,64 @@ export const getSellerOrders = async (
       },
     });
     return res.status(200).json(orders);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Update Order Status
+export const updateOrderStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
+
+    if (!orderId || typeof orderId !== "string") {
+      return next(new ValidationError("Order ID is required."));
+    }
+
+    if (typeof status !== "string" || !(status in orderStatus)) {
+      return next(new ValidationError("Invalid order status."));
+    }
+
+    const shop = await prisma.shops.findUnique({
+      where: { sellerId: req.seller.id },
+      select: { id: true },
+    });
+
+    if (!shop) {
+      return next(new NotFoundError("Seller shop not found."));
+    }
+
+    const existingOrder = await prisma.orders.findFirst({
+      where: { id: orderId, shopId: shop.id },
+      select: { id: true },
+    });
+
+    if (!existingOrder) {
+      return next(new NotFoundError("Order not found."));
+    }
+
+    const nextStatus = orderStatus[status as keyof typeof orderStatus];
+    const updatedOrder = await prisma.orders.update({
+      where: { id: existingOrder.id },
+      data: {
+        status: nextStatus,
+        deliveredAt: nextStatus === orderStatus.Delivered ? new Date() : null,
+        cancelledAt: nextStatus === orderStatus.Cancelled ? new Date() : null,
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, avatar: true },
+        },
+        items: true,
+      },
+    });
+
+    return res.status(200).json(updatedOrder);
   } catch (error) {
     return next(error);
   }
