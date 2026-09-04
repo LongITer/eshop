@@ -47,9 +47,11 @@ const OrdersTable = () => {
         ),
       },
       {
-        accessorKey: "total",
+        accessorKey: "totalAmount",
         header: "Total",
-        cell: ({ row }: any) => <span>${row.original.total}</span>,
+        cell: ({ row }: any) => (
+          <span>${Number(row.original.totalAmount ?? 0).toFixed(2)}</span>
+        ),
       },
       {
         accessorKey: "status",
