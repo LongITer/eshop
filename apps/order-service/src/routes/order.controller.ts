@@ -600,6 +600,7 @@ export const getSellerOrders = async (
             avatar: true,
           },
         },
+        items: true,
       },
       orderBy: {
         createdAt: "desc",
