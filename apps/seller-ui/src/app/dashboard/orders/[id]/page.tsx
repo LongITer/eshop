@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "apps/seller-ui/src/utils/axioInstance";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
@@ -46,7 +46,22 @@ const OrderDetails = () => {
   const order = orders.find((item: any) => item.id === id);
 
   if (isLoading) {
-    return <p className="p-8 text-white">Loading order...</p>;
+    return (
+      <div className="min-h-screen bg-[#080d1a] p-6 text-white md:p-10">
+        <div className="mx-auto max-w-4xl animate-pulse">
+          <div className="mb-6 h-4 w-44 rounded bg-slate-800" />
+          <div className="mb-7 h-8 w-64 rounded bg-slate-800" />
+          <div className="mb-8 h-24 rounded-lg border border-slate-800 bg-[#0d1423]" />
+          <div className="mb-8 h-16 rounded-lg bg-slate-900" />
+          <div className="space-y-3">
+            <div className="h-4 w-52 rounded bg-slate-800" />
+            <div className="h-4 w-64 rounded bg-slate-800" />
+            <div className="h-4 w-40 rounded bg-slate-800" />
+          </div>
+          <div className="mt-8 h-20 rounded-lg border border-slate-800 bg-[#0d1423]" />
+        </div>
+      </div>
+    );
   }
 
   if (!order) {
@@ -98,7 +113,10 @@ const OrderDetails = () => {
             ))}
           </select>
           {updateStatusMutation.isPending && (
-            <span className="text-xs text-slate-400">Saving...</span>
+            <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
+              <Loader2 size={14} className="animate-spin" />
+              Saving...
+            </span>
           )}
           {updateStatusMutation.isError && (
             <span className="text-xs text-red-400">Could not update status.</span>
