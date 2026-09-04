@@ -33,6 +33,10 @@ const nextConfig = {
         source: '/product/:path*',
         destination: 'http://localhost:8080/product/:path*',
       },
+      {
+        source: '/order/:path*',
+        destination: 'http://localhost:8080/order/:path*',
+      },
     ];
   },
 };

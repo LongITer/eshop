@@ -80,7 +80,13 @@ app.get("/gateway-health", (req, res) => {
 });
 
 app.use("/product", proxy("http://localhost:6002", proxyOptions));
-app.use("/order", proxy("http://localhost:6004", proxyOptions));
+app.use(
+  "/order",
+  proxy("http://localhost:6004", {
+    ...proxyOptions,
+    proxyReqPathResolver: (req) => req.originalUrl.replace(/^\/order/, ""),
+  }),
+);
 app.use("/", proxy("http://localhost:6001", proxyOptions));
 
 const port = process.env.PORT || 8080;
