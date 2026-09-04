@@ -21,23 +21,64 @@ const CartPage = () => {
   const cart = useStore((state: any) => state.cart);
   const removeFromCart = useStore((state: any) => state.removeFromCart);
   const [loading, setLoading] = useState(false);
-  const [discountedProductId] = useState("");
-  const [discountPercent] = useState(0);
-  const [discountAmount] = useState(0);
+  const [discountPercent, setDiscountPercent] = useState(0);
   const [couponCode, setCouponCode] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState("");
+  const [error, setError] = useState("");
+  const [storedCouponCode, setStoredCouponCode] = useState("");
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [discountedProductId, setDiscountedProductId] = useState("");
+
+  const couponCodeApplyHandler = async () => {
+    setError("");
+
+    if (!couponCode.trim()) {
+      setError("Please enter a coupon code.");
+      return;
+    }
+
+    try {
+      const res = await axiosInstance.put("/order/api/apply-coupon", {
+        couponCode: couponCode.trim(),
+        cart,
+      });
+
+      if (res.data.valid) {
+        setStoredCouponCode(couponCode.trim());
+        setDiscountAmount(res.data.discountAmount);
+        setDiscountPercent(res.data.discount);
+        setDiscountedProductId(res.data.productId);
+        setCouponCode("");
+      } else {
+        setDiscountAmount(0);
+        setDiscountPercent(0);
+        setDiscountedProductId("");
+        setError(res.data.message || "Coupon not valid for any items in cart.");
+      }
+    } catch (error: any) {
+      setDiscountAmount(0);
+      setDiscountPercent(0);
+      setDiscountedProductId("");
+      setError(
+        error.response?.data?.message ||
+          "An error occurred while applying the coupon.",
+      );
+    }
+  };
 
   const createPaymentSession = async () => {
     setLoading(true);
     try {
-      const res = await axiosInstance.post(
-        "/order/create-payment-session",
-        {
-          cart,
-          selectedAddressId,
-          coupon: {},
+      const res = await axiosInstance.post("/order/create-payment-session", {
+        cart,
+        selectedAddressId,
+        coupon: {
+          code: storedCouponCode,
+          discountAmount,
+          discountPercent,
+          discountedProductId,
         },
-      );
+      });
 
       const sessionId = res.data.sessionId;
       router.push(`/checkout?sessionId=${sessionId}`);
@@ -273,14 +314,14 @@ const CartPage = () => {
                   />
                   <button
                     className="bg-blue-500 cursor-pointer text-white px-4 rounded-r-md hover:bg-blue-600 hover:text-white transition-colors"
-                    // onClick={() => applyCoupon()}
+                    onClick={() => couponCodeApplyHandler()}
                   >
                     Apply
                   </button>
 
-                  {/* {error && (
-                    <p></p>
-                  )} */}
+                  {error && (
+                    <p className="text-red-500 text-sm">{error}</p>
+                  )}
                 </div>
                 <hr className="my-4 text-slate-200" />
 
