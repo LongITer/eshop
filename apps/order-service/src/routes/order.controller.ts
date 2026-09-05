@@ -612,6 +612,30 @@ export const getSellerOrders = async (
   }
 };
 
+// Get orders for the authenticated user
+export const getUserOrders = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const orders = await prisma.orders.findMany({
+      where: { userId: req.user.id },
+      include: {
+        shop: {
+          select: { id: true, name: true },
+        },
+        items: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return res.status(200).json(orders);
+  } catch (error) {
+    return next(error);
+  }
+};
+
 // Update Order Status
 export const updateOrderStatus = async (
   req: Request,
@@ -665,6 +689,66 @@ export const updateOrderStatus = async (
     });
 
     return res.status(200).json(updatedOrder);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Verify coupon code
+export const verifyConponCode = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { couponCode, cart } = req.body;
+
+    if (!couponCode || !cart || cart.length === 0) {
+      return next(new ValidationError("Coupon code and cart are required!"));
+    }
+
+    const discount = await prisma.discountCodes.findUnique({
+      where: { discountCode: couponCode },
+    });
+
+    if (!discount) {
+      return next(new NotFoundError("Discount code is not valid or expired."));
+    }
+
+    // Find matching products that includes this discount code
+    const matchingProduct = cart.find((item: any) => {
+      return item.discountCodes?.some((d: any) => d === discount.id);
+    });
+
+    if (!matchingProduct) {
+      return res.status(200).json({
+        valid: false,
+        discount: 0,
+        discountAmount: 0,
+        message: "No matching products found for this coupon!",
+      });
+    }
+
+    // Calculate discount amount
+    let discountAmount = 0;
+    const price = matchingProduct.sale_price * matchingProduct.quantity;
+
+    if (discount.discountType === "percentage") {
+      discountAmount = (price * discount.discountValue) / 100;
+    } else if (discount.discountType === "fixed") {
+      discountAmount = discount.discountValue;
+    }
+
+    discountAmount = Math.min(discountAmount, price);
+
+    res.status(200).json({
+      valid: true,
+      discount: discount.discountValue,
+      discountAmount: discountAmount.toFixed(2),
+      discountProductId: matchingProduct.id,
+      discountType: discount.discountType,
+      message: "Discount applied to 1 eligible product",
+    });
   } catch (error) {
     return next(error);
   }

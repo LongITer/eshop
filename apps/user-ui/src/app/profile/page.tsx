@@ -28,6 +28,9 @@ import axiosInstance from "@/utils/axioInstance";
 import Image from "next/image";
 import QuickActionCard from "@/shared/cards/quick-action.card";
 import ShippingAddressSection from "@/shared/cards/shipping-address.card";
+import OrdersTable from "@/shared/cards/orders.table";
+import Notifications from "@/shared/cards/notifications";
+import ChangePassword from "@/shared/cards/change-password";
 
 const page = () => {
   const { user, isLoading } = useUser();
@@ -172,9 +175,15 @@ const page = () => {
               </div>
             ) : activeTab === "Shipping Address" ? (
               <ShippingAddressSection />
-            ) : (
-              <div></div>
-            )}
+            ) : activeTab === "My Orders" ? (
+              <OrdersTable />
+            ) : activeTab === "Inbox" ? (
+              <Inbox />
+            ) : activeTab === "Notifications" ? (
+              <Notifications />
+            ) : activeTab === "Change Password" ? (
+              <ChangePassword />
+            ) : null}
           </div>
 
           {/* Right Quick Panel */}
