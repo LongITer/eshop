@@ -2,6 +2,7 @@ import express, { Router } from "express";
 import {
   createShop,
   createStripeConnectLink,
+  changeUserPassword,
   getSeller,
   getUser,
   loginSeller,
@@ -30,6 +31,7 @@ router.post("/login-user", loginUser);
 router.post("/refresh-token", refreshUserToken);
 router.post("/seller-refresh-token", refreshSellerToken);
 router.get("/logged-in-user", isAuthenticated, getUser);
+router.patch("/change-password", isAuthenticated, changeUserPassword);
 router.post("/forgot-password-user", userForgotPassword);
 router.post("/reset-password-user", resetUserPassword);
 router.post("/verify-forgot-password-user", verifyUserForgotPassword);
