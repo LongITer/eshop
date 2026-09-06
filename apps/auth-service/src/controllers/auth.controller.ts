@@ -270,6 +270,31 @@ export const getUser = async (
   }
 };
 
+// Get logged-in admin
+export const getAdmin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const admin = (req as any).user;
+    if (!admin) {
+      return next(new ValidationError("Admin not found"));
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        id: admin.id,
+        email: admin.email,
+        name: admin.name,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const changeUserPassword = async (
   req: Request,
   res: Response,

@@ -20,9 +20,10 @@ import {
   deleteUserAddress,
   getUserAddress,
   loginAdmin,
+  getAdmin,
 } from "../controllers/auth.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
-import { isSeller } from "@packages/middleware/authorizeRoles";
+import { isAdmin, isSeller } from "@packages/middleware/authorizeRoles";
 const router: Router = express.Router();
 
 // User routes
@@ -33,6 +34,7 @@ router.post("/login-admin", loginAdmin);
 router.post("/refresh-token", refreshUserToken);
 router.post("/seller-refresh-token", refreshSellerToken);
 router.get("/logged-in-user", isAuthenticated, getUser);
+router.get("/logged-in-admin", isAuthenticated, isAdmin, getAdmin);
 router.patch("/change-password", isAuthenticated, changeUserPassword);
 router.post("/forgot-password-user", userForgotPassword);
 router.post("/reset-password-user", resetUserPassword);

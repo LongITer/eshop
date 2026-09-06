@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import Input from "packages/components/input";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
+import axiosInstance from "../utils/axioInstance";
 type FormData = {
   email: string;
   password: string;
@@ -17,11 +18,7 @@ const page = () => {
 
   const loginMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/login-admin`,
-        data,
-        { withCredentials: true },
-      );
+      const response = await axiosInstance.post("/api/login-admin", data);
 
       return response.data;
     },
