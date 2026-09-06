@@ -753,3 +753,78 @@ export const getUserAddress = async (
     return next(error);
   }
 };
+
+// Login admin
+export const loginAdmin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return next(new ValidationError("Email and password are required!"));
+    }
+
+    const user = await prisma.users.findUnique({ where: { email } });
+
+    if (!user) return next(new AuthError("Invalide email or password!"));
+
+    // Verify password
+    const isMatch = await bcrypt.compare(password, user.password!);
+
+    if (!isMatch) {
+      return next(new AuthError("Invalid email or password!"));
+    }
+
+    const isAdmin = user.role === "admin";
+
+    if (!isAdmin) {
+      // sendLog({
+      //   type: "error",
+      //   message: `Admin lgin failer for ${email} - not an admin`,
+      //   source: "auth-service",
+      // });
+
+      return next(new AuthError("Unauthorized! Not an admin!"));
+    }
+
+    // sendLog({
+    //   type: "success",
+    //   message: `Admin login success for ${email}`,
+    //   source: "auth-service",
+    // })
+
+    res.clearCookie("seller-access-token");
+    res.clearCookie("seller-refresh-token");
+
+    // Generate access token and refresh token
+    const accessToken = await jwt.sign(
+      { id: user.id, role: "admin" },
+      process.env.ACCESS_TOKEN_JWT_SECRET as string,
+      {
+        expiresIn: "15m",
+      },
+    );
+
+    const refreshToken = await jwt.sign(
+      { id: user.id, role: "admin" },
+      process.env.REFRESH_TOKEN_JWT_SECRET as string,
+      {
+        expiresIn: "7d",
+      },
+    );
+
+    // Store the refresh and access token in httpOnly secure cookies
+    setCookie(res, "refresh_token", refreshToken);
+    setCookie(res, "access_token", accessToken);
+
+    res.status(200).json({
+      message: "Login successfully",
+      user: { id: user.id, email: user.email, name: user.name },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};

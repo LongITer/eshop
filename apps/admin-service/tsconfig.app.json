@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "ignoreDeprecations": "6.0",
+  "compilerOptions": {
+    "outDir": "dist",
+    "types": [
+      "node",
+      "express"
+    ],
+    "rootDir": "../../",
+    "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo"
+  },
+  
+  "include": [
+    "src/**/*.ts",
+    "../../packages/**/*.ts"
+  ],
+  "exclude": []
+}

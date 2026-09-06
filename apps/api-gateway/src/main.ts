@@ -12,10 +12,17 @@ const app = express();
 
 const proxyOptions = {
   proxyReqOptDecorator: (proxyReqOpts: any, srcReq: any) => {
+    // Only forward auth/session headers — do NOT spread all srcReq.headers.
+    // Spreading stale transport headers (content-length, transfer-encoding, etc.)
+    // after express has already parsed the body causes "Cannot set headers after
+    // they are sent to the client".
     proxyReqOpts.headers = {
       ...proxyReqOpts.headers,
-      ...srcReq.headers,
-      host: srcReq.headers.host,
+      ...(srcReq.headers.authorization && {
+        authorization: srcReq.headers.authorization,
+      }),
+      ...(srcReq.headers.cookie && { cookie: srcReq.headers.cookie }),
+      "content-type": srcReq.headers["content-type"] || "application/json",
     };
     return proxyReqOpts;
   },
@@ -87,6 +94,7 @@ app.use(
     proxyReqPathResolver: (req) => req.originalUrl.replace(/^\/order/, ""),
   }),
 );
+app.use("/admin", proxy("http://localhost:6005", proxyOptions));
 app.use("/", proxy("http://localhost:6001", proxyOptions));
 
 const port = process.env.PORT || 8080;

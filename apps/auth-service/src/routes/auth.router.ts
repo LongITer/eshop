@@ -19,6 +19,7 @@ import {
   addUserAddress,
   deleteUserAddress,
   getUserAddress,
+  loginAdmin,
 } from "../controllers/auth.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isSeller } from "@packages/middleware/authorizeRoles";
@@ -28,6 +29,7 @@ const router: Router = express.Router();
 router.post("/user-registration", userRegistration);
 router.post("/verify-user", verifyUser);
 router.post("/login-user", loginUser);
+router.post("/login-admin", loginAdmin);
 router.post("/refresh-token", refreshUserToken);
 router.post("/seller-refresh-token", refreshSellerToken);
 router.get("/logged-in-user", isAuthenticated, getUser);

@@ -38,7 +38,7 @@ const CartPage = () => {
     }
 
     try {
-      const res = await axiosInstance.put("/order/api/apply-coupon", {
+      const res = await axiosInstance.post("/order/verify-coupon", {
         couponCode: couponCode.trim(),
         cart,
       });
@@ -67,6 +67,10 @@ const CartPage = () => {
   };
 
   const createPaymentSession = async () => {
+    if (addresses?.length === 0) {
+      toast.error("Please set your delivery address to create an order!");
+      return;
+    }
     setLoading(true);
     try {
       const res = await axiosInstance.post("/order/create-payment-session", {
@@ -318,11 +322,8 @@ const CartPage = () => {
                   >
                     Apply
                   </button>
-
-                  {error && (
-                    <p className="text-red-500 text-sm">{error}</p>
-                  )}
                 </div>
+                {error && <p className="text-red-500 text-sm">{error}</p>}
                 <hr className="my-4 text-slate-200" />
 
                 <div className="mb-4">
