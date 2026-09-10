@@ -2,7 +2,7 @@
 import { activeSideBarAtom } from "apps/admin-ui/src/configs/constants";
 import { useAtom } from "jotai";
 import { usePathname } from "next/navigation";
-import React from "react";
+import React, { useEffect } from "react";
 import useAdmin from "../../../hooks/useAdmin";
 import Box from "../box";
 import { SideBar } from "./sidebar.style";
@@ -30,6 +30,10 @@ const SidebarWrapper = () => {
   const [activeSidebar, setActiveSidebar] = useAtom(activeSideBarAtom);
   const pathname = usePathname();
   const { admin } = useAdmin();
+
+  useEffect(() => {
+    setActiveSidebar(pathname);
+  }, [pathname, setActiveSidebar]);
 
   const getIconColor = (route: string) =>
     activeSidebar == route ? "#0085ff" : "#969696";
