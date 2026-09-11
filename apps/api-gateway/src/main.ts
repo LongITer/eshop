@@ -94,7 +94,13 @@ app.use(
     proxyReqPathResolver: (req) => req.originalUrl.replace(/^\/order/, ""),
   }),
 );
-app.use("/admin", proxy("http://localhost:6005", proxyOptions));
+app.use(
+  "/admin",
+  proxy("http://localhost:6005", {
+    ...proxyOptions,
+    proxyReqPathResolver: (req) => req.originalUrl,
+  }),
+);
 app.use("/", proxy("http://localhost:6001", proxyOptions));
 
 const port = process.env.PORT || 8080;
