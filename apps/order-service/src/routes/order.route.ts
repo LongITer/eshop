@@ -2,6 +2,7 @@ import express, { Router } from "express";
 import {
   createPaymentIntent,
   createPaymentSession,
+  getAdminOrders,
   getSellerOrders,
   getUserOrders,
   updateOrderStatus,
@@ -9,7 +10,7 @@ import {
   verifyPaymentSession,
 } from "./order.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
-import { isSeller } from "@packages/middleware/authorizeRoles";
+import { isAdmin, isSeller } from "@packages/middleware/authorizeRoles";
 
 const router: Router = express.Router();
 
@@ -18,6 +19,7 @@ router.post("/create-payment-session", isAuthenticated, createPaymentSession);
 router.get("/verify-payment-session", isAuthenticated, verifyPaymentSession);
 router.get("/get-user-orders", isAuthenticated, getUserOrders);
 router.get("/get-seller-orders", isAuthenticated, isSeller, getSellerOrders);
+router.get("/get-admin-orders", isAuthenticated, isAdmin, getAdminOrders);
 router.patch(
   "/update-order-status/:orderId",
   isAuthenticated,
