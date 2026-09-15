@@ -5,6 +5,7 @@ import axiosInstance from "apps/admin-ui/src/utils/axioInstance";
 import { Eye, Search, Download } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import Breadcrumbs from "../../shared/component/breadcrumbs";
 
 const LIMIT = 20;
 
@@ -82,10 +83,12 @@ const ProductsPage = () => {
         </button>
       </div>
 
-      {/* Breadcrumb */}
-      <p className="text-slate-400 text-sm mb-6">
-        Dashboard &rsaquo; All Products
-      </p>
+      <Breadcrumbs
+        items={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "All Products", href: "/dashboard/products", active: true },
+        ]}
+      />
 
       {/* Search */}
       <form
