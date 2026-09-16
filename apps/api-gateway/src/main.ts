@@ -102,6 +102,7 @@ app.use(
   }),
 );
 app.use("/", proxy("http://localhost:6001", proxyOptions));
+app.use("/chatting", proxy("http://localhost:6006", proxyOptions));
 
 const port = process.env.PORT || 8080;
 const server = app.listen(port, () => {

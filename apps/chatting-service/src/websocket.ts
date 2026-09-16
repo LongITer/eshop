@@ -33,9 +33,14 @@ export async function createWebSockerServer(server: HttpServer) {
 
         // Register the user on first plain message (non-JSON)
         if (!registeredUserId && !messageStr.startsWith("{")) {
-          registeredUserId = messageStr;
+          // Auto-prefix plain userIds so the key matches lookup format ("user_X" / "seller_X")
+          const rawId = messageStr;
+          registeredUserId =
+            rawId.startsWith("user_") || rawId.startsWith("seller_")
+              ? rawId
+              : `user_${rawId}`;
           connectedUsers.set(registeredUserId, ws);
-          console.log(`registered websocker for userID: ${registeredUserId}`);
+          console.log(`Registered websocket for userID: ${registeredUserId}`);
 
           const isSeller = registeredUserId.startsWith("seller_");
           const redisKey = isSeller
@@ -51,7 +56,7 @@ export async function createWebSockerServer(server: HttpServer) {
         const data: IncomingMessage = JSON.parse(messageStr);
 
         // If it's seen update
-        if (data.type === "MASK_AS_SEEN" && registeredUserId) {
+        if (data.type === "MARK_AS_SEEN" && registeredUserId) {
           const seenKey = `${registeredUserId}_${data.conversationId}`;
           unseenCounts.set(seenKey, 0);
           return;

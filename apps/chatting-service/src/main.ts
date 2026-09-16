@@ -1,4 +1,6 @@
 import express from "express";
+import { createWebSockerServer } from "./websocket";
+import { startConsumer } from "./chat-message.consumer";
 
 const app = express();
 app.use(express.json());
@@ -12,4 +14,12 @@ const port = process.env.PORT || 6006;
 const server = app.listen(port, () => {
   console.log(`Listening at http://localhost:${port}/api`);
 });
+// Websocker server
+createWebSockerServer(server);
+
+// Start kafka consumer
+startConsumer().catch((error: any) => {
+  console.log(error);
+});
+
 server.on("error", console.error);
