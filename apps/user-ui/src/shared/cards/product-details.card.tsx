@@ -8,6 +8,9 @@ import useUser from "../../hooks/useUser";
 import useLocationTracking from "../../hooks/useLocationTracking";
 import useDeviceTracking from "../../hooks/useDeviceTracking";
 import { useStore } from "../../store";
+import axios from "axios";
+import axiosInstance from "@/utils/axioInstance";
+import isProtected from "@/utils/protected";
 
 const ProductDetailsCard = ({
   data,
@@ -20,6 +23,7 @@ const ProductDetailsCard = ({
   const [isSelected, setIsSelected] = useState(data?.colors?.[0] || "");
   const [isSizeSelected, setIsSizeSelected] = useState(data?.sizes?.[0] || "");
   const [quantity, setQuantity] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [timeLeft, setTimeLeft] = useState("");
 
@@ -39,6 +43,27 @@ const ProductDetailsCard = ({
   estimatedDelivery.setDate(estimatedDelivery.getDate() + 5);
 
   const router = useRouter();
+
+  const handleChat = async () => {
+    if (isLoading) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const res = await axiosInstance.post(
+        "/chatting/api/create-user-conversationGroup",
+        { sellerId: data?.shop?.sellerId },
+        isProtected,
+      );
+      router.push(`/inbox?conversationId=${res.data?.conversationId}`);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <div
       className="fixed flex items-center justify-center top-0 left-0 h-screen w-full bg-[#0000001d] z-50"
@@ -120,11 +145,7 @@ const ProductDetailsCard = ({
               {/* Chat with seller button*/}
               <button
                 className="flex cursor-pointer items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-full shadow-md hover:shadow-lg transition-all active:scale-95 whitespace-nowrap ml-auto"
-                onClick={() =>
-                  router.push(
-                    `/inbox?shopId=${data?.shop?._id}&userId=${data?.user?._id}`,
-                  )
-                }
+                onClick={() => handleChat()}
               >
                 <MessageCircle size={16} />
                 Chat with Seller

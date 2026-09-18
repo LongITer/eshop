@@ -51,6 +51,10 @@ const nextConfig = {
         source: '/product/:path*',
         destination: 'http://localhost:8080/product/:path*',
       },
+      {
+        source: '/chatting/:path*',
+        destination: 'http://localhost:8080/chatting/:path*',
+      },
     ];
   },
 };

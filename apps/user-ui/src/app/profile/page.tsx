@@ -42,7 +42,13 @@ const page = () => {
   const [activeTab, setActiveTab] = useState(queryTab);
 
   useEffect(() => {
-    if (activeTab !== queryTab) {
+    if (queryTab === "Inbox") {
+      router.push("/inbox");
+    }
+  }, [queryTab]);
+
+  useEffect(() => {
+    if (activeTab !== queryTab && activeTab !== "Inbox") {
       const newParams = new URLSearchParams(searchParams);
       newParams.set("active", activeTab);
       router.replace(`/profile?${newParams.toString()}`);
@@ -102,7 +108,7 @@ const page = () => {
                 label="Inbox"
                 Icon={Inbox}
                 active={activeTab === "Inbox"}
-                onClick={() => setActiveTab("Inbox")}
+                onClick={() => router.push("/inbox")}
               />
               <NavItem
                 label="Notifications"
@@ -178,7 +184,10 @@ const page = () => {
             ) : activeTab === "My Orders" ? (
               <OrdersTable />
             ) : activeTab === "Inbox" ? (
-              <Inbox />
+              <div className="flex items-center justify-center py-10 gap-2 text-blue-500">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-sm">Redirecting to Inbox…</span>
+              </div>
             ) : activeTab === "Notifications" ? (
               <Notifications />
             ) : activeTab === "Change Password" ? (

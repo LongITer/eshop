@@ -53,7 +53,7 @@ export const newConversation = async (
           conversationId: newGroup.id,
         },
         {
-          userId: sellerId,
+          sellerId: sellerId,
           conversationId: newGroup.id,
         },
       ],
@@ -225,7 +225,7 @@ export const getSellerConversations = async (
             id: buyer?.id || null,
             name: buyer?.name || "Unknown",
             email: buyer?.email || null,
-            avatar: buyer?.avatar || null,
+            avatar: (buyer?.avatar as any)?.[0]?.url || null,
             isOnline,
           },
           lastMessage:

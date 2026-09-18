@@ -45,7 +45,7 @@ export async function createWebSockerServer(server: HttpServer) {
           const isSeller = registeredUserId.startsWith("seller_");
           const redisKey = isSeller
             ? `online:seller:${registeredUserId.replace("seller_", "")}`
-            : `online:user:${registeredUserId}`;
+            : `online:user:${registeredUserId.replace("user_", "")}`;
 
           await redis.set(redisKey, "1");
           await redis.expire(redisKey, 300);
@@ -153,7 +153,7 @@ export async function createWebSockerServer(server: HttpServer) {
         const isSeller = registeredUserId.startsWith("seller_");
         const redisKey = isSeller
           ? `online:seller:${registeredUserId.replace("seller_", "")}`
-          : `online:user:${registeredUserId}`;
+          : `online:user:${registeredUserId.replace("user_", "")}`;
 
         await redis.del(redisKey);
         console.log(`Removed from online set: ${redisKey}`);

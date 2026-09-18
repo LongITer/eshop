@@ -101,8 +101,15 @@ app.use(
     proxyReqPathResolver: (req) => req.originalUrl,
   }),
 );
+app.use(
+  "/chatting",
+  proxy("http://localhost:6006", {
+    ...proxyOptions,
+    proxyReqPathResolver: (req) =>
+      req.originalUrl.replace(/^\/chatting/, ""),
+  }),
+);
 app.use("/", proxy("http://localhost:6001", proxyOptions));
-app.use("/chatting", proxy("http://localhost:6006", proxyOptions));
 
 const port = process.env.PORT || 8080;
 const server = app.listen(port, () => {

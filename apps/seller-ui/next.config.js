@@ -21,6 +21,12 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'hunggiaco.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
   async rewrites() {
@@ -36,6 +42,10 @@ const nextConfig = {
       {
         source: '/order/:path*',
         destination: 'http://localhost:8080/order/:path*',
+      },
+      {
+        source: '/chatting/:path*',
+        destination: 'http://localhost:8080/chatting/:path*',
       },
     ];
   },

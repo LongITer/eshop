@@ -48,7 +48,8 @@ export async function startConsumer() {
 
 // Flushes the buffer to the database and reset the timer
 async function flushBufferToDb() {
-  const toInsert = buffer.slice(0, buffer.length);
+  const toInsert = [...buffer];
+  buffer = [];
   if (flushTimer) {
     clearTimeout(flushTimer);
     flushTimer = null;
