@@ -43,9 +43,33 @@ const nextConfig = {
         source: '/api/:path*',
         destination: 'http://localhost:8080/api/:path*',
       },
+      // Order API endpoints — listed explicitly so they don't conflict
+      // with the /order/[orderId] page route (afterFiles rewrites run
+      // before dynamic routes, so a wildcard /order/:path* would
+      // intercept page navigation).
       {
-        source: '/order/:path*',
-        destination: 'http://localhost:8080/order/:path*',
+        source: '/order/get-user-orders',
+        destination: 'http://localhost:8080/order/get-user-orders',
+      },
+      {
+        source: '/order/get-order/:orderId',
+        destination: 'http://localhost:8080/order/get-order/:orderId',
+      },
+      {
+        source: '/order/create-payment-intent',
+        destination: 'http://localhost:8080/order/create-payment-intent',
+      },
+      {
+        source: '/order/create-payment-session',
+        destination: 'http://localhost:8080/order/create-payment-session',
+      },
+      {
+        source: '/order/verify-payment-session',
+        destination: 'http://localhost:8080/order/verify-payment-session',
+      },
+      {
+        source: '/order/verify-coupon',
+        destination: 'http://localhost:8080/order/verify-coupon',
       },
       {
         source: '/product/:path*',
@@ -57,6 +81,7 @@ const nextConfig = {
       },
     ];
   },
+
 };
 
 const plugins = [

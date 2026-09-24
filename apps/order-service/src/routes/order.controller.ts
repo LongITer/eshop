@@ -636,6 +636,43 @@ export const getUserOrders = async (
   }
 };
 
+// Get single order by ID (authenticated user)
+export const getOrderById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { orderId } = req.params;
+
+    if (!orderId || typeof orderId !== "string") {
+      return next(new ValidationError("Order ID is required."));
+    }
+
+    const order = await prisma.orders.findFirst({
+      where: { id: orderId, userId: req.user.id },
+      include: {
+        shop: { select: { id: true, name: true } },
+        items: {
+          include: {
+            product: {
+              select: { id: true, title: true, images: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      return next(new NotFoundError("Order not found."));
+    }
+
+    return res.status(200).json({ order });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 // Update Order Status
 export const updateOrderStatus = async (
   req: Request,

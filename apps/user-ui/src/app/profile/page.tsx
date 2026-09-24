@@ -74,7 +74,7 @@ const page = () => {
               {isLoading ? (
                 <Loader2 className="inline animate-spin w-5 h-5" />
               ) : (
-                `${user.name || "User"}!`
+                `${user?.name || "User"}!`
               )}
             </span>
           </h1>
