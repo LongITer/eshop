@@ -333,9 +333,12 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                   <span className="text-sm text-gray-600 font-light">
                     Sold by
                   </span>
-                  <span className="block max-w-[150px] truncate font-medium text-lg">
+                  <Link
+                    href={`/shop/${productDetails?.shop?.id}`}
+                    className="block max-w-[150px] truncate font-medium text-lg text-blue-600 hover:underline"
+                  >
                     {productDetails?.shop?.name}
-                  </span>
+                  </Link>
                 </div>
                 <Link
                   href={"#"}

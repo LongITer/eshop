@@ -644,6 +644,53 @@ export const getFilteredEvents = async (
   }
 };
 
+// Get shop by ID (public)
+export const getShopById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { id } = req.params;
+
+    const shop = await prisma.shops.findUnique({
+      where: { id },
+      include: {
+        sellers: {
+          select: {
+            id: true,
+            name: true,
+            country: true,
+          },
+        },
+        products: {
+          where: { isDeleted: false },
+          take: 20,
+          orderBy: { createdAt: "desc" },
+          include: {
+            images: true,
+            shop: true,
+          },
+        },
+      },
+    });
+
+    if (!shop) {
+      return res.status(404).json({ message: "Shop not found" });
+    }
+
+    res.json({
+      shop: {
+        ...shop,
+        avatar: shop.avatar?.[0]?.url ?? "",
+      },
+      sellerId: shop.sellerId,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Get filtered shops
 export const getFilteredShops = async (
   req: Request,

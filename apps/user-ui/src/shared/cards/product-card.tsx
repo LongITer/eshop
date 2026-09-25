@@ -82,9 +82,13 @@ const ProductCard = ({
           height={300}
           className="w-full h-[200px] object-cover mx-auto rounded-t-md"
         />
-        <span className="block px-2 text-sm text-blue-500 font-semibold mt-2">
-          {product?.shop?.name}
-        </span>
+      </Link>
+      <Link
+        href={`/shop/${product?.shop?.id}`}
+        className="block px-2 text-sm text-blue-500 font-semibold mt-2 hover:text-blue-700 hover:underline transition-colors"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {product?.shop?.name}
       </Link>
 
       <Link href={`/product/${product?.slug}`}>
