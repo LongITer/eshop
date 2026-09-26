@@ -72,8 +72,8 @@ const nextConfig = {
         destination: 'http://localhost:8080/order/verify-coupon',
       },
       {
-        source: '/product/:path*',
-        destination: 'http://localhost:8080/product/:path*',
+        source: '/product/api/:path*',
+        destination: 'http://localhost:8080/product/api/:path*',
       },
       {
         source: '/chatting/:path*',
