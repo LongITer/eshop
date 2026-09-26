@@ -8,6 +8,7 @@ import ImageMagnifier from "@/shared/components/image-magnifier";
 import Ratings from "@/shared/ratings";
 import { useStore } from "@/store";
 import axiosInstance from "@/utils/axioInstance";
+import isProtected from "@/utils/protected";
 import {
   ChevronLeft,
   ChevronRight,
@@ -21,6 +22,7 @@ import {
   WalletMinimal,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useState, useCallback } from "react";
 
 const ProductDetails = ({ productDetails }: { productDetails: any }) => {
@@ -32,6 +34,8 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   const { user, isLoading } = useUser();
   const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
+  const router = useRouter();
+  const [chatLoading, setChatLoading] = useState(false);
 
   const [isSelectedColor, setIsSelectedColor] = useState(
     productDetails?.color?.[0] || "",
@@ -112,6 +116,27 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   useEffect(() => {
     fetchFilteredProducts();
   }, [fetchFilteredProducts]);
+
+  const handleChat = async () => {
+    if (chatLoading) return;
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    setChatLoading(true);
+    try {
+      const res = await axiosInstance.post(
+        "/chatting/api/create-user-conversationGroup",
+        { sellerId: productDetails?.shop?.sellerId },
+        isProtected,
+      );
+      router.push(`/inbox?conversationId=${res.data?.conversationId}`);
+    } catch (error) {
+      console.error("Failed to start chat", error);
+    } finally {
+      setChatLoading(false);
+    }
+  };
 
   return (
     <div className="w-full bg-[#f5f5f5] min-h-screen">
@@ -450,13 +475,14 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                   {productDetails?.shop?.name}
                 </Link>
               </div>
-              <Link
-                href={"#"}
-                className="flex items-center gap-1 text-blue-500 text-sm hover:text-blue-700 transition-colors mt-1"
+              <button
+                onClick={handleChat}
+                disabled={chatLoading}
+                className="flex items-center gap-1 text-blue-500 text-sm hover:text-blue-700 transition-colors mt-1 cursor-pointer disabled:opacity-50 disabled:cursor-wait"
               >
                 <MessageSquareText size={16} />
-                Chat
-              </Link>
+                {chatLoading ? "Opening..." : "Chat"}
+              </button>
             </div>
 
             {/* Seller performance stats */}
