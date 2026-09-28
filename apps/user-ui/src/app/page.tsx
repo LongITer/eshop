@@ -59,7 +59,12 @@ const Page = () => {
       <Hero />
       <div className="md:w-[80%] w-[90%] my-10 m-auto">
         <div className="mb-8">
-          <SectionTitle title="Suggested Products" />
+          <SectionTitle
+            title="Suggested Products"
+            eyebrow="JUST FOR YOU"
+            suffix="Today’s Picks"
+            description="Based on your browsing history, interests, and this week’s popular shopping trends."
+          />
         </div>
         {isLoading && (
           <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 2xl:grid-cols-5 gap-5">
@@ -99,7 +104,12 @@ const Page = () => {
           </div>
         )}
         <div className="my-8 block">
-          <SectionTitle title="Latest Products" />
+          <SectionTitle
+            title="Latest Products"
+            eyebrow="FRESH ARRIVALS"
+            suffix="Just Added"
+            description="Discover the newest products recently added to our marketplace."
+          />
         </div>
 
         {!latestProductLoading && !isError && (
@@ -125,7 +135,12 @@ const Page = () => {
         )}
 
         <div className="my-8 block">
-          <SectionTitle title="Top Shops" />
+          <SectionTitle
+            title="Top Shops"
+            eyebrow="SELLER SPOTLIGHT"
+            suffix="Featured Stores"
+            description="Explore popular stores and find brands worth coming back to."
+          />
         </div>
 
         {!shopLoading && (
@@ -143,7 +158,12 @@ const Page = () => {
         )}
 
         <div className="my-8 block">
-          <SectionTitle title="Top Offers" />
+          <SectionTitle
+            title="Top Offers"
+            eyebrow="LIMITED-TIME DEALS"
+            suffix="Save More Today"
+            description="Browse standout deals while these special prices are available."
+          />
         </div>
 
         {!offersLoading && !isError && (
