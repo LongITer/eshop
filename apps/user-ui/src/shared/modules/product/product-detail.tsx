@@ -12,6 +12,8 @@ import isProtected from "@/utils/protected";
 import {
   ChevronLeft,
   ChevronRight,
+  Check,
+  CircleHelp,
   Heart,
   Home,
   MapPin,
@@ -25,13 +27,45 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState, useCallback } from "react";
 
+const getProductSpecifications = (product: any) => {
+  const rawSpecifications =
+    product?.custom_specification ?? product?.custom_specifications;
+
+  if (Array.isArray(rawSpecifications)) {
+    return rawSpecifications.filter(
+      (specification: any) =>
+        specification &&
+        typeof specification === "object" &&
+        specification.name &&
+        specification.value !== undefined &&
+        specification.value !== null &&
+        specification.value !== "",
+    );
+  }
+
+  if (rawSpecifications && typeof rawSpecifications === "object") {
+    return Object.entries(rawSpecifications).map(([name, value]) => ({
+      name,
+      value,
+    }));
+  }
+
+  return [];
+};
+
+const formatSpecificationValue = (value: unknown): string => {
+  if (Array.isArray(value)) return value.map(String).join(", ");
+  if (value && typeof value === "object") return JSON.stringify(value);
+  return String(value);
+};
+
 const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   const [currentImage, setCurrentImage] = useState(
     productDetails?.images?.[0]?.url || "/default-image.jpg",
   );
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const { user, isLoading } = useUser();
+  const { user } = useUser();
   const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
   const router = useRouter();
@@ -47,12 +81,10 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
 
   const [quantity, setQuantity] = useState(1);
 
-  const [priceRange, setPriceRange] = useState([
-    0,
-    2000,
-  ]);
+  const [priceRange] = useState([0, 2000]);
 
   const [recommendedProducts, setRecommendedProducts] = useState([]);
+  const specifications = getProductSpecifications(productDetails);
 
   const addToCart = useStore((state: any) => state.addToCart);
   const cart = useStore((state: any) => state.cart);
@@ -519,37 +551,134 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
         </div>
       </div>
 
-      {/* Product Description Section */}
-      <div className="w-[90%] lg:w-[80%] mx-auto mt-5">
-        <div className="bg-white rounded-xl shadow-sm p-6 overflow-hidden">
-          <h3 className="text-lg font-bold text-gray-900 pb-3 border-b border-gray-100">
-            Product Details
-          </h3>
+      <section className="mx-auto mt-5 grid w-[90%] min-w-0 grid-cols-1 items-start gap-4 lg:w-[80%] lg:grid-cols-[minmax(0,2fr)_minmax(260px,0.95fr)]">
+        <div className="min-w-0 space-y-4">
           <div
-            className="prose prose-sm max-w-none mt-4 text-gray-700 leading-relaxed break-words overflow-hidden
-              prose-headings:text-gray-900 prose-headings:font-semibold
-              prose-p:text-gray-700 prose-p:leading-relaxed
-              prose-strong:text-gray-800
-              prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline
-              prose-li:text-gray-700
-              prose-img:rounded-lg prose-img:shadow-sm"
-            dangerouslySetInnerHTML={{
-              __html: productDetails?.detailed_description,
-            }}
-          />
+            id="product-specifications"
+            className="scroll-mt-6 min-w-0 overflow-hidden border border-slate-200 bg-white p-5 shadow-sm md:p-6"
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <h2 className="flex items-center gap-2 text-base font-bold text-slate-900">
+                <Check size={16} className="text-blue-600" />
+                Product Specifications
+              </h2>
+              <span className="shrink-0 bg-slate-50 px-2 py-1 text-[11px] text-slate-500">
+                {productDetails?.subCategory || productDetails?.category}
+                {productDetails?.brand ? ` / ${productDetails.brand}` : ""}
+              </span>
+            </div>
+            {specifications.length > 0 ? (
+              <dl className="mt-3 divide-y divide-slate-100">
+                {specifications.map((specification: any, index: number) => (
+                  <div
+                    key={`${specification.name}-${index}`}
+                    className="grid min-w-0 grid-cols-1 gap-1 sm:grid-cols-[minmax(120px,0.8fr)_minmax(0,2fr)] sm:gap-4"
+                  >
+                    <dt className="min-w-0 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600 [overflow-wrap:anywhere]">
+                      {specification.name}
+                    </dt>
+                    <dd className="min-w-0 px-3 py-2 text-sm text-slate-900 [overflow-wrap:anywhere]">
+                      {formatSpecificationValue(specification.value)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <p className="py-5 text-3xl text-slate-500">
+                Product specifications have not been added yet.
+              </p>
+            )}
+          </div>
 
-          {/* Short description fallback */}
-          {!productDetails?.detailed_description && productDetails?.short_description && (
-            <p className="mt-4 text-gray-600 leading-relaxed">
-              {productDetails.short_description}
-            </p>
-          )}
+          <div className="min-w-0 border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+            <h2 className="border-b border-slate-100 pb-3 text-base font-bold text-slate-900">
+              Product Details &amp; Summary
+            </h2>
+            {productDetails?.short_description && (
+              <p className="mt-4 border border-slate-100 bg-slate-50 p-3 text-sm leading-relaxed text-slate-600 [overflow-wrap:anywhere]">
+                {productDetails.short_description}
+              </p>
+            )}
+            {productDetails?.detailed_description ? (
+              <div
+                className="prose prose-sm mt-4 max-w-none break-words leading-relaxed text-slate-700
+                  prose-headings:font-semibold prose-headings:text-slate-900
+                  prose-p:leading-relaxed prose-strong:text-slate-800
+                  prose-a:text-blue-600 prose-li:text-slate-700
+                  prose-img:rounded-lg prose-img:shadow-sm"
+                dangerouslySetInnerHTML={{
+                  __html: productDetails.detailed_description,
+                }}
+              />
+            ) : null}
+          </div>
         </div>
-      </div>
+
+        <aside className="min-w-0 space-y-4">
+          <div className="min-w-0 border border-slate-200 bg-white p-4 shadow-sm">
+            <h2 className="border-b border-slate-100 pb-3 text-sm font-bold text-slate-900">
+              Recommended Combo
+            </h2>
+            <div className="divide-y divide-slate-100">
+              {[
+                { name: "This item: Intel Core i5-12400F", price: "$135" },
+                { name: "B660M DDR4 Motherboard", price: "$109" },
+                { name: "16GB (2×8GB) 3200MHz RAM", price: "$42" },
+              ].map((item) => (
+                <div key={item.name} className="flex items-center gap-2 py-3">
+                  <input
+                    type="checkbox"
+                    checked
+                    readOnly
+                    aria-label={`${item.name} included in sample combo`}
+                    className="accent-blue-600"
+                  />
+                  <span className="min-w-0 flex-1 truncate text-xs text-slate-600">
+                    {item.name}
+                  </span>
+                  <span className="shrink-0 text-xs font-semibold text-slate-900">
+                    {item.price}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+              <div>
+                <p className="text-[11px] text-slate-500">Bundle Total</p>
+                <p className="text-lg font-bold text-slate-900">
+                  $286.00
+                </p>
+              </div>
+              <button
+                type="button"
+                className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white"
+              >
+                Add Combo
+              </button>
+            </div>
+          </div>
+
+          <div className="min-w-0 bg-slate-900 p-4 text-white shadow-sm">
+            <h2 className="flex items-center gap-2 text-sm font-bold">
+              <CircleHelp size={16} />
+              Need Help Choosing?
+            </h2>
+            <p className="mt-2 text-xs leading-relaxed text-slate-300">
+              Compare socket, memory type, and component dimensions before building your PC.
+            </p>
+            <span className="mt-3 inline-flex rounded-md border border-slate-600 px-3 py-2 text-xs font-semibold text-white">
+              View Compatibility Specs
+            </span>
+          </div>
+        </aside>
+      </section>
 
       {/* Ratings & Reviews Section */}
-      <div id="reviews" className="w-[90%] lg:w-[80%] mx-auto">
-        <div className="bg-white rounded-xl shadow-sm mt-5 p-6">
+      <div className="mx-auto mt-5 grid w-[90%] min-w-0 grid-cols-1 gap-4 lg:w-[80%] lg:grid-cols-[minmax(0,2fr)_minmax(260px,0.95fr)]">
+        <div
+          id="reviews"
+          className="min-w-0 border border-slate-200 bg-white p-6 shadow-sm"
+        >
           <h3 className="text-lg font-bold text-gray-900 pb-3 border-b border-gray-100">
             Ratings & Reviews
           </h3>
