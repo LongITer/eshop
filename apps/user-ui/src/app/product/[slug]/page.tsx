@@ -8,12 +8,13 @@ async function fetchProductDetails(slug: string) {
   return response.data.product;
 }
 
-export async function genarateMetaData({
+export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const product = await fetchProductDetails(params.slug);
+  const { slug } = await params;
+  const product = await fetchProductDetails(slug);
   return {
     title: `${product.title} | Becodemy Marketplace`,
     description:
@@ -30,8 +31,9 @@ export async function genarateMetaData({
   };
 }
 
-const page = async ({ params }: { params: { slug: string } }) => {
-  const productDetails = await fetchProductDetails(params?.slug);
+const page = async ({ params }: { params: Promise<{ slug: string }> }) => {
+  const { slug } = await params;
+  const productDetails = await fetchProductDetails(slug);
   console.log(productDetails);
   return <ProductDetails productDetails={productDetails} />;
 };

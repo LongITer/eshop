@@ -6,6 +6,7 @@ import { NextFunction, Request, Response } from "express";
 import Stripe from "stripe";
 import { Prisma, orderStatus } from "@prisma/client";
 import { sendEmail } from "../utils/send-email";
+import { sendBehaviorLog } from "@packages/utils/logs/behavior-log";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-08-26.dahlia",
@@ -64,6 +65,16 @@ export const createPaymentIntent = async (
     }
 
     const paymentIntent = await stripe.paymentIntents.create(intentData);
+    await sendBehaviorLog("paymentAttempt", {
+      type: "info",
+      source: "order-service",
+      message: "Payment attempt created",
+      metadata: {
+        userId: req.user.id,
+        paymentIntentId: paymentIntent.id,
+        amount: customerAmount / 100,
+      },
+    });
     res.send({
       clientSecret: paymentIntent.client_secret,
     });
@@ -382,6 +393,7 @@ export const createOrder = async (
           }
         }
 
+        let totalDiscount = 0;
         for (const shopId in shopGrouped) {
           const orderItems = shopGrouped[shopId];
 
@@ -413,10 +425,11 @@ export const createOrder = async (
           }
 
           const orderTotal = subTotal - discount;
+          totalDiscount += discount;
           const orderNumber = `ORD-${Date.now()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
 
           // Create order
-          await prisma.orders.create({
+          const createdOrder = await prisma.orders.create({
             data: {
               orderNumber,
               userId,
@@ -440,6 +453,19 @@ export const createOrder = async (
                   totalPrice: item.quantity * item.sale_price,
                 })),
               },
+            },
+          });
+
+          await sendBehaviorLog("orderCreated", {
+            type: "success",
+            source: "order-service",
+            message: "Order created after successful payment",
+            metadata: {
+              userId,
+              orderId: createdOrder.id,
+              orderNumber,
+              shopId,
+              amount: orderTotal,
             },
           });
 
@@ -501,6 +527,26 @@ export const createOrder = async (
               });
             }
           }
+        }
+
+        await sendBehaviorLog("paymentSuccess", {
+          type: "success",
+          source: "order-service",
+          message: "Payment completed successfully",
+          metadata: {
+            userId,
+            paymentIntentId: paymentIntent.id,
+            amount: paymentIntent.amount_received / 100,
+          },
+        });
+
+        if (totalDiscount > 0) {
+          await sendBehaviorLog("couponUsed", {
+            type: "info",
+            source: "order-service",
+            message: "Coupon applied to a paid order",
+            metadata: { userId, discount: totalDiscount },
+          });
         }
 
         // Send email for user
@@ -702,7 +748,7 @@ export const updateOrderStatus = async (
 
     const existingOrder = await prisma.orders.findFirst({
       where: { id: orderId, shopId: shop.id },
-      select: { id: true },
+      select: { id: true, status: true },
     });
 
     if (!existingOrder) {
@@ -724,6 +770,27 @@ export const updateOrderStatus = async (
         items: true,
       },
     });
+
+    await sendBehaviorLog("orderStatusChange", {
+      type: "info",
+      source: "order-service",
+      message: "Seller changed order status",
+      metadata: {
+        sellerId: req.seller.id,
+        orderId: updatedOrder.id,
+        previousStatus: existingOrder.status,
+        status: updatedOrder.status,
+      },
+    });
+
+    if (nextStatus === orderStatus.Cancelled) {
+      await sendBehaviorLog("orderCancelled", {
+        type: "warn",
+        source: "order-service",
+        message: "Order cancelled by seller",
+        metadata: { sellerId: req.seller.id, orderId: updatedOrder.id },
+      });
+    }
 
     return res.status(200).json(updatedOrder);
   } catch (error) {

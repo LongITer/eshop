@@ -3,6 +3,7 @@ import prisma from "@packages/libs/prisma";
 import { ValidationError } from "@packages/error-handler";
 import { imageKit } from "@packages/libs/imagekit";
 import { Prisma } from "@prisma/client";
+import { sendBehaviorLog } from "@packages/utils/logs/behavior-log";
 
 // Get product categories
 export const getCategories = async (
@@ -263,6 +264,13 @@ export const createProduct = async (
       },
     });
 
+    await sendBehaviorLog("productCreated", {
+      type: "success",
+      source: "product-service",
+      message: "Seller created a product",
+      metadata: { sellerId: req.seller.id, productId: newProduct.id },
+    });
+
     res.status(201).json({
       success: true,
       message: "Product created successfully",
@@ -331,6 +339,13 @@ export const deleteProduct = async (
         isDeleted: true,
         deleteAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
+    });
+
+    await sendBehaviorLog("productDeleted", {
+      type: "success",
+      source: "product-service",
+      message: "Seller scheduled a product for deletion",
+      metadata: { sellerId: req.seller.id, productId: deletedProduct.id },
     });
 
     return res.status(200).json({
@@ -462,6 +477,16 @@ export const getProductDetails = async (
         shop: true,
       },
     });
+
+    if (product) {
+      await sendBehaviorLog("productView", {
+        type: "info",
+        source: "product-service",
+        message: "Product details viewed",
+        metadata: { productId: product.id, slug: product.slug },
+      });
+    }
+
     return res.status(200).json({
       success: true,
       product,
@@ -545,6 +570,22 @@ export const getFilteredProducts = async (
       }),
       prisma.products.count({ where: filters }),
     ]);
+
+    const activeFilterKeys = ["priceRange", "categories", "colors", "sizes"]
+      .filter((key) => req.query[key] !== undefined)
+      .filter((key) => {
+        const value = req.query[key];
+        return Array.isArray(value) ? value.length > 0 : Boolean(value);
+      });
+
+    if (activeFilterKeys.length > 0) {
+      await sendBehaviorLog("productFilter", {
+        type: "info",
+        source: "product-service",
+        message: "Product filters applied",
+        metadata: { filterKeys: activeFilterKeys, resultCount: total },
+      });
+    }
 
     const totalPages = Math.ceil(total / parsedLimit);
 
@@ -796,6 +837,13 @@ export const searchProducts = async (
       orderBy: {
         createdAt: "desc",
       },
+    });
+
+    await sendBehaviorLog("productSearch", {
+      type: "info",
+      source: "product-service",
+      message: "Product search completed",
+      metadata: { queryLength: query.trim().length, resultCount: products.length },
     });
 
     return res.status(200).json({ products });
