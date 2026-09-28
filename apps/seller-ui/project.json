@@ -1,0 +1,28 @@
+{
+  "name": "@./seller-ui",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/seller-ui/src",
+  "projectType": "application",
+  "targets": {
+    "dev": {
+      "executor": "@nx/next:server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "@./seller-ui:build",
+        "dev": true,
+        "port": 3002
+      },
+      "configurations": {
+        "development": {},
+        "production": {}
+      }
+    },
+    "start": {
+      "executor": "@nx/next:server",
+      "options": {
+        "buildTarget": "@./seller-ui:build",
+        "port": 3002
+      }
+    }
+  }
+}

@@ -31,6 +31,7 @@ const Page = () => {
       );
       return res.data.products;
     },
+    refetchOnMount: "always",
   });
 
   const { data: shops, isLoading: shopLoading } = useQuery({

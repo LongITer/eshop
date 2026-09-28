@@ -51,7 +51,12 @@ const CustomizationPage = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  const { mutate: save, isPending: isSaving } = useMutation({
+  const {
+    mutate: save,
+    isPending: isSaving,
+    isSuccess: saveSucceeded,
+    isError: saveFailed,
+  } = useMutation({
     mutationFn: patchConfig,
     onSuccess: (updated) => {
       queryClient.setQueryData(["site-config"], updated);
@@ -125,6 +130,16 @@ const CustomizationPage = () => {
               isSaving={isSaving}
               onSave={save}
             />
+          )}
+          {saveSucceeded && (
+            <p className="mt-4 text-sm text-emerald-400" role="status">
+              Changes saved successfully.
+            </p>
+          )}
+          {saveFailed && (
+            <p className="mt-4 text-sm text-red-400" role="alert">
+              Failed to save changes. Please try again.
+            </p>
           )}
         </>
       )}

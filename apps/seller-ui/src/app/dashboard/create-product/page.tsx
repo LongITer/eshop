@@ -27,6 +27,8 @@ const Page = () => {
     control,
     watch,
     setValue,
+    setError,
+    clearErrors,
     handleSubmit,
     formState: { errors },
   } = useForm();
@@ -81,7 +83,22 @@ const Page = () => {
   const onSubmit = async (data: any) => {
     try {
       setLoading(true);
-      await axiosInstance.post("/product/api/create-product", data);
+      const uploadedImages = images.filter(
+        (image): image is { url: string; fileId: string } =>
+          Boolean(image && typeof image === "object" && "url" in image && "fileId" in image),
+      );
+      if (uploadedImages.length === 0) {
+        const message = "Upload at least one product image.";
+        setError("images", { type: "required", message });
+        toast.error(message);
+        return;
+      }
+
+      await axiosInstance.post("/product/api/create-product", {
+        ...data,
+        images: uploadedImages,
+      });
+      toast.success("Product created successfully");
       router.push("/dashboard/all-products");
     } catch (error: any) {
       console.error("Create product error:", error.response?.data || error);
@@ -124,8 +141,10 @@ const Page = () => {
 
       setImages(updatedImages);
       setValue("images", updatedImages);
-    } catch (error) {
-      console.log(error);
+      clearErrors("images");
+    } catch (error: any) {
+      console.error("Product image upload error:", error.response?.data || error);
+      toast.error(error.response?.data?.message || "Failed to upload product image");
     } finally {
       setPictureUploadingLoader(false);
     }
@@ -319,6 +338,11 @@ const Page = () => {
               />
             ))}
           </div>
+          {errors.images && (
+            <p className="mt-2 text-sm text-red-500" role="alert">
+              {errors.images.message as string}
+            </p>
+          )}
         </div>
 
         {/* Right side - form inputs*/}

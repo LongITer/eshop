@@ -127,6 +127,10 @@ export const uploadProductImages = async (
   try {
     const { fileName } = req.body;
 
+    if (typeof fileName !== "string" || !fileName.startsWith("data:image/")) {
+      return next(new ValidationError("A valid product image is required."));
+    }
+
     const response = await imageKit.upload({
       file: fileName,
       fileName: `product-${Date.now()}.jpg`,
@@ -198,23 +202,47 @@ export const createProduct = async (
     const finalCustomSpecifications =
       custom_specification || custom_specifications || [];
 
-    if (
-      !title ||
-      !slug ||
-      !short_description ||
-      !category ||
-      !subCategory ||
-      !sale_price ||
-      !images ||
-      !finalTags ||
-      !stock ||
-      !regular_price
-    ) {
-      return next(new ValidationError("Missing required fields"));
+    const missingFields = [
+      ["title", title],
+      ["slug", slug],
+      ["short_description", short_description],
+      ["detail_description", detailed_description || detail_description],
+      ["category", category],
+      ["subCategory", subCategory],
+      ["sale_price", sale_price],
+      ["regular_price", regular_price],
+      ["stock", stock],
+      ["tag", finalTags],
+    ]
+      .filter(([, value]) => value === undefined || value === null || value === "")
+      .map(([field]) => field);
+
+    if (missingFields.length > 0) {
+      return next(
+        new ValidationError(`Missing required fields: ${missingFields.join(", ")}`),
+      );
     }
 
-    if (!req.seller.id) {
-      return next(new ValidationError("Only seller can create products!"));
+    const hasUploadedImage =
+      Array.isArray(images) &&
+      images.some(
+        (image: any) =>
+          typeof image?.url === "string" &&
+          image.url.length > 0 &&
+          typeof image?.fileId === "string" &&
+          image.fileId.length > 0,
+      );
+
+    if (!hasUploadedImage) {
+      return next(
+        new ValidationError("At least one product image is required."),
+      );
+    }
+
+    if (!req.seller?.shop?.id) {
+      return next(
+        new ValidationError("Create your shop before listing products."),
+      );
     }
 
     const slugChecking = await prisma.products.findUnique({
@@ -436,9 +464,7 @@ export const getAllProducts = async (
           shop: true,
         },
         where: baseFilter,
-        orderBy: {
-          totalSales: "desc",
-        },
+        orderBy,
       }),
 
       prisma.products.count({ where: baseFilter }),

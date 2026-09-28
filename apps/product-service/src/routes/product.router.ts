@@ -21,25 +21,27 @@ import {
   getAllEvents,
 } from "../controllers/product.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
+import { isSeller } from "@packages/middleware/authorizeRoles";
 
 const router: Router = express.Router();
 
 router.get("/get-categories", getCategories);
 // Discount
-router.get("/get-discount-code", isAuthenticated, getDiscountCodes);
-router.post("/create-discount-code", isAuthenticated, createDiscountCode);
+router.get("/get-discount-code", isAuthenticated, isSeller, getDiscountCodes);
+router.post("/create-discount-code", isAuthenticated, isSeller, createDiscountCode);
 router.delete(
   "/delete-discount-code/:id",
   isAuthenticated,
+  isSeller,
   deleteDiscountCodes,
 );
-router.post("/upload-product-image", isAuthenticated, uploadProductImages);
-router.delete("/delete-product-image", isAuthenticated, deleteProductImages);
+router.post("/upload-product-image", isAuthenticated, isSeller, uploadProductImages);
+router.delete("/delete-product-image", isAuthenticated, isSeller, deleteProductImages);
 // Products
-router.post("/create-product", isAuthenticated, createProduct);
-router.get("/get-shop-products", isAuthenticated, getShopProducts);
-router.post("/delete-product/:id", isAuthenticated, deleteProduct);
-router.post("/restore-product/:id", isAuthenticated, restoreProduct);
+router.post("/create-product", isAuthenticated, isSeller, createProduct);
+router.get("/get-shop-products", isAuthenticated, isSeller, getShopProducts);
+router.post("/delete-product/:id", isAuthenticated, isSeller, deleteProduct);
+router.post("/restore-product/:id", isAuthenticated, isSeller, restoreProduct);
 // All products
 router.get("/get-all-products", getAllProducts);
 // Find product by slug
