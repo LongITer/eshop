@@ -44,7 +44,7 @@ const Signup = () => {
     // Mutation 1: Đăng ký ban đầu (Gửi OTP về mail)
     const signupMutation = useMutation({
         mutationFn: async (data: FormData) => {
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/user-registration`, data);
+            const response = await axios.post("/api/user-registration", data);
             return response.data;
         },
         onSuccess: (_, formData) => {
@@ -65,7 +65,7 @@ const Signup = () => {
             if (!userData) {
                 throw new Error("User data not found");
             }
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/verify-user`, {
+            const response = await axios.post("/api/verify-user", {
                 ...userData,
                 otp: otpCode
             });

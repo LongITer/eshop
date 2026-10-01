@@ -98,10 +98,10 @@ const Page = () => {
         ...data,
         images: uploadedImages,
       });
-      toast.success("Product created successfully");
-      router.push("/dashboard/all-products");
+      toast.success("Product created successfully", { duration: 3000 });
+      window.setTimeout(() => router.push("/dashboard/all-products"), 1200);
     } catch (error: any) {
-      console.error("Create product error:", error.response?.data || error);
+      console.log("Create product error:", error.response?.data || error);
       toast.error(error.response?.data?.message || "Failed to create product");
     } finally {
       setLoading(false);
@@ -830,9 +830,9 @@ const Page = () => {
         <button
           type="submit"
           className="px-4 py-2 bg-blue-600 text-white rounded-md"
-          disabled={isLoading}
+          disabled={loading}
         >
-          {isLoading ? "Creating..." : "Create"}
+          {loading ? "Creating..." : "Create"}
         </button>
       </div>
     </form>

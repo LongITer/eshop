@@ -44,14 +44,7 @@ app.post(
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow any origin during development
-      if (!origin || origin.startsWith("http://localhost")) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",
@@ -86,7 +79,14 @@ app.get("/gateway-health", (req, res) => {
   res.send({ message: "Welcome to api-gateway!" });
 });
 
-app.use("/product", proxy("http://localhost:6002", proxyOptions));
+app.use(
+  "/product",
+  proxy("http://localhost:6002", {
+    ...proxyOptions,
+    proxyReqPathResolver: (req) =>
+      req.originalUrl.replace(/^\/product/, ""),
+  }),
+);
 app.use(
   "/order",
   proxy("http://localhost:6004", {

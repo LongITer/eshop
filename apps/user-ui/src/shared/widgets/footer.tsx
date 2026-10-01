@@ -61,7 +61,7 @@ const Footer = () => {
         </div>
       </div>
       <div className="border-t border-slate-200 py-5 text-center text-xs text-slate-500">
-        © 2025 All Rights Reserved | Becodemy Private Ltd
+        © 2026 All Rights Reserved | Eshop Private Ltd
       </div>
     </footer>
   );

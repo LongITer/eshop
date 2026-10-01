@@ -315,3 +315,48 @@ model message {
 
   @@unique([conversationId, senderId, content, createdAt])
 }
+
+// ─── User Behavior Logging Configuration ───────────────────────────
+// Single-document config controlling which user actions get logged to Kafka.
+// Each boolean field toggles logging for a specific behavior category.
+model log_config {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Auth behaviors
+  userLogin          Boolean @default(true)
+  userRegistration   Boolean @default(true)
+  userLogout         Boolean @default(false)
+  passwordChange     Boolean @default(true)
+  passwordReset      Boolean @default(true)
+
+  // Product behaviors
+  productView        Boolean @default(true)
+  productSearch      Boolean @default(true)
+  productFilter      Boolean @default(false)
+  addToCart          Boolean @default(true)
+  addToWishlist      Boolean @default(true)
+
+  // Order behaviors
+  orderCreated       Boolean @default(true)
+  orderCancelled     Boolean @default(true)
+  paymentAttempt     Boolean @default(true)
+  paymentSuccess     Boolean @default(true)
+  paymentFailed      Boolean @default(true)
+  couponUsed         Boolean @default(false)
+
+  // Seller behaviors
+  sellerLogin        Boolean @default(true)
+  sellerRegistration Boolean @default(true)
+  shopCreated        Boolean @default(true)
+  productCreated     Boolean @default(true)
+  productDeleted     Boolean @default(true)
+  orderStatusChange  Boolean @default(true)
+
+  // System / infra behaviors
+  apiErrors          Boolean @default(true)
+  rateLimitHit       Boolean @default(true)
+  webhookEvents      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

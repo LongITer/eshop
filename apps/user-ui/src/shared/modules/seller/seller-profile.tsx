@@ -1,13 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axioInstance";
 import isProtected from "@/utils/protected";
-import useUser from "@/hooks/useUser";
 import ProductCard from "@/shared/cards/product-card";
-import Ratings from "@/shared/ratings";
 import {
   MapPin,
   Star,
@@ -15,10 +12,8 @@ import {
   Heart,
   Users,
   Calendar,
-  Globe,
   ExternalLink,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 // Inline SVG social icons (lucide-react doesn't have brand icons)
 const YoutubeIcon = () => (
@@ -69,9 +64,6 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
     shop?.followers?.length ?? 0,
   );
   const [isLoading, setIsLoading] = useState(false);
-
-  const { user } = useUser();
-  const router = useRouter();
 
   // Shop products are already included in the sellerData response
   const shopProducts = shop?.products ?? [];
@@ -135,6 +127,17 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
       ? (() => { try { return JSON.parse(shop.socialLinks); } catch { return {}; } })()
       : shop?.socialLinks ?? {};
 
+  const socialLinksToDisplay =
+    Object.keys(parsedSocialLinks).length > 0
+      ? parsedSocialLinks
+      : {
+          facebook: "https://facebook.com",
+          instagram: "https://instagram.com",
+          youtube: "https://youtube.com",
+          twitter: "https://x.com",
+          tiktok: "https://tiktok.com",
+        };
+
   const tabs = [
     { key: "products" as const, label: "Products" },
     { key: "offers" as const, label: "Offers" },
@@ -142,224 +145,153 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
   ];
 
   return (
-    <div className="w-full bg-[#f5f5f5] min-h-screen">
-      {/* ===== COVER BANNER ===== */}
-      <div className="relative w-full">
-        <div className="flex flex-col md:flex-row">
-          {/* Left — Cover Image */}
-          <div className="w-full md:w-1/2 h-[250px] md:h-[300px] relative overflow-hidden">
-            {shop?.coverBanner ? (
-              <img
-                src={shop.coverBanner}
-                alt="Shop Cover"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-blue-700 via-purple-600 to-pink-500" />
-            )}
+    <div className="w-full bg-[#f3f4f6] min-h-screen text-slate-800">
+      <div className="w-[94%] lg:w-[80%] mx-auto pt-5 md:pt-8">
+        <div className="relative h-[220px] overflow-hidden border border-white/30 border-b-0 shadow-[0_18px_40px_rgba(79,70,229,0.12)] bg-[linear-gradient(90deg,_#7c3aed_0%,_#8b5cf6_25%,_#d946ef_52%,_#4f46e5_100%)] md:h-[300px]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.08),_transparent_45%),linear-gradient(90deg,_rgba(255,255,255,0.06),_rgba(255,255,255,0)_42%,_rgba(15,23,42,0.08)_100%)]" />
+          <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(rgba(255,255,255,0.5)_1px,transparent_1px)] [background-size:16px_16px]" />
+
+          <div className="relative flex items-center justify-between px-4 md:px-6 py-4 md:py-5">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white shadow-sm backdrop-blur-sm">
+              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400/90 text-[10px] text-white">✓</span>
+              Verified Premier Partner
+            </div>
+
+            <button className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-[#1f2937]/30 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition hover:bg-[#1f2937]/40">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+                <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z"/>
+                <path d="M8 9h8M8 13h5"/>
+              </svg>
+              Store Cover
+            </button>
           </div>
 
-          {/* Right — Description + Tags */}
-          <div className="w-full md:w-1/2 bg-[#1a1a2e] text-white p-6 md:p-8 flex flex-col justify-center">
-            <p className="text-sm md:text-[15px] leading-relaxed text-gray-300">
-              {shop?.bio ||
-                "Welcome to our shop! Browse our amazing collection of products."}
-            </p>
+          <div className="relative px-4 pb-4 md:px-6 md:pb-5" />
+        </div>
 
-            {tags.length > 0 && (
-              <div className="mt-5">
-                <h4 className="text-base font-semibold mb-2">Tags</h4>
-                <div className="flex flex-wrap gap-2">
-                  {tags.map((tag: string, idx: number) => (
+        <div className="relative z-10 -mt-6 w-full border border-slate-200 border-t-0 bg-white/95 p-4 shadow-[0_12px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm md:p-5">
+          <div className="flex min-w-0 flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div className="flex min-w-0 flex-1 items-center gap-4">
+              <div className="relative shrink-0">
+                <div className="flex h-[88px] w-[88px] items-center justify-center overflow-hidden rounded-[24px] border-[4px] border-white bg-gradient-to-br from-violet-500 to-pink-500 shadow-[0_8px_18px_rgba(168,85,247,0.35)] md:h-[98px] md:w-[98px]">
+                  {shop?.avatar ? (
+                    <img
+                      src={shop.avatar}
+                      alt={shop.name || "Shop"}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-[2rem] font-bold text-white">
+                      {shop?.name?.[0]?.toUpperCase() || "S"}
+                    </span>
+                  )}
+                </div>
+                <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-blue-500 text-[10px] text-white shadow-sm">
+                  ✓
+                </span>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                  <h1 className="text-2xl font-semibold tracking-[-0.05em] text-slate-900 md:text-[2.1rem]">
+                    {shop?.name || "Shop Name"}
+                  </h1>
+                  {tags.slice(0, 1).map((tag: string, idx: number) => (
                     <span
                       key={idx}
-                      className="bg-[#2d2d44] text-gray-200 text-sm px-3 py-1 rounded capitalize"
+                      className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-700 ring-1 ring-violet-100"
                     >
                       {tag}
                     </span>
                   ))}
                 </div>
+
+                <p className="mt-2 max-w-[620px] text-sm leading-6 text-slate-600 md:text-[15px]">
+                  {shop?.bio || "Welcome to our shop! Browse our amazing collection of products."}
+                </p>
+
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Star size={14} className="fill-amber-400 text-amber-400" />
+                    <span className="font-semibold text-slate-800">{shop?.ratings?.toFixed(1) || "0.0"}</span>
+                    <span className="text-slate-500">({shop?.reviews?.length ?? 0} reviews)</span>
+                  </span>
+
+                  <span className="inline-flex items-center gap-1.5">
+                    <Users size={14} className="text-blue-500" />
+                    <span className="font-semibold text-slate-800">{followerCount}</span>
+                    <span>Followers</span>
+                  </span>
+
+                  {shop?.opening_hours && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Clock size={14} className="text-slate-500" />
+                      <span>{shop.opening_hours}</span>
+                    </span>
+                  )}
+                </div>
+
+                {shop?.address && (
+                  <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-slate-500">
+                    <MapPin size={14} className="text-slate-400" />
+                    {shop.address}
+                  </p>
+                )}
+
+                <div className="mt-2 flex w-full items-center gap-1.5 text-sm text-slate-500">
+                  <Calendar size={14} className="text-slate-400" />
+                  <span>Joined at {joinedDate}</span>
+                </div>
               </div>
-            )}
+            </div>
+
+            <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleFollow}
+                  disabled={isLoading}
+                  className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium shadow-sm transition ${
+                    isFollowing
+                      ? "bg-red-50 text-red-500 ring-1 ring-red-200 hover:bg-red-100"
+                      : "bg-gradient-to-r from-violet-500 to-indigo-500 text-white hover:from-violet-600 hover:to-indigo-600"
+                  }`}
+                >
+                  <Heart size={16} fill={isFollowing ? "currentColor" : "none"} />
+                  {isFollowing ? "Unfollow" : "Follow Store"}
+                </button>
+
+                <button className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50">
+                  Message
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="mr-1 text-xs font-medium text-slate-500">Follow us</span>
+                {Object.entries(socialLinksToDisplay).slice(0, 4).map(([platform, url]) => {
+                  if (!url) return null;
+                  const config = socialIcons[platform.toLowerCase()];
+                  const IconComponent = config?.icon ?? ExternalLink;
+                  return (
+                    <a
+                      key={platform}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 transition hover:bg-slate-100"
+                      title={platform}
+                    >
+                      <IconComponent />
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ===== SHOP INFO CARD ===== */}
-      <div className="w-[92%] lg:w-[80%] mx-auto -mt-6 relative z-10">
-        <div className="bg-white rounded-lg shadow-md border border-gray-100 overflow-visible">
-          <div className="flex flex-col md:flex-row">
-            {/* Left — Shop Info */}
-            <div className="flex-1 p-5 md:p-6 flex flex-col sm:flex-row items-start gap-4">
-              {/* Avatar */}
-              <div className="shrink-0 -mt-12 sm:-mt-14">
-                <div className="w-[80px] h-[80px] sm:w-[90px] sm:h-[90px] rounded-full border-4 border-white shadow-lg overflow-hidden bg-white">
-                  {shop?.avatar ? (
-                    <img
-                      src={shop.avatar}
-                      alt={shop.name || "Shop"}
-                      className="object-cover w-full h-full"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-3xl font-bold">
-                      {shop?.name?.[0]?.toUpperCase() || "S"}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Details */}
-              <div className="flex-1 mt-1">
-                <div className="flex flex-col gap-1">
-                  <h1 className="text-xl font-bold text-gray-900">
-                    {shop?.name || "Shop Name"}
-                  </h1>
-                  {(shop?.description || shop?.bio) && (
-                    <p className="text-sm text-gray-500">
-                      {shop?.description || shop?.bio}
-                    </p>
-                  )}
-                </div>
-
-                {/* Stats row */}
-                <div className="flex items-center gap-4 mt-2 flex-wrap text-sm text-gray-600">
-                  {/* Rating */}
-                  <span className="flex items-center gap-1">
-                    <Star
-                      size={14}
-                      className="text-yellow-400 fill-yellow-400"
-                    />
-                    <span className="font-medium">
-                      {shop?.ratings?.toFixed(1) || "N/A"}
-                    </span>
-                  </span>
-
-                  {/* Followers */}
-                  <span className="flex items-center gap-1">
-                    <Users size={14} className="text-blue-500" />
-                    <span className="font-medium">{followerCount}</span>{" "}
-                    Followers
-                  </span>
-                </div>
-
-                {/* Opening hours */}
-                {shop?.opening_hours && (
-                  <p className="flex items-center gap-1.5 text-sm text-gray-500 mt-2">
-                    <Clock size={14} />
-                    {shop.opening_hours}
-                  </p>
-                )}
-
-                {/* Location */}
-                {shop?.address && (
-                  <p className="flex items-center gap-1.5 text-sm text-gray-500 mt-1">
-                    <MapPin size={14} />
-                    {shop.address}
-                  </p>
-                )}
-              </div>
-
-              {/* Follow Button */}
-              <div className="shrink-0 self-start mt-1">
-                <button
-                  onClick={handleFollow}
-                  disabled={isLoading}
-                  className={`flex items-center gap-2 px-5 py-2 rounded-md text-sm font-semibold transition-all cursor-pointer ${
-                    isFollowing
-                      ? "bg-red-50 text-red-500 border border-red-200 hover:bg-red-100"
-                      : "bg-blue-500 text-white hover:bg-blue-600 shadow-sm"
-                  }`}
-                >
-                  <Heart
-                    size={16}
-                    fill={isFollowing ? "currentColor" : "none"}
-                  />
-                  {isFollowing ? "Unfollow" : "Follow"}
-                </button>
-              </div>
-            </div>
-
-            {/* Right — Shop Details Sidebar */}
-            <div className="w-full md:w-[280px] border-t md:border-t-0 md:border-l border-gray-100 p-5 md:p-6 bg-[#fafbfc]">
-              <h3 className="text-base font-bold text-gray-800 mb-3">
-                Shop Details
-              </h3>
-
-              <div className="space-y-2.5 text-sm">
-                {/* Joined date */}
-                <p className="flex items-center gap-2 text-gray-600">
-                  <Calendar size={15} className="text-gray-400 shrink-0" />
-                  Joined At: {joinedDate}
-                </p>
-
-                {/* Website */}
-                {shop?.website && (
-                  <p className="flex items-center gap-2">
-                    <Globe size={15} className="text-gray-400 shrink-0" />
-                    <a
-                      href={shop.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline truncate"
-                    >
-                      {shop.website}
-                    </a>
-                  </p>
-                )}
-
-                {/* Social Links */}
-                <div className="pt-2">
-                  <p className="text-gray-600 text-sm mb-2">Follow Us:</p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {Object.entries(parsedSocialLinks).map(
-                      ([platform, url]) => {
-                        if (!url) return null;
-                        const config = socialIcons[platform.toLowerCase()];
-                        if (!config) {
-                          // Unknown platform — show generic link
-                          return (
-                            <a
-                              key={platform}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-8 h-8 bg-gray-500 hover:bg-gray-600 text-white rounded flex items-center justify-center transition"
-                              title={platform}
-                            >
-                              <ExternalLink size={14} />
-                            </a>
-                          );
-                        }
-                        const IconComponent = config.icon;
-                        return (
-                          <a
-                            key={platform}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`w-8 h-8 ${config.color} ${config.hoverColor} text-white rounded flex items-center justify-center transition`}
-                            title={platform}
-                          >
-                            <IconComponent />
-                          </a>
-                        );
-                      },
-                    )}
-                    {Object.keys(parsedSocialLinks).length === 0 && (
-                      <span className="text-gray-400 text-sm">
-                        No social links available
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ===== TABS ===== */}
-        <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-100">
-          {/* Tab Headers */}
+      <div className="mt-6 w-[94%] lg:w-[80%] mx-auto">
+        <div className="bg-white shadow-sm border border-gray-100">
           <div className="flex border-b border-gray-200">
             {tabs.map((tab) => (
               <button
@@ -376,9 +308,7 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
             ))}
           </div>
 
-          {/* Tab Content */}
           <div className="p-5 md:p-6">
-            {/* === Products Tab === */}
             {activeTab === "products" && (
               <div>
                 {shopProducts.length > 0 ? (
@@ -395,7 +325,6 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
               </div>
             )}
 
-            {/* === Offers Tab === */}
             {activeTab === "offers" && (
               <div>
                 {offersLoading && (
@@ -421,16 +350,14 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
                   </div>
                 )}
 
-                {!offersLoading &&
-                  (!shopOffers || shopOffers?.length === 0) && (
-                    <p className="text-center text-gray-500 py-12">
-                      No offers available yet.
-                    </p>
-                  )}
+                {!offersLoading && (!shopOffers || shopOffers?.length === 0) && (
+                  <p className="text-center text-gray-500 py-12">
+                    No offers available yet.
+                  </p>
+                )}
               </div>
             )}
 
-            {/* === Reviews Tab === */}
             {activeTab === "reviews" && (
               <div className="text-center py-12">
                 <p className="text-gray-500">No reviews available yet.</p>
@@ -440,7 +367,6 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
         </div>
       </div>
 
-      {/* Bottom spacing */}
       <div className="h-10" />
     </div>
   );

@@ -14,6 +14,7 @@ import bcrypt from "bcryptjs";
 import jwt, { JsonWebTokenError } from "jsonwebtoken";
 import { setCookie } from "../utils/cookies/setCookies";
 import Stripe from "stripe";
+import { sendBehaviorLog } from "@packages/utils/logs/behavior-log";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-04-22.dahlia",
@@ -73,8 +74,15 @@ export const verifyUser = async (
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await prisma.users.create({
+    const user = await prisma.users.create({
       data: { name, email, password: hashedPassword },
+    });
+
+    await sendBehaviorLog("userRegistration", {
+      type: "success",
+      source: "auth-service",
+      message: "User registration succeeded",
+      metadata: { userId: user.id },
     });
 
     res.status(201).json({
@@ -132,6 +140,13 @@ export const loginUser = async (
     // Store the refresh and access token in httpOnly secure cookies
     setCookie(res, "refresh_token", refreshToken);
     setCookie(res, "access_token", accessToken);
+
+    await sendBehaviorLog("userLogin", {
+      type: "success",
+      source: "auth-service",
+      message: "User login succeeded",
+      metadata: { userId: user.id },
+    });
 
     res.status(200).json({
       message: "Login successfully",
@@ -468,6 +483,13 @@ export const verifySeller = async (
       },
     });
 
+    await sendBehaviorLog("sellerRegistration", {
+      type: "success",
+      source: "auth-service",
+      message: "Seller registration succeeded",
+      metadata: { sellerId: seller.id },
+    });
+
     res.status(200).json({
       seller,
       message: "Seller registered successfully",
@@ -605,9 +627,12 @@ export const loginSeller = async (
     const seller = await prisma.sellers.findUnique({ where: { email } });
 
     if (!seller) return next(new AuthError("Invalid email or password!"));
+    if (!seller.password) {
+      return next(new AuthError("Invalid email or password!"));
+    }
 
     // Verify password
-    const isMatch = await bcrypt.compare(password, seller.password!);
+    const isMatch = await bcrypt.compare(password, seller.password);
 
     if (!isMatch) {
       return next(new AuthError("Invalid email or password!"));
@@ -635,6 +660,13 @@ export const loginSeller = async (
     // Store the refresh and access token in httpOnly secure cookies
     setCookie(res, "seller_refresh_token", refreshToken);
     setCookie(res, "seller_access_token", accessToken);
+
+    await sendBehaviorLog("sellerLogin", {
+      type: "success",
+      source: "auth-service",
+      message: "Seller login succeeded",
+      metadata: { sellerId: seller.id },
+    });
 
     res.status(200).json({
       message: "Login successfully",

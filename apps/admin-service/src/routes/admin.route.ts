@@ -9,6 +9,10 @@ import {
   getAllUsers,
   getAllSellers,
 } from "../controllers/admin.controller";
+import {
+  getLogConfig,
+  updateLogConfig,
+} from "../controllers/log-config.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isAdmin } from "@packages/middleware/authorizeRoles";
 
@@ -33,6 +37,12 @@ router.post("/add-admin", isAuthenticated, isAdmin, addAdmin);
 router.get("/get-site-config", isAuthenticated, isAdmin, getSiteConfig);
 // PATCH /admin/update-site-config
 router.patch("/update-site-config", isAuthenticated, isAdmin, updateSiteConfig);
+
+// Log config (user behavior logging settings)
+// GET   /admin/log-config
+router.get("/log-config", isAuthenticated, isAdmin, getLogConfig);
+// PATCH /admin/update-log-config
+router.patch("/update-log-config", isAuthenticated, isAdmin, updateLogConfig);
 
 // Users
 // GET /admin/get-all-users?page=1&limit=20&search=...

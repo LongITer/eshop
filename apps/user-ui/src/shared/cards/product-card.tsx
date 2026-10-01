@@ -9,6 +9,24 @@ import useUser from "../../hooks/useUser";
 import useLocationTracking from "../../hooks/useLocationTracking";
 import useDeviceTracking from "../../hooks/useDeviceTracking";
 
+const getProductImageUrl = (product: any) => {
+  const rawImages = Array.isArray(product?.images) ? product.images : [];
+
+  const firstImage = rawImages.find((img: any) => {
+    if (typeof img === "string") return Boolean(img);
+    return Boolean(img?.url);
+  });
+
+  if (typeof firstImage === "string") return firstImage;
+  if (firstImage?.url) return firstImage.url;
+  if (typeof product?.images?.[0] === "string") return product.images[0];
+  if (product?.images?.[0]?.url) return product.images[0].url;
+  if (product?.image) return product.image;
+  if (product?.thumbnail) return product.thumbnail;
+
+  return "/default-image.jpg";
+};
+
 const ProductCard = ({
   product,
   isEvent,
@@ -26,6 +44,7 @@ const ProductCard = ({
   const removeFromCart = useStore((state: any) => state.removeFromCart);
   const removeFromWishlist = useStore((state: any) => state.removeFromWishlist);
   const wishlist = useStore((state: any) => state.wishlist);
+  const productImage = getProductImageUrl(product);
   const isWishlisted = wishlist.some((item: any) => item.id === product.id);
   const cart = useStore((state: any) => state.cart);
   const isInCart = cart.some((item: any) => item.id === product.id);
@@ -76,11 +95,17 @@ const ProductCard = ({
 
       <Link href={`/product/${product?.slug}`}>
         <img
-          src={product?.images?.[0]?.url}
-          alt={product?.title}
+          src={productImage}
+          alt={product?.title || "Product image"}
           width={300}
           height={300}
-          className="w-full h-[200px] object-cover mx-auto rounded-t-md"
+          className="w-full h-[200px] object-contain mx-auto rounded-t-md"
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (target.src !== window.location.origin + "/default-image.jpg") {
+              target.src = "/default-image.jpg";
+            }
+          }}
         />
       </Link>
       <Link

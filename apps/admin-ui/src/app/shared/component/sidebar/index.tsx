@@ -22,6 +22,7 @@ import {
   PackageSearch,
   PencilRuler,
   Settings,
+  SlidersHorizontal,
   Store,
   Users,
 } from "lucide-react";
@@ -148,6 +149,17 @@ const SidebarWrapper = () => {
                   <FileClock
                     size={22}
                     color={getIconColor("/dashboard/loggers")}
+                  />
+                }
+              />
+              <SidebarItem
+                isActive={activeSidebar === "/dashboard/log-settings"}
+                title="Log Settings"
+                href="/dashboard/log-settings"
+                icon={
+                  <SlidersHorizontal
+                    size={22}
+                    color={getIconColor("/dashboard/log-settings")}
                   />
                 }
               />
