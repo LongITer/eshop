@@ -14,7 +14,7 @@ app.get("/api", (req, res) => {
   res.send({ message: "Welcome to recommendation-service!" });
 });
 
-const port = process.env.PORT || 6007;
+const port = process.env.RECOMMENDATION_PORT || 6008;
 const server = app.listen(port, () => {
   console.log(`Listening at http://localhost:${port}/api`);
 });

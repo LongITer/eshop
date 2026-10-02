@@ -79,6 +79,10 @@ const nextConfig = {
         source: '/chatting/:path*',
         destination: 'http://localhost:8080/chatting/:path*',
       },
+      {
+        source: '/chatbot/:path*',
+        destination: 'http://localhost:8080/chatbot/:path*',
+      },
     ];
   },
 

@@ -251,6 +251,47 @@ model address {
   updatedAt DateTime @updatedAt
 }
 
+// ─── PC Builder Chatbot ─────────────────────────────────────────────
+
+// Pre-configured PC build templates (admin-managed)
+model pcBuildTemplate {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String                              // e.g. "Gaming Entry", "Workstation Pro"
+  purpose     String                              // "gaming" | "office" | "design" | "streaming" | "learning"
+  budgetMin   Float                               // Minimum budget (VND)
+  budgetMax   Float                               // Maximum budget (VND)
+  components  Json                                // { cpu: "...", gpu: "...", ram: "...", ... }
+  productIds  String[] @db.ObjectId               // Links to actual products in shops
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Chatbot conversation session
+model chatbotConversation {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String?          @db.ObjectId          // null for anonymous guests
+  sessionId String                                 // UUID for anonymous users
+  status    String           @default("active")    // "active" | "closed"
+  context   Json?                                  // Stores context: purpose, budget, preferences
+  messages  chatbotMessage[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+// Individual chatbot messages
+model chatbotMessage {
+  id             String              @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId String              @db.ObjectId
+  conversation   chatbotConversation @relation(fields: [conversationId], references: [id])
+  role           String                              // "user" | "bot" | "system"
+  content        String
+  messageType    String              @default("text") // "text" | "product_card" | "config_suggestion" | "quick_reply"
+  metadata       Json?                               // Extra data (products, choices, etc.)
+  createdAt      DateTime            @default(now())
+}
+
 enum notificationType {
   NewOrder
   OrderConfirmed

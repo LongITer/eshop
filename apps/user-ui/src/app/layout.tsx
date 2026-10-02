@@ -1,8 +1,10 @@
 import Header, { Footer } from '../shared/widgets';
 import './global.css';
+import '../shared/components/chatbot/chatbot.css';
 import { Poppins, Roboto } from 'next/font/google'
 import Providers from './providers';
 import { Toaster } from 'react-hot-toast';
+import ChatbotWidget from '../shared/components/chatbot/ChatbotWidget';
 
 const roboto = Roboto({
   weight: ['100', '300', '400', '500', '600', '700', '900'],
@@ -31,6 +33,7 @@ export default function RootLayout({
           <Header />
           {children}
           <Footer />
+          <ChatbotWidget />
           <Toaster position="top-right" />
         </Providers>
       </body>

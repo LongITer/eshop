@@ -46,6 +46,9 @@
     },
     {
       "path": "./apps/recommendation-service"
+    },
+    {
+      "path": "./apps/chatbot-service"
     }
   ]
 }

@@ -1,0 +1,35 @@
+{
+  "name": "@./chatbot-service",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "targets": {
+      "serve": {
+        "executor": "@nx/js:node",
+        "defaultConfiguration": "development",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "buildTarget": "@./chatbot-service:build",
+          "runBuildTargetDependencies": false
+        },
+        "configurations": {
+          "development": {
+            "buildTarget": "@./chatbot-service:build:development"
+          },
+          "production": {
+            "buildTarget": "@./chatbot-service:build:production"
+          }
+        }
+      },
+      "test": {
+        "executor": "@nx/jest:jest",
+        "options": {
+          "jestConfig": "apps/chatbot-service/jest.config.ts",
+          "passWithNoTests": true
+        }
+      }
+    }
+  }
+}

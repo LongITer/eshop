@@ -29,6 +29,19 @@ const CartPage = () => {
   const [discountAmount, setDiscountAmount] = useState(0);
   const [discountedProductId, setDiscountedProductId] = useState("");
 
+  const getCartItemPrice = (item: any) => {
+    const price = Number(
+      item?.sale_price ?? item?.price ?? item?.regular_price ?? 0,
+    );
+    return Number.isFinite(price) ? price : 0;
+  };
+
+  const getCartItemImage = (item: any) => {
+    const image = item?.images?.[0];
+    if (typeof image === "string") return image;
+    return image?.url || item?.image || "/default-image.jpg";
+  };
+
   const couponCodeApplyHandler = async () => {
     setError("");
 
@@ -113,7 +126,8 @@ const CartPage = () => {
   };
 
   const subtotal = cart.reduce(
-    (total: number, item: any) => total + item.quantity * item.sale_price,
+    (total: number, item: any) =>
+      total + (item.quantity ?? 1) * getCartItemPrice(item),
     0,
   );
 
@@ -173,7 +187,7 @@ const CartPage = () => {
                   <tr key={item.id} className="border-b border-b-[#0000000e]">
                     <td className="flex items-center gap-4 p-4">
                       <Image
-                        src={item?.images[0]?.url}
+                        src={getCartItemImage(item)}
                         alt={item.title}
                         width={80}
                         height={80}
@@ -211,12 +225,12 @@ const CartPage = () => {
                       {item?.id === discountedProductId ? (
                         <div className="flex flex-col items-center">
                           <span className="line-through text-gray-500 text-sm">
-                            ${item.sale_price.toFixed(2)}
+                            ${getCartItemPrice(item).toFixed(2)}
                           </span>{" "}
                           <span className="text-green-600 font-semibold">
                             $
                             {(
-                              (item.sale_price *
+                              (getCartItemPrice(item) *
                                 (100 - item?.discountPercent)) /
                               100
                             ).toFixed(2)}
@@ -226,7 +240,7 @@ const CartPage = () => {
                           </span>
                         </div>
                       ) : (
-                        <span>${item?.sale_price.toFixed(2)}</span>
+                        <span>${getCartItemPrice(item).toFixed(2)}</span>
                       )}
                     </td>
                     <td>

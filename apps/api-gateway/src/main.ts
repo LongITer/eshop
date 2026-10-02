@@ -102,6 +102,14 @@ app.use(
   }),
 );
 app.use(
+  "/chatbot",
+  proxy("http://localhost:6007", {
+    ...proxyOptions,
+    proxyReqPathResolver: (req) =>
+      req.originalUrl.replace(/^\/chatbot/, ""),
+  }),
+);
+app.use(
   "/chatting",
   proxy("http://localhost:6006", {
     ...proxyOptions,
