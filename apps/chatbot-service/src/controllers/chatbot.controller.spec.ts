@@ -5,6 +5,7 @@ import {
   findMatchingProducts,
   findBuildTemplates,
   getTemplateProducts,
+  findShopProductsForAI,
 } from "../services/product-matcher.service";
 import { getAIResponse } from "../services/ai.service";
 
@@ -25,6 +26,7 @@ jest.mock("../services/product-matcher.service", () => ({
   findBuildTemplates: jest.fn(),
   getTemplateProducts: jest.fn(),
   findMatchingProducts: jest.fn(),
+  findShopProductsForAI: jest.fn(),
 }));
 
 jest.mock("../services/ai.service", () => ({
@@ -42,6 +44,9 @@ describe("chat controller alternative configuration", () => {
   const findProductsMock = findMatchingProducts as unknown as {
     mockResolvedValue: (value: any) => void;
   };
+  const shopProductsMock = findShopProductsForAI as unknown as {
+    mockResolvedValue: (value: any) => void;
+  };
   const aiResponseMock = getAIResponse as unknown as {
     mockResolvedValue: (value: any) => void;
   };
@@ -52,6 +57,7 @@ describe("chat controller alternative configuration", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    shopProductsMock.mockResolvedValue([]);
     conversationContext = {
       step: "follow_up",
       purpose: "learning",
@@ -201,5 +207,69 @@ describe("chat controller alternative configuration", () => {
       []
     );
     expect(responseBody.message.content).toContain("AI response for test");
+  });
+
+  it("uses only the AI response when the rule engine cannot classify the request", async () => {
+    conversationContext = { step: "ask_purpose" };
+    database.chatbotConversation.findUnique.mockResolvedValue({
+      id: "conversation-1",
+      sessionId,
+      userId: null,
+      context: conversationContext,
+      messages: [],
+    });
+    aiResponseMock.mockResolvedValue({
+      content: "Có, CPU Ryzen 5 7600 và mainboard B650 đều dùng socket AM5.",
+    });
+
+    await sendMessage(
+      "Tôi có CPU AMD Ryzen 5 7600 và main ASUS PRIME B650M-A WIFI. Hai linh kiện này có lắp chung được không?"
+    );
+
+    expect(aiResponseMock).toHaveBeenCalledWith(
+      "Tôi có CPU AMD Ryzen 5 7600 và main ASUS PRIME B650M-A WIFI. Hai linh kiện này có lắp chung được không?",
+      [],
+      []
+    );
+    expect(responseBody.message.content).toBe(
+      "Có, CPU Ryzen 5 7600 và mainboard B650 đều dùng socket AM5."
+    );
+    expect(responseBody.message.messageType).toBe("text");
+    expect(responseBody.message.metadata).toBeNull();
+  });
+
+  it("provides in-stock CPU products to AI for shop ranking questions", async () => {
+    conversationContext = { step: "ask_budget", purpose: "gaming" };
+    database.chatbotConversation.findUnique.mockResolvedValue({
+      id: "conversation-1",
+      sessionId,
+      userId: null,
+      context: conversationContext,
+      messages: [],
+    });
+    const shopProducts = [
+      {
+        id: "cpu-1",
+        title: "AMD Ryzen 7 Example",
+        sale_price: 9000000,
+        stock: 4,
+      },
+    ];
+    shopProductsMock.mockResolvedValue(shopProducts);
+    aiResponseMock.mockResolvedValue({ content: "CPU mạnh nhất là AMD Ryzen 7 Example." });
+
+    await sendMessage("CPU nào của shop mạnh nhất cho gaming");
+
+    expect(shopProductsMock).toHaveBeenCalledWith(
+      "CPU nào của shop mạnh nhất cho gaming"
+    );
+    expect(aiResponseMock).toHaveBeenCalledWith(
+      "CPU nào của shop mạnh nhất cho gaming",
+      [],
+      shopProducts
+    );
+    expect(responseBody.message.content).toBe(
+      "CPU mạnh nhất là AMD Ryzen 7 Example."
+    );
   });
 });

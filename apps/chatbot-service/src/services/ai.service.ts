@@ -30,6 +30,7 @@ const SYSTEM_PROMPT = `Bạn là chuyên gia tư vấn build PC cho cửa hàng 
 ## Quy tắc
 - Luôn trả lời bằng tiếng Việt, thân thiện và chuyên nghiệp
 - Nếu có sản phẩm trong cửa hàng, ưu tiên đề xuất sản phẩm đó
+- Khi hỏi sản phẩm của cửa hàng, chỉ xác nhận hoặc đề xuất sản phẩm có trong danh sách được cung cấp; nếu danh sách trống, hãy nói rõ chưa tìm thấy sản phẩm phù hợp
 - Giải thích lý do chọn từng linh kiện ngắn gọn
 - Cảnh báo nếu linh kiện không tương thích (ví dụ: socket CPU ≠ socket mainboard)
 - Nếu ngân sách hạn chế, đề xuất linh kiện tốt nhất trong khả năng
@@ -37,6 +38,8 @@ const SYSTEM_PROMPT = `Bạn là chuyên gia tư vấn build PC cho cửa hàng 
 - Trả lời ngắn gọn, tối đa 200 từ
 - Sử dụng emoji phù hợp để tăng tính thân thiện
 - Format bằng Markdown khi cần (bold, list, headers)`;
+
+const GEMINI_MODEL = "gemini-3.8-flash";
 
 // ─── Gemini Integration ─────────────────────────────────────────────
 
@@ -78,47 +81,33 @@ export async function getAIResponse(
         );
     }
 
-    // Build conversation history for Gemini
-    const contents = conversationHistory
+    const history = conversationHistory
       .filter((msg) => msg.role !== "system")
-      .map((msg) => ({
-        role: msg.role === "bot" ? "model" : "user",
-        parts: [{ text: msg.content }],
-      }));
+      .map((msg) => `${msg.role === "bot" ? "Trợ lý" : "Người dùng"}: ${msg.content}`)
+      .join("\n");
+    const input = history
+      ? `${history}\nNgười dùng: ${userMessage}`
+      : userMessage;
 
-    // Add current user message
-    contents.push({
-      role: "user",
-      parts: [{ text: userMessage }],
-    });
-
-    // Call Gemini API
+    // Interactions API stores requests by default; this stateless call opts out.
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      "https://generativelanguage.googleapis.com/v1beta/interactions",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
         body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: SYSTEM_PROMPT + productContext }],
-          },
-          contents,
-          generationConfig: {
+          model: GEMINI_MODEL,
+          input,
+          system_instruction: SYSTEM_PROMPT + productContext,
+          generation_config: {
             temperature: 0.7,
-            topP: 0.9,
-            topK: 40,
-            maxOutputTokens: 1024,
+            top_p: 0.9,
+            max_output_tokens: 1024,
           },
-          safetySettings: [
-            {
-              category: "HARM_CATEGORY_HARASSMENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            },
-            {
-              category: "HARM_CATEGORY_HATE_SPEECH",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE",
-            },
-          ],
+          store: false,
         }),
       }
     );
@@ -134,8 +123,14 @@ export async function getAIResponse(
 
     const data = await response.json();
 
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = Array.isArray(data?.steps)
+      ? data.steps
+          .filter((step: any) => step.type === "model_output")
+          .flatMap((step: any) => step.content || [])
+          .filter((content: any) => content.type === "text")
+          .map((content: any) => content.text)
+          .join("")
+      : "";
 
     if (!text) {
       return {
@@ -161,6 +156,13 @@ export async function getAIResponse(
  */
 function getFallbackResponse(message: string): string {
   const lowerMsg = message.toLowerCase();
+
+  if (/tương\s*thích|compatible|socket/.test(lowerMsg)) {
+    return (
+      "Gemini hiện không khả dụng nên mình chưa thể xác minh độ tương thích của các linh kiện bạn nêu. " +
+      "Vui lòng thử lại sau."
+    );
+  }
 
   // Common questions with pre-built answers
   if (/cpu|bộ\s*xử\s*lý|vi\s*xử\s*lý/.test(lowerMsg)) {
@@ -192,17 +194,6 @@ function getFallbackResponse(message: string): string {
       "• **Đồ họa/Render:** 32GB DDR4/DDR5\n" +
       "• **Workstation:** 64GB+ DDR5\n\n" +
       "Lưu ý: Luôn dùng 2 thanh RAM (dual channel) để tối ưu hiệu năng!"
-    );
-  }
-
-  if (/tương\s*thích|compatible|socket/.test(lowerMsg)) {
-    return (
-      "🔧 **Kiểm tra tương thích:**\n\n" +
-      "• CPU Intel Gen 12/13/14 → Socket LGA 1700 → Mainboard B660/B760/Z690/Z790\n" +
-      "• CPU AMD Ryzen 5000 → Socket AM4 → Mainboard B550/X570\n" +
-      "• CPU AMD Ryzen 7000 → Socket AM5 → Mainboard B650/X670\n" +
-      "• DDR4 ≠ DDR5 — kiểm tra mainboard hỗ trợ loại RAM nào\n\n" +
-      "Hãy cho tôi biết CPU bạn đang chọn, tôi sẽ gợi ý mainboard phù hợp!"
     );
   }
 

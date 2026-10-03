@@ -34,6 +34,17 @@ describe("chatbot rule engine conversation flow", () => {
     expect(response.newContext.purpose).toBe("learning");
   });
 
+  it("routes shop CPU ranking questions to AI even while waiting for a budget", () => {
+    const response = processMessage(
+      "CPU nào của shop mạnh nhất cho gaming",
+      { step: "ask_budget", purpose: "gaming" }
+    );
+
+    expect(response.needsAI).toBe(true);
+    expect(response.metadata?.action).toBe("shop_product_query");
+    expect(response.newContext.step).toBe("free_chat");
+  });
+
   it("parses a typed budget range", () => {
     const context: ConversationContext = {
       step: "ask_budget",
@@ -98,14 +109,14 @@ describe("chatbot rule engine conversation flow", () => {
     expect(response.newContext.purpose).toBeUndefined();
   });
 
-  it("routes component changes to AI without dropping context", () => {
+  it("asks which component to change before routing the follow-up to AI", () => {
     const response = processMessage("Thay đổi linh kiện", {
       step: "follow_up",
       purpose: "learning",
       budgetTier: "high",
     });
 
-    expect(response.needsAI).toBe(true);
+    expect(response.needsAI).toBe(false);
     expect(response.newContext).toMatchObject({
       step: "free_chat",
       purpose: "learning",

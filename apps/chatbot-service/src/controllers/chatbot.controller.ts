@@ -12,6 +12,7 @@ import {
   findMatchingProducts,
   findBuildTemplates,
   getTemplateProducts,
+  findShopProductsForAI,
 } from "../services/product-matcher.service";
 import crypto from "crypto";
 
@@ -110,7 +111,9 @@ export const chat = async (req: Request, res: Response, next: NextFunction) => {
 
       // Find relevant products for AI context
       let products: any[] = [];
-      if (
+      if (botResponse.metadata?.action === "shop_product_query") {
+        products = await findShopProductsForAI(message.trim());
+      } else if (
         botResponse.newContext.budgetMax &&
         botResponse.newContext.purpose
       ) {
@@ -128,13 +131,13 @@ export const chat = async (req: Request, res: Response, next: NextFunction) => {
         products
       );
 
-      // If AI returned content, use it (may combine with rule engine response)
+      // AI owns the response for deferred requests; do not mix in rule prompts.
       if (aiResult.content) {
         botResponse = {
           ...botResponse,
-          content: botResponse.content
-            ? botResponse.content + "\n\n" + aiResult.content
-            : aiResult.content,
+          content: aiResult.content,
+          messageType: "text",
+          metadata: undefined,
         };
       }
     }

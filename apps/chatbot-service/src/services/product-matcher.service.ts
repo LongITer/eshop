@@ -30,6 +30,80 @@ export interface ProductSearchContext {
   preferences: string[];
 }
 
+const PRODUCT_SEARCH_TERMS: Record<string, string[]> = {
+  cpu: ["cpu", "processor", "bộ xử lý", "ryzen", "intel core"],
+  gpu: ["gpu", "vga", "card đồ họa", "graphics"],
+  ram: ["ram", "memory", "bộ nhớ"],
+  storage: ["ssd", "hdd", "ổ cứng", "storage"],
+  motherboard: ["mainboard", "motherboard", "bo mạch chủ"],
+};
+
+/** Find in-stock shop products for a component-specific AI question. */
+export async function findShopProductsForAI(
+  userMessage: string
+): Promise<MatchedProduct[]> {
+  const lowerMessage = userMessage.toLowerCase();
+  const component = Object.keys(PRODUCT_SEARCH_TERMS).find((key) => {
+    const pattern =
+      key === "cpu"
+        ? /cpu|processor|bộ\s*xử\s*lý/
+        : key === "gpu"
+          ? /gpu|vga|card\s*đồ\s*họa/
+          : key === "ram"
+            ? /ram|memory|bộ\s*nhớ/
+            : key === "storage"
+              ? /ssd|hdd|ổ\s*cứng|storage/
+              : /mainboard|motherboard|bo\s*mạch\s*chủ/;
+    return pattern.test(lowerMessage);
+  });
+
+  if (!component) return [];
+
+  try {
+    const terms = PRODUCT_SEARCH_TERMS[component];
+    const products = await prisma.products.findMany({
+      where: {
+        AND: [
+          {
+            OR: terms.flatMap((term) => [
+              { category: { contains: term, mode: "insensitive" } },
+              { subCategory: { contains: term, mode: "insensitive" } },
+              { title: { contains: term, mode: "insensitive" } },
+              { tags: { hasSome: [term, term.toUpperCase()] } },
+            ]),
+          },
+          { stock: { gt: 0 }, status: "Active", isDeleted: false },
+        ],
+      },
+      include: {
+        images: { take: 1 },
+        shop: { select: { name: true } },
+      },
+      orderBy: [{ sale_price: "desc" }, { rating: "desc" }],
+      take: 100,
+    });
+
+    return products.map((product) => ({
+      id: product.id,
+      title: product.title,
+      slug: product.slug,
+      category: product.category,
+      subCategory: product.subCategory,
+      sale_price: product.sale_price,
+      regular_price: product.regular_price,
+      stock: product.stock,
+      rating: product.rating,
+      image: product.images[0]?.url || null,
+      shopName: product.shop.name,
+      shopId: product.shopId,
+      brand: product.brand,
+    }));
+  } catch (error) {
+    console.error("Error finding shop products for AI:", error);
+    return [];
+  }
+}
+
 /**
  * Find products that match the PC build context.
  * Searches for PC component products within the budget range.

@@ -76,10 +76,22 @@ export function processMessage(
 
   const trimmedMsg = userMessage.trim();
 
-  // If no context or greeting detected, start fresh
-  if (!context || isGreeting(trimmedMsg)) {
+  if (isGreeting(trimmedMsg)) {
     return handleGreeting(trimmedMsg, currentContext);
   }
+
+  if (isShopProductQuestion(trimmedMsg)) {
+    return {
+      content: "",
+      messageType: "text",
+      metadata: { action: "shop_product_query" },
+      newContext: { ...currentContext, step: "free_chat" },
+      needsAI: true,
+    };
+  }
+
+  // If no context, start the guided flow.
+  if (!context) return handleGreeting(trimmedMsg, currentContext);
 
   switch (currentContext.step) {
     case "greeting":
@@ -194,6 +206,17 @@ function handlePurpose(
       step: "ask_budget",
     },
   };
+}
+
+function isShopProductQuestion(message: string): boolean {
+  return (
+    /cpu|processor|bộ\s*xử\s*lý|gpu|vga|card\s*đồ\s*họa|ram|ssd|hdd|mainboard/.test(
+      message.toLowerCase()
+    ) &&
+    /nào|mạnh\s*nhất|tốt\s*nhất|của\s*shop|cửa\s*hàng|đang\s*bán|giá/.test(
+      message.toLowerCase()
+    )
+  );
 }
 
 function handleBudget(
@@ -373,7 +396,7 @@ function handleFollowUp(
         "Bạn muốn thay đổi linh kiện nào? Hãy cho tôi biết cụ thể (ví dụ: 'đổi GPU mạnh hơn', 'thêm RAM').",
       messageType: "text",
       newContext: { ...context, step: "free_chat" },
-      needsAI: true,
+      needsAI: false,
     };
   }
 
