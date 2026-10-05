@@ -46,7 +46,63 @@ const SYSTEM_PROMPT = `Bạn là chuyên gia tư vấn build PC cho cửa hàng 
 - Sử dụng emoji phù hợp để tăng tính thân thiện
 - Format bằng Markdown khi cần (bold, list, headers)`;
 
-const GEMINI_MODEL = "gemini-3.8-flash";
+const GEMINI_MODELS = ["gemini-3.8-flash", "gemini-3.5-flash-lite"] as const;
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/interactions";
+
+// Provider cooldowns prevent every chat turn from retrying an exhausted model.
+const modelCooldowns = new Map<string, number>();
+let cooldownApiKey: string | null = null;
+
+function retryDelay(response: Response, body: string): number {
+  const retryAfter = response.headers.get("retry-after");
+  if (retryAfter) {
+    const seconds = Number(retryAfter);
+    const delay = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(retryAfter) - Date.now();
+    if (Number.isFinite(delay) && delay > 0) return Math.min(delay, 86400000);
+  }
+  const duration = body.match(/retry in\s+(?:(\d+)h)?(?:(\d+)m)?(?:(\d+(?:\.\d+)?)s)?/i);
+  if (duration) {
+    const delay = (Number(duration[1] || 0) * 3600 + Number(duration[2] || 0) * 60 + Number(duration[3] || 0)) * 1000;
+    if (delay > 0) return Math.min(delay, 86400000);
+  }
+  return /per day|daily|per_day/i.test(body) ? 86400000 : 60000;
+}
+
+async function requestGemini(url: string, init: RequestInit): Promise<Response> {
+  const apiKey = new Headers(init.headers).get("x-goog-api-key");
+  if (apiKey !== cooldownApiKey) {
+    modelCooldowns.clear();
+    cooldownApiKey = apiKey;
+  }
+  const requestBody = JSON.parse(String(init.body || "{}"));
+  let lastResponse: Response | undefined;
+  let lastError: unknown;
+
+  for (const model of GEMINI_MODELS) {
+    if ((modelCooldowns.get(model) || 0) > Date.now()) continue;
+    try {
+      const response = await fetch(url, {
+        ...init,
+        body: JSON.stringify({ ...requestBody, model }),
+        signal: AbortSignal.timeout(20000),
+      });
+      lastResponse = response;
+      if (response.ok) return response;
+      // Invalid credentials or malformed requests cannot be fixed by another model.
+      if (![404, 429, 500, 502, 503, 504].includes(response.status)) return response;
+      const detail = await response.clone().text();
+      modelCooldowns.set(model, Date.now() + (response.status === 429 ? retryDelay(response, detail) : 30000));
+      console.warn("Gemini model unavailable; trying fallback", { model, status: response.status });
+    } catch (error) {
+      // A timeout/network failure must not bypass the fallback model.
+      lastError = error;
+      modelCooldowns.set(model, Date.now() + 30000);
+      console.warn("Gemini request failed; trying fallback", { model, reason: error instanceof Error ? error.name : "NetworkError" });
+    }
+  }
+  if (lastResponse) return lastResponse;
+  throw lastError || new Error("All Gemini models are temporarily unavailable");
+}
 
 // ─── Gemini Integration ─────────────────────────────────────────────
 
@@ -90,7 +146,7 @@ export async function getAIResponse(
     }
 
     const history = conversationHistory
-      .filter((msg) => msg.role !== "system")
+      .filter((msg) => msg.role !== "system" && !(msg.role === "bot" && [getFallbackResponse("", "vi"), getFallbackResponse("", "en")].includes(msg.content.trim())))
       .map((msg) => `${msg.role === "bot" ? "Trợ lý" : "Người dùng"}: ${msg.content}`)
       .join("\n");
     const input = history
@@ -98,8 +154,8 @@ export async function getAIResponse(
       : userMessage;
 
     // Interactions API stores requests by default; this stateless call opts out.
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/interactions",
+    const response = await requestGemini(
+      GEMINI_URL,
       {
         method: "POST",
         headers: {
@@ -107,7 +163,7 @@ export async function getAIResponse(
           "x-goog-api-key": apiKey,
         },
         body: JSON.stringify({
-          model: GEMINI_MODEL,
+          model: GEMINI_MODELS[0],
           input,
           system_instruction:
             `${SYSTEM_PROMPT}\n\nTrả lời bằng ${language === "en" ? "tiếng Anh" : "tiếng Việt"}.` +
@@ -171,8 +227,8 @@ export async function localizeChatResponse(
 
   const options = Array.isArray(metadata?.options) ? metadata.options : [];
   try {
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/interactions",
+    const response = await requestGemini(
+      GEMINI_URL,
       {
         method: "POST",
         headers: {
@@ -180,7 +236,7 @@ export async function localizeChatResponse(
           "x-goog-api-key": apiKey,
         },
         body: JSON.stringify({
-          model: GEMINI_MODEL,
+          model: GEMINI_MODELS[0],
           input: JSON.stringify({ content, options }),
           system_instruction:
             "Translate the content and option labels/descriptions into English. " +
@@ -233,60 +289,8 @@ export async function localizeChatResponse(
 /**
  * Provides a helpful fallback when AI is unavailable.
  */
-function getFallbackResponse(message: string, language: ChatLanguage): string {
-  if (language === "en") {
-    return "Sorry, the AI assistant is temporarily unavailable. Please try again later.";
-  }
-
-  const lowerMsg = message.toLowerCase();
-
-  if (/tương\s*thích|compatible|socket/.test(lowerMsg)) {
-    return (
-      "Gemini hiện không khả dụng nên mình chưa thể xác minh độ tương thích của các linh kiện bạn nêu. " +
-      "Vui lòng thử lại sau."
-    );
-  }
-
-  // Common questions with pre-built answers
-  if (/cpu|bộ\s*xử\s*lý|vi\s*xử\s*lý/.test(lowerMsg)) {
-    return (
-      "💡 **Về CPU:**\n\n" +
-      "• **Gaming:** Intel Core i5-12400F hoặc AMD Ryzen 5 5600 là lựa chọn giá/hiệu năng tốt nhất\n" +
-      "• **Đồ họa/Render:** Intel Core i7-13700 hoặc AMD Ryzen 7 7700X\n" +
-      "• **Văn phòng:** Intel Core i3-12100 hoặc AMD Ryzen 3 4100\n\n" +
-      "Bạn muốn biết thêm chi tiết về CPU nào?"
-    );
-  }
-
-  if (/gpu|vga|card\s*(đồ\s*họa|màn\s*hình)/.test(lowerMsg)) {
-    return (
-      "🎮 **Về GPU/Card đồ họa:**\n\n" +
-      "• **Entry (5-8tr):** GTX 1650, RX 6500 XT\n" +
-      "• **Mid (8-15tr):** RTX 3060, RTX 4060, RX 6600 XT\n" +
-      "• **High (15-25tr):** RTX 4060 Ti, RTX 4070, RX 7700 XT\n" +
-      "• **Ultra (25tr+):** RTX 4070 Ti Super, RTX 4080, RX 7900 XT\n\n" +
-      "Bạn cần card đồ họa cho mục đích gì?"
-    );
-  }
-
-  if (/ram|bộ\s*nhớ/.test(lowerMsg)) {
-    return (
-      "🧠 **Về RAM:**\n\n" +
-      "• **Văn phòng:** 8GB DDR4 3200MHz là đủ\n" +
-      "• **Gaming:** 16GB DDR4 3600MHz (2x8GB dual channel)\n" +
-      "• **Đồ họa/Render:** 32GB DDR4/DDR5\n" +
-      "• **Workstation:** 64GB+ DDR5\n\n" +
-      "Lưu ý: Luôn dùng 2 thanh RAM (dual channel) để tối ưu hiệu năng!"
-    );
-  }
-
-  // Generic fallback
-  return (
-    "Cảm ơn câu hỏi của bạn! 🤔\n\n" +
-    "Hiện tại tôi chưa thể trả lời chi tiết câu hỏi này. Bạn có thể:\n\n" +
-    "1. **Bắt đầu lại** quy trình tư vấn build PC\n" +
-    "2. Hỏi về **CPU, GPU, RAM, hay tương thích linh kiện**\n" +
-    "3. Cho tôi biết **mục đích sử dụng** và **ngân sách** để được tư vấn cấu hình\n\n" +
-    'Gõ "bắt đầu" để bắt đầu tư vấn từ đầu!'
-  );
+function getFallbackResponse(_message: string, language: ChatLanguage): string {
+  return language === "en"
+    ? "Sorry, the AI assistant is temporarily unavailable. Please try again shortly."
+    : "Xin lỗi, AI hiện đang bận hoặc không khả dụng. Vui lòng thử lại sau ít phút.";
 }

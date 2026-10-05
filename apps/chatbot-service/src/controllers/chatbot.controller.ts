@@ -6,18 +6,7 @@
 import { NextFunction, Request, Response } from "express";
 import type { Prisma } from "@prisma/client";
 import prisma from "@packages/libs/prisma";
-import { processMessage, ConversationContext } from "../services/rule-engine.service";
-import {
-  ChatLanguage,
-  getAIResponse,
-  localizeChatResponse,
-} from "../services/ai.service";
-import {
-  findMatchingProducts,
-  findBuildTemplates,
-  getTemplateProducts,
-  findShopProductsForAI,
-} from "../services/product-matcher.service";
+import { ChatLanguage, getAIResponse } from "../services/ai.service";
 import crypto from "crypto";
 
 const ownsConversation = (
@@ -33,6 +22,31 @@ const toPrismaJson = (
   value: Record<string, unknown> | undefined
 ): Prisma.InputJsonValue | undefined =>
   value as unknown as Prisma.InputJsonValue | undefined;
+
+const getProductContext = async () => {
+  const products = await prisma.products.findMany({
+    where: { stock: { gt: 0 }, status: "Active", isDeleted: false },
+    include: { images: { take: 1 }, shop: { select: { name: true } } },
+    orderBy: [{ rating: "desc" }, { totalSales: "desc" }],
+    take: 100,
+  });
+
+  return products.map((product) => ({
+    id: product.id,
+    title: product.title,
+    slug: product.slug,
+    category: product.category,
+    subCategory: product.subCategory,
+    sale_price: product.sale_price,
+    regular_price: product.regular_price,
+    stock: product.stock,
+    rating: product.rating,
+    image: product.images[0]?.url || null,
+    shopName: product.shop.name,
+    shopId: product.shopId,
+    brand: product.brand,
+  }));
+};
 
 // ─── Chat Endpoint ──────────────────────────────────────────────────
 
@@ -100,241 +114,28 @@ export const chat = async (req: Request, res: Response, next: NextFunction) => {
       },
     });
 
-    // Get current context from conversation
-    const currentContext =
-      (conversation.context as ConversationContext | null) || null;
-
-    // Process through rule engine first
-    let botResponse = processMessage(message.trim(), currentContext);
-
-    // If rule engine defers to AI, call AI service
-    if (botResponse.needsAI) {
-      const chatHistory = conversation.messages.slice().reverse().map((m) => ({
-        role: m.role as "user" | "bot" | "system",
-        content: m.content,
-      }));
-
-      // Find relevant products for AI context
-      let products: any[] = [];
-      if (botResponse.metadata?.action === "shop_product_query") {
-        products = await findShopProductsForAI(message.trim());
-      } else if (
-        botResponse.newContext.budgetMax &&
-        botResponse.newContext.purpose
-      ) {
-        products = await findMatchingProducts({
-          purpose: botResponse.newContext.purpose,
-          budgetMin: botResponse.newContext.budgetMin || 0,
-          budgetMax: botResponse.newContext.budgetMax,
-          preferences: botResponse.newContext.preferences || [],
-        });
-      }
-
-      const aiResult = await getAIResponse(
-        message.trim(),
-        chatHistory,
-        products,
-        language
-      );
-
-      // AI owns the response for deferred requests; do not mix in rule prompts.
-      if (aiResult.content) {
-        botResponse = {
-          ...botResponse,
-          content: aiResult.content,
-          messageType: "text",
-          metadata: undefined,
-        };
-      }
+    const chatHistory = conversation.messages.slice().reverse().map((m) => ({
+      role: m.role as "user" | "bot" | "system",
+      content: m.content,
+    }));
+    const products = await getProductContext();
+    const aiResult = await getAIResponse(message.trim(), chatHistory, products, language);
+    if (aiResult.error) {
+      console.warn("Chatbot response unavailable:", aiResult.error);
+      // Return a transient error message without adding it to AI conversation history.
+      return res.status(200).json({
+        conversationId: conversation.id,
+        message: {
+          id: crypto.randomUUID(), role: "bot", content: aiResult.content,
+          messageType: "text", metadata: { aiUnavailable: true }, createdAt: new Date().toISOString(),
+        },
+      });
     }
-
-    if (!botResponse.needsAI) {
-      const localized = await localizeChatResponse(
-        botResponse.content,
-        botResponse.metadata,
-        language
-      );
-      botResponse.content = localized.content;
-      botResponse.metadata = localized.metadata;
-    }
-
-    // If action is search_products, find matching products
-    let matchedProducts: any[] = [];
-    if (botResponse.messageType === "config_suggestion") {
-      const suggestionContext = botResponse.metadata?.context as
-        | ConversationContext
-        | undefined;
-
-      if (suggestionContext?.purpose && suggestionContext.budgetMax) {
-        const templates = await findBuildTemplates(
-          suggestionContext.purpose,
-          suggestionContext.budgetMin || 0,
-          suggestionContext.budgetMax
-        );
-        const targetBudget =
-          ((suggestionContext.budgetMin || 0) + suggestionContext.budgetMax) / 2;
-        const rankedTemplates = templates.sort(
-          (a, b) =>
-            Math.abs((a.budgetMin + a.budgetMax) / 2 - targetBudget) -
-            Math.abs((b.budgetMin + b.budgetMax) / 2 - targetBudget)
-        );
-        let selectedTemplate = null;
-        for (const template of rankedTemplates) {
-          const templateProducts = await getTemplateProducts(template.productIds);
-          if (templateProducts.length > 0) {
-            selectedTemplate = template;
-            matchedProducts = templateProducts;
-            break;
-          }
-        }
-
-        if (selectedTemplate) {
-          const components = selectedTemplate.components as Record<string, unknown>;
-          const componentsText = Object.entries(components)
-            .map(([name, value]) => `• **${name.toUpperCase()}:** ${String(value)}`)
-            .join("\n");
-          botResponse.content =
-            `🖥️ **Cấu hình đề xuất: ${selectedTemplate.name}**\n\n` +
-            `Mục đích: ${suggestionContext.purposeLabel || suggestionContext.purpose}\n` +
-            `Ngân sách: ${selectedTemplate.budgetMin.toLocaleString("vi-VN")} - ${selectedTemplate.budgetMax.toLocaleString("vi-VN")}đ\n\n` +
-            `${componentsText}\n\n` +
-            `${selectedTemplate.description || "Sản phẩm thực tế có trong cửa hàng được liệt kê bên dưới."}`;
-          botResponse.metadata = {
-            ...botResponse.metadata,
-            build: {
-              name: selectedTemplate.name,
-              components,
-              estimatedPrice: `${selectedTemplate.budgetMin.toLocaleString("vi-VN")} - ${selectedTemplate.budgetMax.toLocaleString("vi-VN")}đ`,
-            },
-            templateId: selectedTemplate.id,
-          };
-          botResponse.newContext = {
-            ...botResponse.newContext,
-            suggestedBuildName: selectedTemplate.name,
-            suggestedTemplateId: selectedTemplate.id,
-          };
-        } else {
-          matchedProducts = await findMatchingProducts({
-            purpose: suggestionContext.purpose,
-            budgetMin: suggestionContext.budgetMin || 0,
-            budgetMax: suggestionContext.budgetMax,
-            preferences: suggestionContext.preferences || [],
-          });
-        }
-
-        if (matchedProducts.length > 0) {
-          botResponse.metadata = {
-            ...botResponse.metadata,
-            products: matchedProducts.slice(0, 6),
-          };
-        }
-      }
-    }
-
-    if (botResponse.metadata?.action === "alternative_config") {
-      const alternativeContext = botResponse.metadata.context as
-        | ConversationContext
-        | undefined;
-
-      if (alternativeContext?.purpose && alternativeContext.budgetMax) {
-        const templates = await findBuildTemplates(
-          alternativeContext.purpose,
-          alternativeContext.budgetMin || 0,
-          alternativeContext.budgetMax
-        );
-        const targetBudget =
-          ((alternativeContext.budgetMin || 0) + alternativeContext.budgetMax) / 2;
-        const candidates = templates
-          .filter(
-            (template) =>
-              template.id !== alternativeContext.suggestedTemplateId &&
-              template.name !== alternativeContext.suggestedBuildName
-          )
-          .sort(
-            (a, b) =>
-              Math.abs((a.budgetMin + a.budgetMax) / 2 - targetBudget) -
-              Math.abs((b.budgetMin + b.budgetMax) / 2 - targetBudget)
-          );
-
-        let alternativeTemplate = null;
-        for (const template of candidates) {
-          const templateProducts = await getTemplateProducts(template.productIds);
-          if (templateProducts.length > 0) {
-            alternativeTemplate = template;
-            matchedProducts = templateProducts.slice(0, 6);
-            break;
-          }
-        }
-
-        if (alternativeTemplate) {
-          const components = alternativeTemplate.components as Record<string, unknown>;
-          const componentsText = Object.entries(components)
-            .map(([name, value]) => `• **${name.toUpperCase()}:** ${String(value)}`)
-            .join("\n");
-          botResponse.content =
-            `🖥️ **Cấu hình thay thế: ${alternativeTemplate.name}**\n\n` +
-            `Mục đích: ${alternativeContext.purposeLabel || alternativeContext.purpose}\n` +
-            `Ngân sách: ${alternativeTemplate.budgetMin.toLocaleString("vi-VN")} - ${alternativeTemplate.budgetMax.toLocaleString("vi-VN")}đ\n\n` +
-            `${componentsText}\n\n` +
-            `${alternativeTemplate.description || "Sản phẩm thực tế có trong cửa hàng được liệt kê bên dưới."}`;
-          botResponse.messageType = "config_suggestion";
-          botResponse.metadata = {
-            build: {
-              name: alternativeTemplate.name,
-              components,
-              estimatedPrice: `${alternativeTemplate.budgetMin.toLocaleString("vi-VN")} - ${alternativeTemplate.budgetMax.toLocaleString("vi-VN")}đ`,
-            },
-            context: alternativeContext,
-            templateId: alternativeTemplate.id,
-            products: matchedProducts,
-          };
-          botResponse.newContext = {
-            ...botResponse.newContext,
-            suggestedBuildName: alternativeTemplate.name,
-            suggestedTemplateId: alternativeTemplate.id,
-          };
-        } else {
-          botResponse.content =
-            `Trong ngân sách ${alternativeContext.budgetLabel || "đã chọn"}, ` +
-            `hiện chưa có cấu hình mẫu khác cho nhu cầu ${alternativeContext.purposeLabel || alternativeContext.purpose}. ` +
-            "Mình vẫn giữ nguyên mục đích và ngân sách của bạn. Bạn có thể yêu cầu đổi linh kiện cụ thể, ví dụ: “thêm RAM” hoặc “đổi GPU mạnh hơn”.";
-          botResponse.messageType = "text";
-          botResponse.metadata = undefined;
-          botResponse.newContext = {
-            ...botResponse.newContext,
-            step: "follow_up",
-          };
-        }
-      }
-    }
-
-    if (botResponse.metadata?.action === "search_products") {
-      const searchCtx = botResponse.metadata.context as any;
-      if (searchCtx) {
-        matchedProducts = await findMatchingProducts({
-          purpose: searchCtx.purpose || "gaming",
-          budgetMin: searchCtx.budgetMin || 0,
-          budgetMax: searchCtx.budgetMax || 50000000,
-          preferences: searchCtx.preferences || [],
-        });
-
-        if (matchedProducts.length > 0) {
-          botResponse.content =
-            `🔍 Tôi tìm thấy **${matchedProducts.length} sản phẩm** phù hợp trong cửa hàng:\n\n` +
-            "Dưới đây là những linh kiện được đánh giá cao nhất:";
-          botResponse.messageType = "product_card";
-          botResponse.metadata = {
-            ...botResponse.metadata,
-            products: matchedProducts.slice(0, 6),
-          };
-        } else {
-          botResponse.content =
-            "Hiện tại chưa có sản phẩm linh kiện PC phù hợp trong cửa hàng. " +
-            "Bạn có thể duyệt qua tất cả sản phẩm tại trang **Products** nhé!\n\n" +
-            'Gõ "bắt đầu" để tư vấn lại cấu hình.';
-        }
-      }
-    }
+    const botResponse = {
+      content: aiResult.content,
+      messageType: "text" as const,
+      metadata: undefined,
+    };
 
     // Save bot response message
     const botMessage = await prisma.chatbotMessage.create({
@@ -344,14 +145,6 @@ export const chat = async (req: Request, res: Response, next: NextFunction) => {
         content: botResponse.content,
         messageType: botResponse.messageType,
         metadata: toPrismaJson(botResponse.metadata),
-      },
-    });
-
-    // Update conversation context
-    await prisma.chatbotConversation.update({
-      where: { id: conversation.id },
-      data: {
-        context: botResponse.newContext as any,
       },
     });
 
@@ -365,7 +158,7 @@ export const chat = async (req: Request, res: Response, next: NextFunction) => {
         metadata: botResponse.metadata || null,
         createdAt: botMessage.createdAt,
       },
-      products: matchedProducts.length > 0 ? matchedProducts : undefined,
+      products: undefined,
     });
   } catch (error) {
     console.error("Chat error:", error);
@@ -406,11 +199,11 @@ export const createConversation = async (
       },
     });
 
-    // Generate initial greeting message
-    const greetingResponse = processMessage("", null);
-    const localizedGreeting = await localizeChatResponse(
-      greetingResponse.content,
-      greetingResponse.metadata,
+    const products = await getProductContext();
+    const greetingResponse = await getAIResponse(
+      "Hãy chào người dùng và hỏi họ đang cần tư vấn gì về máy tính hoặc sản phẩm trong cửa hàng.",
+      [],
+      products,
       language
     );
 
@@ -418,15 +211,12 @@ export const createConversation = async (
       data: {
         conversationId: conversation.id,
         role: "bot",
-        content: localizedGreeting.content,
-        messageType: greetingResponse.messageType,
-        metadata: toPrismaJson(localizedGreeting.metadata),
+        content: greetingResponse.error
+          ? (language === "en" ? "Hello! What will you use your PC for, and what is your budget?" : "Chào bạn! Bạn muốn build PC cho nhu cầu gì và ngân sách khoảng bao nhiêu?")
+          : greetingResponse.content,
+        messageType: "text",
+        metadata: null,
       },
-    });
-
-    await prisma.chatbotConversation.update({
-      where: { id: conversation.id },
-      data: { context: greetingResponse.newContext as any },
     });
 
     return res.status(201).json({
@@ -435,9 +225,9 @@ export const createConversation = async (
       message: {
         id: botMessage.id,
         role: "bot",
-        content: localizedGreeting.content,
-        messageType: greetingResponse.messageType,
-        metadata: localizedGreeting.metadata || null,
+        content: botMessage.content,
+        messageType: "text",
+        metadata: null,
         createdAt: botMessage.createdAt,
       },
     });

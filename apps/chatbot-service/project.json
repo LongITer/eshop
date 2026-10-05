@@ -24,6 +24,7 @@
       ],
       "options": {
         "buildTarget": "chatbot-service:build",
+        "runBuildTargetDependencies": false,
         "inspect": false
       }
     }
