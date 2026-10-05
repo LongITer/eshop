@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "apps/seller-ui/src/utils/axioInstance";
-import RevenueChart, { RevenuePoint } from "apps/seller-ui/src/shared/components/charts/revenue-chart";
+import { RevenuePoint } from "apps/seller-ui/src/shared/components/charts/revenue-chart";
+import SellerRevenue from "apps/seller-ui/src/shared/components/charts/seller-revenue";
 
 interface ShopInfo {
   id: string;
@@ -155,7 +156,7 @@ const DashboardPage = () => {
     );
   }
 
-  const { shop, stats, revenueByDay, recentOrders, topProducts, lowStockProducts } =
+  const { shop, stats, recentOrders, topProducts, lowStockProducts } =
     data;
 
   if (!shop) {
@@ -189,7 +190,7 @@ const DashboardPage = () => {
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <TrendingUp size={16} className="text-emerald-400" />
-          Last 30 days
+          Shop overview
         </div>
       </div>
 
@@ -232,14 +233,7 @@ const DashboardPage = () => {
 
       {/* Revenue chart */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-semibold">Revenue</h3>
-          <p className="text-sm text-gray-400">
-            {money(revenueByDay.reduce((sum, d) => sum + d.revenue, 0))} total ·{" "}
-            {revenueByDay.reduce((sum, d) => sum + d.orders, 0)} paid orders
-          </p>
-        </div>
-        <RevenueChart data={revenueByDay} />
+        <SellerRevenue />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">

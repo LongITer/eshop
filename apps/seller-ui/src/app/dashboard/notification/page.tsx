@@ -1,4 +1,6 @@
 "use client";
+import toast from "react-hot-toast";
+import useSeller from "apps/seller-ui/src/hooks/useSeller";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "apps/seller-ui/src/utils/axioInstance";
@@ -24,7 +26,7 @@ const NOTIFICATIONS_QUERY_KEY = ["seller-notifications"];
 
 const fetchNotifications = async (): Promise<NotificationResponse> => {
   const response = await axiosInstance.get(
-    "/product/get-seller-notifications",
+    "/product/api/get-seller-notifications",
   );
   return {
     notifications: response.data?.notifications ?? [],
@@ -44,15 +46,18 @@ const formatDate = (value: string) =>
 
 const SellerNotificationsPage = () => {
   const queryClient = useQueryClient();
+  const { seller } = useSeller();
   const notificationsQuery = useQuery({
-    queryKey: NOTIFICATIONS_QUERY_KEY,
+    queryKey: [...NOTIFICATIONS_QUERY_KEY, seller?.id],
+    enabled: !!seller?.id,
     queryFn: fetchNotifications,
     refetchInterval: 30_000,
   });
 
   const markReadMutation = useMutation({
     mutationFn: (id: string) =>
-      axiosInstance.patch(`/product/notifications/${id}/read`),
+      axiosInstance.patch(`/product/api/notifications/${id}/read`),
+    onError: () => toast.error("Could not mark notification as read"),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY }),
   });

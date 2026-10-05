@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState, MutableRefObject } from 'react';
+import { useEffect, useRef, useState, MutableRefObject, ReactNode } from 'react';
 import type { AxiosInstance } from 'axios';
 import { Bell, BellRing, ExternalLink, FileText, ImagePlus, Loader2, Paperclip, Upload, X } from 'lucide-react';
 
@@ -33,9 +33,10 @@ export function AttachmentPreview({ url, onRemove }: { url: string; onRemove: ()
     <button type="button" onClick={onRemove} title="Remove attachment" aria-label="Remove attachment" className={chatActionClass}><X size={16} aria-hidden="true" /></button>
   </div>;
 }
-export function UnreadMessages({ api, href }: { api: AxiosInstance; href: string }) {
+export function UnreadMessages({ api, href, renderLink }: { api: AxiosInstance; href: string; renderLink?: (count: number) => ReactNode }) {
   const [count, setCount] = useState(0);
   useEffect(() => { let active = true; const load = () => api.get('/chatting/api/unread-count').then(res => { if (active) setCount(res.data.unreadCount); }).catch(() => {}); load(); const timer = setInterval(load, 10000); return () => { active = false; clearInterval(timer); }; }, [api]);
+  if (renderLink) return <>{renderLink(count)}</>;
   return <a href={href} className="block min-h-11 p-2">Messages{count > 0 && <span className="ml-2 bg-blue-600 text-white rounded-full px-2">{count}</span>}</a>;
 }
 

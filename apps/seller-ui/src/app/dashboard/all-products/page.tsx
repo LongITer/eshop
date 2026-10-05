@@ -1,4 +1,5 @@
 "use client";
+import toast from "react-hot-toast";
 import React, { useMemo, useState } from "react";
 import {
   useReactTable,
@@ -56,7 +57,9 @@ const ProductList = () => {
   // Delete Product Mutation
   const deleteMutation = useMutation({
     mutationFn: deleteProduct,
+    onError: () => toast.error("Could not delete product"),
     onSuccess: () => {
+      toast.success("Product deleted");
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setShowDeleteModal(false);
     },
@@ -65,7 +68,9 @@ const ProductList = () => {
   // Restore Product Mutation
   const restoreMutation = useMutation({
     mutationFn: restoreProduct,
+    onError: () => toast.error("Could not restore product"),
     onSuccess: () => {
+      toast.success("Product restored");
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setShowDeleteModal(false);
     },

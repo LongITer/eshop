@@ -8,15 +8,15 @@ export interface RevenuePoint {
   orders: number;
 }
 
-const RevenueChart = ({ data }: { data: RevenuePoint[] }) => {
+const RevenueChart = ({ data, monthly = false }: { data: RevenuePoint[]; monthly?: boolean }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const max = Math.max(...data.map((d) => d.revenue), 1);
   const hasData = data.some((d) => d.revenue > 0);
 
   const formatDate = (date: string) => {
-    const d = new Date(`${date}T00:00:00`);
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const d = new Date(`${date.length === 7 ? `${date}-01` : date}T00:00:00`);
+    return d.toLocaleDateString("en-US", monthly ? { month: "short" } : { month: "short", day: "numeric" });
   };
 
   return (
@@ -31,6 +31,10 @@ const RevenueChart = ({ data }: { data: RevenuePoint[] }) => {
               className="relative flex-1 h-full flex flex-col justify-end cursor-pointer"
               onMouseEnter={() => setActiveIndex(index)}
               onMouseLeave={() => setActiveIndex(null)}
+              tabIndex={0}
+              onFocus={() => setActiveIndex(index)}
+              onBlur={() => setActiveIndex(null)}
+              aria-label={`${formatDate(point.date)}: $${point.revenue.toFixed(2)}, ${point.orders} paid orders`}
             >
               {isActive && (
                 <div className="absolute z-10 -translate-x-1/2 -top-16 left-1/2 whitespace-nowrap bg-gray-800 border border-gray-700 rounded-md px-3 py-1.5 text-xs text-white shadow-lg pointer-events-none">
@@ -67,7 +71,7 @@ const RevenueChart = ({ data }: { data: RevenuePoint[] }) => {
 
       {!hasData && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="text-sm text-gray-500">No revenue recorded in the last 30 days</p>
+          <p className="text-sm text-gray-500">No revenue recorded in this period</p>
         </div>
       )}
 
@@ -76,13 +80,10 @@ const RevenueChart = ({ data }: { data: RevenuePoint[] }) => {
           <div
             key={point.date}
             className={`flex-1 text-center text-[10px] ${
-              index % 5 === 0 ? "text-gray-400" : "text-transparent"
+              monthly || index % 5 === 0 ? "text-gray-400" : "text-transparent"
             }`}
           >
-            {new Date(`${point.date}T00:00:00`).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-            })}
+            {formatDate(point.date)}
           </div>
         ))}
       </div>

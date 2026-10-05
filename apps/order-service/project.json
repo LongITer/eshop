@@ -24,6 +24,7 @@
       ],
       "options": {
         "buildTarget": "order-service:build",
+        "runBuildTargetDependencies": false,
         "inspect": false
       }
     }
