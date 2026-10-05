@@ -1,10 +1,8 @@
 "use client";
 import { categories } from "@/config/categories";
-import ProductCard from "@/shared/cards/product-card";
 import ShopCard from "@/shared/cards/shop.cart";
 import axiosInstance from "@/utils/axioInstance";
 import { countries } from "@/utils/countries";
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -14,21 +12,10 @@ const ProductListingPage = () => {
   const [isShopLoading, setIsShopLoading] = useState(false);
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [shops, setShops] = useState<any[]>([]);
   const [totalPages, setTotalPages] = useState(1);
-  const [tempPriceRange, setTempPriceRange] = useState([0, 1199]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
-  const colors = [
-    { name: "Black", code: "#000" },
-    { name: "Red", code: "#ff0000" },
-    { name: "Green", code: "#00ff00" },
-    { name: "Blue", code: "#0000ff" },
-    { name: "Yellow", code: "#ffff00" },
-    { name: "Magenta", code: "#ff00ff" },
-    { name: "Cyan", code: "#00ffff" },
-  ];
 
   const toggleCategory = (label: string) => {
     setSelectedCategories((prev) =>

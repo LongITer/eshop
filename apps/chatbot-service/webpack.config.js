@@ -1,3 +1,5 @@
+process.env.NX_TASK_TARGET_PROJECT ||= 'chatbot-service';
+process.env.NX_TASK_TARGET_TARGET ||= 'build';
 const { NxAppWebpackPlugin } = require('@nx/webpack/app-plugin');
 const { join, resolve } = require('path');
 

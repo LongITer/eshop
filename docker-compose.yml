@@ -1,0 +1,125 @@
+name: eshop
+x-service: &service
+  restart: unless-stopped
+  env_file: .env
+  environment: &environment
+    DATABASE_URL: mongodb://mongo:27017/eshop?replicaSet=rs0
+    REDIS_DATABASE_URL: redis://redis:6379
+    KAFKA_BROKERS: kafka:9092
+    KAFKA_SSL: 'false'
+    KAFKA_API_KEY: ''
+    KAFKA_API_SECRET: ''
+  depends_on:
+    schema-init: { condition: service_completed_successfully }
+    mongo: { condition: service_healthy }
+    redis: { condition: service_healthy }
+    kafka: { condition: service_healthy }
+services:
+  schema-init:
+    build: { context: ., dockerfile: apps/auth-service/Dockerfile, target: build }
+    environment:
+      DATABASE_URL: mongodb://mongo:27017/eshop?replicaSet=rs0
+    command: ['npx', 'prisma', 'db', 'push', '--skip-generate']
+    depends_on:
+      mongo: { condition: service_healthy }
+    restart: 'no'
+  mongo:
+    image: mongo:7.0
+    command: ['mongod', '--replSet', 'rs0', '--bind_ip_all']
+    volumes: ['mongo-data:/data/db']
+    ports: ['127.0.0.1:27017:27017']
+    healthcheck:
+      test: ['CMD-SHELL', 'mongosh --quiet --eval "try { rs.status().ok } catch(e) { rs.initiate({_id: ''rs0'', members: [{_id: 0, host: ''mongo:27017''}]}) }"']
+      interval: 10s
+      timeout: 10s
+      retries: 12
+  redis:
+    image: redis:7.4-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes: ['redis-data:/data']
+    ports: ['127.0.0.1:6379:6379']
+    healthcheck: { test: ['CMD', 'redis-cli', 'ping'], interval: 5s, timeout: 3s, retries: 20 }
+  kafka:
+    image: apache/kafka:3.9.0
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    healthcheck: { test: ['CMD-SHELL', '/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list'], interval: 10s, timeout: 10s, retries: 20 }
+  auth-service:
+    <<: *service
+    build: { context: ., dockerfile: apps/auth-service/Dockerfile }
+    environment: { <<: *environment, PORT: 6001 }
+  product-service:
+    <<: *service
+    build: { context: ., dockerfile: apps/product-service/Dockerfile }
+    environment: { <<: *environment, PORT: 6002 }
+  order-service:
+    <<: *service
+    build: { context: ., dockerfile: apps/order-service/Dockerfile }
+    environment: { <<: *environment, PORT: 6004 }
+  admin-service:
+    <<: *service
+    build: { context: ., dockerfile: apps/admin-service/Dockerfile }
+    environment: { <<: *environment, PORT: 6005 }
+  chatting-service:
+    <<: *service
+    build: { context: ., dockerfile: apps/chatting-service/Dockerfile }
+    environment: { <<: *environment, PORT: 6006 }
+    ports: ['127.0.0.1:6006:6006']
+  chatbot-service:
+    <<: *service
+    build: { context: ., dockerfile: apps/chatbot-service/Dockerfile }
+    environment: { <<: *environment, PORT: 6007 }
+  recommendation-service:
+    <<: *service
+    build: { context: ., dockerfile: apps/recommendation-service/Dockerfile }
+    environment: { <<: *environment, PORT: 6008 }
+  logger-service:
+    <<: *service
+    build: { context: ., dockerfile: apps/logger-service/Dockerfile }
+    environment: { <<: *environment, PORT: 6009 }
+  kafka-service:
+    <<: *service
+    build: { context: ., dockerfile: apps/kafka-service/Dockerfile }
+  api-gateway:
+    <<: *service
+    build: { context: ., dockerfile: apps/api-gateway/Dockerfile }
+    ports: ['127.0.0.1:8080:8080']
+    environment:
+      <<: *environment
+      PORT: 8080
+      AUTH_SERVICE_URL: http://auth-service:6001
+      PRODUCT_SERVICE_URL: http://product-service:6002
+      ORDER_SERVICE_URL: http://order-service:6004
+      ADMIN_SERVICE_URL: http://admin-service:6005
+      CHATTING_SERVICE_URL: http://chatting-service:6006
+      CHATBOT_SERVICE_URL: http://chatbot-service:6007
+      RECOMMENDATION_SERVICE_URL: http://recommendation-service:6008
+    depends_on: [recommendation-service]
+  user-ui:
+    build:
+      context: .
+      dockerfile: apps/user-ui/Dockerfile
+      args: { NEXT_PUBLIC_STRIPE_PUBLIC_KEY: '${NEXT_PUBLIC_STRIPE_PUBLIC_KEY:-}', NEXT_PUBLIC_SITE_URL: '${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}', NEXT_PUBLIC_CHAT_WS_URL: '${NEXT_PUBLIC_CHAT_WS_URL:-ws://localhost:6006}' }
+    ports: ['127.0.0.1:3000:3000']
+    depends_on: [api-gateway]
+  seller-ui:
+    build: { context: ., dockerfile: apps/seller-ui/Dockerfile }
+    ports: ['127.0.0.1:3001:3000']
+    depends_on: [api-gateway]
+  admin-ui:
+    build: { context: ., dockerfile: apps/admin-ui/Dockerfile }
+    ports: ['127.0.0.1:3002:3000']
+    depends_on: [api-gateway]
+volumes:
+  mongo-data:
+  redis-data:

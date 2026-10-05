@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import GoogleButton from '../../shared/components/google-button';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import axios, { AxiosError } from 'axios';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
 type FormData = {
@@ -19,6 +19,7 @@ const Login = () => {
     const [serverError, setServerError] = useState<string | null>(null);
     const [rememberMe, setRememberMe] = useState(false)
     const router = useRouter();
+    const queryClient = useQueryClient();
     const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
 
 
@@ -31,7 +32,11 @@ const Login = () => {
             );
             return response.data;
         },
-        onSuccess: () => {
+        onSuccess: async (data) => {
+            // Discard guest requests before publishing the authenticated user.
+            await queryClient.cancelQueries({ queryKey: ['user'] });
+            queryClient.setQueryData(['user'], data.user);
+            await queryClient.invalidateQueries({ queryKey: ['user'] });
             setServerError(null);
             toast.success("Login successful!");
             router.push('/');

@@ -16,6 +16,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { use } from "react";
+import OrderActions from '@/shared/components/order-actions';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -54,20 +55,20 @@ type Order = {
 // ─── Status Steps ─────────────────────────────────────────────────────────────
 
 const STATUS_STEPS = [
-  { key: "Ordered", label: "Ordered", Icon: ShoppingCart },
-  { key: "Packed", label: "Packed", Icon: Package },
+  { key: "Pending", label: "Pending", Icon: ShoppingCart },
+  { key: "Confirmed", label: "Confirmed", Icon: Package },
+  { key: "Processing", label: "Processing", Icon: PackageCheck },
   { key: "Shipped", label: "Shipped", Icon: Truck },
-  { key: "Out for Delivery", label: "Out for Delivery", Icon: PackageCheck },
   { key: "Delivered", label: "Delivered", Icon: CheckCircle },
 ];
 
 const STATUS_INDEX: Record<string, number> = {
   Pending: 0,
-  Confirmed: 0,
-  Processing: 0,
+  Confirmed: 1,
+  Processing: 2,
   Ordered: 0,
   Packed: 1,
-  Shipped: 2,
+  Shipped: 3,
   "Out for Delivery": 3,
   Delivered: 4,
 };
@@ -147,7 +148,8 @@ export default function OrderDetailPage({
           </h1>
 
           {/* ── Progress Tracker ── */}
-          <div className="relative mb-8">
+          <OrderActions order={order} />
+          <div className={`relative mb-8 ${['Cancelled', 'Returned', 'Refunded'].includes(order.status ?? '') ? 'hidden' : ''}`}>
             {/* Background line */}
             <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200 z-0" />
             {/* Filled line */}

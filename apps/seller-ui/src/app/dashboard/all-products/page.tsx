@@ -4,7 +4,6 @@ import {
   useReactTable,
   getCoreRowModel,
   flexRender,
-  getPaginationRowModel,
   getFilteredRowModel,
 } from "@tanstack/react-table";
 import Link from "next/link";
@@ -44,8 +43,6 @@ const restoreProduct = async (productId: string) => {
 
 const ProductList = () => {
   const [globalFilter, setGlobalFilter] = useState("");
-  const [analyticsData, setAnalyticsData] = useState(null);
-  const [showAnalytics, setShowAnalytics] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>();
   const queryClient = useQueryClient();
@@ -111,7 +108,7 @@ const ProductList = () => {
 
           return (
             <Link
-              href={`${process.env.NEXT_PUBLIC_USER_UI_LINK}/product/edit-product/${row.original.slug}`}
+              href={`${process.env.NEXT_PUBLIC_USER_UI_LINK}/product/${row.original.slug}`}
               className="font-medium text-blue-400 hover:underline"
               title={row.original.title}
             >
@@ -159,7 +156,7 @@ const ProductList = () => {
             </Link>
 
             <Link
-              href={`/product/edit/${row.original.id}`}
+              href={`/dashboard/edit-product/${row.original.id}`}
               className="text-yellow-400 hover:text-yellow-300 transition"
             >
               <Pencil size={18} />
@@ -292,3 +289,5 @@ const ProductList = () => {
 };
 
 export default ProductList;
+
+

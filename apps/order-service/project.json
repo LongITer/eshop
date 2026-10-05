@@ -1,0 +1,31 @@
+{
+  "name": "order-service",
+  "sourceRoot": "apps/order-service/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "apps/order-service/dist",
+        "main": "apps/order-service/src/main.ts",
+        "tsConfig": "apps/order-service/tsconfig.app.json",
+        "webpackConfig": "apps/order-service/webpack.config.js"
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "dependsOn": [
+        "build"
+      ],
+      "options": {
+        "buildTarget": "order-service:build",
+        "inspect": false
+      }
+    }
+  }
+}

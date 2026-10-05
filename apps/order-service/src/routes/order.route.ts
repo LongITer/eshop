@@ -6,14 +6,15 @@ import {
   getOrderById,
   getSellerOrders,
   getUserOrders,
-  updateOrderStatus,
   verifyConponCode,
   verifyPaymentSession,
 } from "./order.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
-import { isAdmin, isSeller } from "@packages/middleware/authorizeRoles";
+import { isAdmin, isSeller, isUser } from "@packages/middleware/authorizeRoles";
+import { cancelOrder, sellerOrderStatus } from './order-management.controller';
 
 const router: Router = express.Router();
+router.post('/cancel-order/:orderId', isAuthenticated, isUser, cancelOrder);
 
 router.post("/create-payment-intent", isAuthenticated, createPaymentIntent);
 router.post("/create-payment-session", isAuthenticated, createPaymentSession);
@@ -26,7 +27,7 @@ router.patch(
   "/update-order-status/:orderId",
   isAuthenticated,
   isSeller,
-  updateOrderStatus,
+  sellerOrderStatus,
 );
 router.post("/verify-coupon", isAuthenticated, verifyConponCode);
 

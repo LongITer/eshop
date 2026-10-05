@@ -8,8 +8,21 @@ import {
   newConversation,
 } from "../controllers/chatting.controllers";
 import { isSeller } from "@packages/middleware/authorizeRoles";
+import { socketTicket, attachment, pushKey, subscribePush } from '../chat-extras';
+import { actor } from '../chat-extras';
+import { handle } from '@packages/utils/api';
+import prisma from '@packages/libs/prisma';
 
 const router = express.Router();
+router.get('/unread-count', isAuthenticated, handle(async (req, res) => {
+  const identity = actor(req);
+  const result = await prisma.participant.aggregate({ where: identity.type === 'user' ? { userId: identity.id } : { sellerId: identity.id }, _sum: { unreadCount: true } });
+  res.json({ unreadCount: result._sum.unreadCount ?? 0 });
+}));
+router.post('/socket-ticket', isAuthenticated, socketTicket);
+router.post('/attachments', isAuthenticated, attachment);
+router.get('/push-key', isAuthenticated, pushKey);
+router.post('/push-subscription', isAuthenticated, subscribePush);
 
 router.post("/create-user-conversationGroup", isAuthenticated, newConversation);
 router.get("/get-user-conversations", isAuthenticated, getUserConversations);

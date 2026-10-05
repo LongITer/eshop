@@ -1,85 +1,31 @@
-import prisma from "@packages/libs/prisma";
-import { incrementUnseenCount } from "@packages/libs/redis/message.redis";
-import { kafka } from "@packages/utils/kafka";
-import { Consumer, EachMessagePayload } from "kafkajs";
-// import { incrementUnseenCount } from '@packages/db/unseenCount';
+import { kafka } from '@packages/utils/kafka';
+import { sendPush } from './chat-extras';
+import crypto from 'crypto';
+import { transaction } from '@packages/utils/transaction';
 
-interface BufferedMessage {
-  conversationId: string;
-  senderId: string;
-  senderType: string;
-  content: string;
-  createdAt: string;
-}
-
-const TOPIC = "chat.new_message";
-const GROUP_ID = "chat-message-db-writer";
-const BATCH_INTERVAL_MS = 3000;
-
-let buffer: BufferedMessage[] = [];
-let flushTimer: NodeJS.Timeout | null = null;
-
-// Initialize Kafka consumer
 export async function startConsumer() {
-  const consumer: Consumer = kafka.consumer({ groupId: GROUP_ID });
-  await consumer.connect();
-  await consumer.subscribe({ topic: TOPIC, fromBeginning: false });
-  console.log("Kafka consumer connected and subscribed to: " + TOPIC);
-
-  // Start consuming
-  await consumer.run({
-    eachMessage: async ({ message }: EachMessagePayload) => {
-      if (!message.value) return;
-
-      try {
-        const parsed: BufferedMessage = JSON.parse(message.value.toString());
-        buffer.push(parsed);
-
-        // If this is the first message in an empty array, then start the timer
-        if (buffer.length === 1 && !flushTimer) {
-          flushTimer = setTimeout(flushBufferToDb, BATCH_INTERVAL_MS);
-        }
-      } catch (error) {
-        console.error("Failed to parse kafka message: ", error);
-      }
-    },
-  });
-}
-
-// Flushes the buffer to the database and reset the timer
-async function flushBufferToDb() {
-  const toInsert = [...buffer];
-  buffer = [];
-  if (flushTimer) {
-    clearTimeout(flushTimer);
-    flushTimer = null;
-  }
-
-  if (toInsert.length === 0) return;
-
-  try {
-    const prismaPayload = toInsert.map((msg) => ({
-      conversationId: msg.conversationId,
-      senderId: msg.senderId,
-      senderType: msg.senderType,
-      content: msg.content,
-      createdAt: new Date(msg.createdAt),
-    }));
-    await prisma.message.createMany({
-      data: prismaPayload,
+  const consumer = kafka.consumer({ groupId: 'chat-message-db-writer' });
+  await consumer.connect(); await consumer.subscribe({ topic: 'chat.new_message', fromBeginning: false });
+  await consumer.run({ eachMessage: async ({ topic, partition, message }) => {
+    if (!message.value) return;
+    let event: any;
+    try { event = JSON.parse(message.value.toString()); } catch { console.error('Invalid chat event'); return; }
+    const id = event.id || crypto.createHash('sha256').update(`${topic}:${partition}:${message.offset}`).digest('hex').slice(0, 24);
+    const receiverType = event.senderType === 'user' ? 'seller' : 'user';
+    const receiverId = await transaction(async tx => {
+      if (await tx.message.findUnique({ where: { id } })) return null;
+      const group = await tx.conversationGroup.findFirst({ where: { id: event.conversationId, participantIds: { has: event.senderId } } });
+      if (!group) return null;
+      const receiverId = group.participantIds.find(value => value !== event.senderId);
+      await tx.message.create({ data: { id, conversationId: group.id, senderId: event.senderId, senderType: event.senderType, content: event.content || '', attachments: event.attachments || [], createdAt: new Date(event.createdAt) } });
+      await tx.conversationGroup.update({ where: { id: group.id }, data: { updatedAt: new Date() } });
+      const participantWhere = { conversationId: group.id, ...(receiverType === 'user' ? { userId: receiverId } : { sellerId: receiverId }) };
+      const participant = await tx.participant.findFirst({ where: participantWhere });
+      if (!participant?.lastSeenAt || participant.lastSeenAt < new Date(event.createdAt)) await tx.participant.updateMany({ where: participantWhere, data: { unreadCount: { increment: 1 } } });
+      if (receiverId) await tx.notifications.create({ data: { ...(receiverType === 'user' ? { userId: receiverId } : { sellerId: receiverId }), type: 'System', title: 'New message', message: String(event.content || 'Attachment').slice(0, 120), redirectUrl: `${receiverType === 'seller' ? '/dashboard' : ''}/inbox?conversationId=${group.id}`, metadata: { eventType: 'NewMessage', conversationId: group.id } } });
+      return receiverId;
     });
-
-    // Redis unseen counter (only if DB insert successful)
-    for (const msg of prismaPayload) {
-      const receiverType = msg.senderType === "user" ? "seller" : "user";
-      await incrementUnseenCount(receiverType, msg.conversationId);
-    }
-    console.log(`Flushed ${prismaPayload.length} messages to DB and Redis.`);
-  } catch (err) {
-    console.error("Error inserting messages to DB: ", err);
-    buffer.unshift(...toInsert);
-    if (!flushTimer) {
-      flushTimer = setTimeout(flushBufferToDb, BATCH_INTERVAL_MS);
-    }
-  }
+    if (receiverId) await sendPush(receiverId, receiverType, event.conversationId);
+  } });
 }
+

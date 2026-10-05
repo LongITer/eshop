@@ -18,6 +18,13 @@ interface AIResponseResult {
   error?: string;
 }
 
+export type ChatLanguage = "vi" | "en";
+
+interface LocalizedResponse {
+  content: string;
+  metadata?: Record<string, unknown>;
+}
+
 // ─── System Prompt ──────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `Bạn là chuyên gia tư vấn build PC cho cửa hàng trực tuyến Eshop.
@@ -28,7 +35,7 @@ const SYSTEM_PROMPT = `Bạn là chuyên gia tư vấn build PC cho cửa hàng 
 - Đề xuất linh kiện tương thích với nhau
 
 ## Quy tắc
-- Luôn trả lời bằng tiếng Việt, thân thiện và chuyên nghiệp
+- Trả lời bằng ngôn ngữ được yêu cầu, thân thiện và chuyên nghiệp
 - Nếu có sản phẩm trong cửa hàng, ưu tiên đề xuất sản phẩm đó
 - Khi hỏi sản phẩm của cửa hàng, chỉ xác nhận hoặc đề xuất sản phẩm có trong danh sách được cung cấp; nếu danh sách trống, hãy nói rõ chưa tìm thấy sản phẩm phù hợp
 - Giải thích lý do chọn từng linh kiện ngắn gọn
@@ -50,13 +57,14 @@ const GEMINI_MODEL = "gemini-3.8-flash";
 export async function getAIResponse(
   userMessage: string,
   conversationHistory: ChatMessage[],
-  availableProducts: MatchedProduct[] = []
+  availableProducts: MatchedProduct[] = [],
+  language: ChatLanguage = "vi"
 ): Promise<AIResponseResult> {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
     return {
-      content: getFallbackResponse(userMessage),
+      content: getFallbackResponse(userMessage, language),
       error: "GEMINI_API_KEY not configured",
     };
   }
@@ -101,7 +109,9 @@ export async function getAIResponse(
         body: JSON.stringify({
           model: GEMINI_MODEL,
           input,
-          system_instruction: SYSTEM_PROMPT + productContext,
+          system_instruction:
+            `${SYSTEM_PROMPT}\n\nTrả lời bằng ${language === "en" ? "tiếng Anh" : "tiếng Việt"}.` +
+            productContext,
           generation_config: {
             temperature: 0.7,
             top_p: 0.9,
@@ -116,7 +126,7 @@ export async function getAIResponse(
       const errorData = await response.text();
       console.error("Gemini API error:", response.status, errorData);
       return {
-        content: getFallbackResponse(userMessage),
+        content: getFallbackResponse(userMessage, language),
         error: `Gemini API error: ${response.status}`,
       };
     }
@@ -134,7 +144,7 @@ export async function getAIResponse(
 
     if (!text) {
       return {
-        content: getFallbackResponse(userMessage),
+        content: getFallbackResponse(userMessage, language),
         error: "Empty response from Gemini",
       };
     }
@@ -143,9 +153,78 @@ export async function getAIResponse(
   } catch (error) {
     console.error("AI Service error:", error);
     return {
-      content: getFallbackResponse(userMessage),
+      content: getFallbackResponse(userMessage, language),
       error: `AI Service error: ${(error as Error).message}`,
     };
+  }
+}
+
+export async function localizeChatResponse(
+  content: string,
+  metadata: Record<string, any> | undefined,
+  language: ChatLanguage
+): Promise<LocalizedResponse> {
+  if (language === "vi") return { content, metadata };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return { content, metadata };
+
+  const options = Array.isArray(metadata?.options) ? metadata.options : [];
+  try {
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/interactions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          model: GEMINI_MODEL,
+          input: JSON.stringify({ content, options }),
+          system_instruction:
+            "Translate the content and option labels/descriptions into English. " +
+            "Return only valid JSON with the same shape: {content, options}. " +
+            "Preserve every option key exactly and do not translate product data.",
+          generation_config: {
+            temperature: 0.2,
+            max_output_tokens: 1024,
+          },
+          store: false,
+        }),
+      }
+    );
+
+    if (!response.ok) return { content, metadata };
+
+    const data = await response.json();
+    const translatedText = Array.isArray(data?.steps)
+      ? data.steps
+          .filter((step: any) => step.type === "model_output")
+          .flatMap((step: any) => step.content || [])
+          .filter((item: any) => item.type === "text")
+          .map((item: any) => item.text)
+          .join("")
+      : "";
+    const translated = JSON.parse(translatedText) as {
+      content?: string;
+      options?: Array<{ key: string; label: string; description?: string }>;
+    };
+
+    return {
+      content: translated.content || content,
+      metadata: metadata
+        ? {
+            ...metadata,
+            ...(options.length > 0 && Array.isArray(translated.options)
+              ? { options: translated.options }
+              : {}),
+          }
+        : undefined,
+    };
+  } catch (error) {
+    console.error("Chat response localization error:", error);
+    return { content, metadata };
   }
 }
 
@@ -154,7 +233,11 @@ export async function getAIResponse(
 /**
  * Provides a helpful fallback when AI is unavailable.
  */
-function getFallbackResponse(message: string): string {
+function getFallbackResponse(message: string, language: ChatLanguage): string {
+  if (language === "en") {
+    return "Sorry, the AI assistant is temporarily unavailable. Please try again later.";
+  }
+
   const lowerMsg = message.toLowerCase();
 
   if (/tương\s*thích|compatible|socket/.test(lowerMsg)) {

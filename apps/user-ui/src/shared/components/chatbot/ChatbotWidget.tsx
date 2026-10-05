@@ -9,6 +9,8 @@ import useLocationTracking from '../../../hooks/useLocationTracking';
 import useDeviceTracking from '../../../hooks/useDeviceTracking';
 
 const CONVERSATION_STORAGE_KEY = 'chatbot_conversation_id';
+const LANGUAGE_STORAGE_KEY = 'chatbot_language';
+type ChatLanguage = 'vi' | 'en';
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -48,16 +50,26 @@ const ChatbotWidget: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [sessionId] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const stored = sessionStorage.getItem('chatbot_session_id');
-      if (stored) return stored;
-      const newId = crypto.randomUUID();
-      sessionStorage.setItem('chatbot_session_id', newId);
-      return newId;
+  const [language, setLanguage] = useState<ChatLanguage>('vi');
+  const [sessionId, setSessionId] = useState('');
+
+  // Keep the server and first client render identical. Restore browser state
+  // only after hydration, and never write to storage during rendering.
+  useEffect(() => {
+    try {
+      setLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'vi');
+    } catch {
+      // Keep the default language when browser storage is unavailable.
     }
-    return '';
-  });
+    const newId = crypto.randomUUID();
+    try {
+      const stored = sessionStorage.getItem('chatbot_session_id');
+      if (!stored) sessionStorage.setItem('chatbot_session_id', newId);
+      setSessionId(stored || newId);
+    } catch {
+      setSessionId(newId);
+    }
+  }, []);
   const { user } = useUser();
   const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
@@ -112,7 +124,7 @@ const ChatbotWidget: React.FC = () => {
 
       const res = await axios.post(
         `${API_BASE}/conversations`,
-        { sessionId },
+        { sessionId, language },
         { withCredentials: true }
       );
 
@@ -131,8 +143,10 @@ const ChatbotWidget: React.FC = () => {
           createdAt: res.data.message.createdAt,
         },
       ]);
-    } catch (error) {
-      console.error('Failed to start conversation:', error);
+    } catch (error: any) {
+      if (error?.response?.status !== 401 && error?.response?.status !== 404) {
+        console.error('Failed to start conversation:', error);
+      }
       // Fallback greeting
       setMessages([
         {
@@ -148,7 +162,16 @@ const ChatbotWidget: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [sessionId]);
+  }, [language, sessionId]);
+
+  const handleLanguageChange = (nextLanguage: ChatLanguage) => {
+    setLanguage(nextLanguage);
+    try {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
+    } catch {
+      // The selected language still applies for this page visit.
+    }
+  };
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
@@ -172,6 +195,7 @@ const ChatbotWidget: React.FC = () => {
           conversationId,
           sessionId,
           message: text.trim(),
+          language,
         },
         { withCredentials: true }
       );
@@ -197,7 +221,9 @@ const ChatbotWidget: React.FC = () => {
         {
           id: `error-${Date.now()}`,
           role: 'bot',
-          content: 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại! 🙏',
+          content: language === 'en'
+            ? 'Sorry, something went wrong. Please try again!'
+            : 'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại! 🙏',
           messageType: 'text',
           createdAt: new Date().toISOString(),
         },
@@ -402,14 +428,25 @@ const ChatbotWidget: React.FC = () => {
             </div>
             <div>
               <h3 className="chatbot-header-title">PC Builder Assistant</h3>
-              <p className="chatbot-header-subtitle">Tư vấn build cấu hình PC</p>
+              <p className="chatbot-header-subtitle">
+                {language === 'en' ? 'PC building advice' : 'Tư vấn build cấu hình PC'}
+              </p>
             </div>
           </div>
           <div className="chatbot-header-actions">
+            <select
+              className="chatbot-language-select"
+              aria-label="Chat language"
+              value={language}
+              onChange={(event) => handleLanguageChange(event.target.value as ChatLanguage)}
+            >
+              <option value="vi">VI</option>
+              <option value="en">EN</option>
+            </select>
             <button
               className="chatbot-header-btn"
               onClick={handleRestart}
-              title="Bắt đầu lại"
+              title={language === 'en' ? 'Start over' : 'Bắt đầu lại'}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
@@ -464,7 +501,7 @@ const ChatbotWidget: React.FC = () => {
             ref={inputRef}
             type="text"
             className="chatbot-input"
-            placeholder="Nhập tin nhắn..."
+            placeholder={language === 'en' ? 'Type a message...' : 'Nhập tin nhắn...'}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}

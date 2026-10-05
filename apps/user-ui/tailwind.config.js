@@ -1,12 +1,8 @@
+const { join } = require('node:path');
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    './{src,pages,components,app}/**/*.{ts,tsx,js,jsx,html}',
-    'src/**/*.{ts,tsx,js,jsx}',
-    '!./{src,pages,components,app}/**/*.{stories,spec}.{ts,tsx,js,jsx,html}',
-    //     ...createGlobPatternsForDependencies(__dirname)
-  ],
+  content: [join(__dirname, 'src/**/*.{ts,tsx,js,jsx,html}'), join(__dirname, '../../packages/components/**/*.{ts,tsx,js,jsx}')],
   theme: {
     extend: {
       fontFamily: {

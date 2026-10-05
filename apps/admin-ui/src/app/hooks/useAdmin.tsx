@@ -1,6 +1,4 @@
-import { useRouter } from "next/navigation";
 import axiosInstance from "../../utils/axioInstance";
-import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 const fetchAdmin = async () => {

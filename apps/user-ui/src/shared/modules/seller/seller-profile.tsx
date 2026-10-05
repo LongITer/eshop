@@ -3,13 +3,12 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axioInstance";
-import isProtected from "@/utils/protected";
+import { FollowButton } from "@/shared/components/account-tools";
 import ProductCard from "@/shared/cards/product-card";
 import {
   MapPin,
   Star,
   Clock,
-  Heart,
   Users,
   Calendar,
   ExternalLink,
@@ -59,12 +58,6 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
   const [activeTab, setActiveTab] = useState<"products" | "offers" | "reviews">(
     "products",
   );
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [followerCount, setFollowerCount] = useState(
-    shop?.followers?.length ?? 0,
-  );
-  const [isLoading, setIsLoading] = useState(false);
-
   // Shop products are already included in the sellerData response
   const shopProducts = shop?.products ?? [];
 
@@ -80,34 +73,6 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
     enabled: !!shop?.id,
     staleTime: 1000 * 60 * 2,
   });
-
-  const handleFollow = async () => {
-    if (isLoading) return;
-    setIsLoading(true);
-    try {
-      if (isFollowing) {
-        await axiosInstance.post(
-          `/seller/api/unfollow-shop`,
-          { shopId: shop?.id },
-          isProtected,
-        );
-        setIsFollowing(false);
-        setFollowerCount((prev: number) => Math.max(0, prev - 1));
-      } else {
-        await axiosInstance.post(
-          `/seller/api/follow-shop`,
-          { shopId: shop?.id },
-          isProtected,
-        );
-        setIsFollowing(true);
-        setFollowerCount((prev: number) => prev + 1);
-      }
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const joinedDate = shop?.createdAt
     ? new Date(shop.createdAt).toLocaleDateString("en-US", {
@@ -125,7 +90,9 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
   const parsedSocialLinks: Record<string, string> =
     typeof shop?.socialLinks === "string"
       ? (() => { try { return JSON.parse(shop.socialLinks); } catch { return {}; } })()
-      : shop?.socialLinks ?? {};
+      : Array.isArray(shop?.socialLinks)
+        ? Object.fromEntries(shop.socialLinks.map((link: any) => [String(link.name).toLowerCase(), link.url]))
+        : shop?.socialLinks ?? {};
 
   const socialLinksToDisplay =
     Object.keys(parsedSocialLinks).length > 0
@@ -219,7 +186,7 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
 
                   <span className="inline-flex items-center gap-1.5">
                     <Users size={14} className="text-blue-500" />
-                    <span className="font-semibold text-slate-800">{followerCount}</span>
+                    <span className="font-semibold text-slate-800">{shop?.followerCount ?? 0}</span>
                     <span>Followers</span>
                   </span>
 
@@ -247,18 +214,7 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
 
             <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
               <div className="flex items-center gap-2">
-                <button
-                  onClick={handleFollow}
-                  disabled={isLoading}
-                  className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium shadow-sm transition ${
-                    isFollowing
-                      ? "bg-red-50 text-red-500 ring-1 ring-red-200 hover:bg-red-100"
-                      : "bg-gradient-to-r from-violet-500 to-indigo-500 text-white hover:from-violet-600 hover:to-indigo-600"
-                  }`}
-                >
-                  <Heart size={16} fill={isFollowing ? "currentColor" : "none"} />
-                  {isFollowing ? "Unfollow" : "Follow Store"}
-                </button>
+                <FollowButton shopId={shop.id} />
 
                 <button className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50">
                   Message
@@ -373,3 +329,6 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
 };
 
 export default SellerProfile;
+
+
+

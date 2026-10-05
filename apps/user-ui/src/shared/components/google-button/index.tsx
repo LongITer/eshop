@@ -3,7 +3,7 @@ import Link from "next/link";
 import * as React from "react";
 const GoogleButton = (props: React.SVGProps<SVGSVGElement>) => (
     <div className="w-full flex justify-center">
-        <Link href={"/signup"}>
+        <Link href={"/api/auth/google"} prefetch={false}>
             <div className="flex justify-center items-center gap-2">
                 <svg
                     width="30px"

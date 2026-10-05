@@ -1,9 +1,9 @@
 "use client";
+import { useChatConnection, ChatAttachments, PushOptIn, AttachmentPreview, MessageAttachment } from "@packages/components/chat";
 
 import useRequireAuth from "@/hooks/useRequireAuth";
 import axiosInstance from "@/utils/axioInstance";
 import isProtected from "@/utils/protected";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   ChevronLeft,
   Loader2,
@@ -66,7 +66,6 @@ const Inbox = () => {
   const messageContainerRef = useRef<HTMLDivElement | null>(null);
   const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
   const selectedChatRef = useRef<Conversation | null>(null);
-  const queryClient = useQueryClient();
 
   const [chats, setChats] = useState<Conversation[]>([]);
   const [chatsLoading, setChatsLoading] = useState(true);
@@ -76,6 +75,11 @@ const Inbox = () => {
   const [seller, setSeller] = useState<Seller | null>(null);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [typingUntil, setTypingUntil] = useState(0);
+  const [chatError, setChatError] = useState("");
+  useEffect(() => { setAttachments([]); setTypingUntil(0); }, [selectedChat?.conversationId]);
+  useEffect(() => { if (!typingUntil) return; const timer = setTimeout(() => setTypingUntil(0), 3000); return () => clearTimeout(timer); }, [typingUntil]);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const [mobileShowChat, setMobileShowChat] = useState(false);
@@ -159,100 +163,33 @@ const Inbox = () => {
   };
 
   /* ── WebSocket connection ── */
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const ws = new WebSocket(`ws://localhost:6006`);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      // Register this user with the WS server
-      ws.send(`user_${user.id}`);
-      console.log("WebSocket connected and registered as user_" + user.id);
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === "NEW_MESSAGE") {
-          const msg = data.payload;
-          // Only update messages if this conversation is currently open
-          if (selectedChatRef.current?.conversationId === msg.conversationId) {
-            setMessages((prev) => {
-              // Avoid duplicating optimistic messages
-              const isDuplicate = prev.some(
-                (m) =>
-                  !m.id.startsWith("temp-") &&
-                  m.content === msg.content &&
-                  m.senderId === msg.senderId,
-              );
-              if (isDuplicate) return prev;
-              const newMsg: Message = {
-                id: `ws-${Date.now()}`,
-                conversationId: msg.conversationId,
-                senderId: msg.senderId,
-                senderType: msg.senderType,
-                content: msg.content,
-                attachments: [],
-                status: "sent",
-                createdAt: msg.createdAt,
-              };
-              return [newMsg, ...prev.filter((m) => !m.id.startsWith("temp-"))];
-            });
-          }
-          // Only refresh conversation list for incoming messages (not own echo)
-          if (msg.senderType !== "user") {
-            fetchConversations();
-          }
-        }
-      } catch (e) {
-        console.error("WS message parse error", e);
+  const chatReady = useChatConnection({ actorId: user?.id, api: axiosInstance, socketRef: wsRef, onEvent: data => {
+    if (data.type === 'ERROR') { setChatError(data.message); setSending(false); }
+    if (data.type === 'READY') { fetchConversations(); }
+    if (data.type === 'TYPING' && data.payload.conversationId === selectedChatRef.current?.conversationId) setTypingUntil(data.payload.typing ? Date.now() + 3000 : 0);
+    if (data.type === 'PRESENCE') {
+      fetchConversations();
+      if (data.payload.conversationId === selectedChatRef.current?.conversationId) setSeller(prev => prev ? { ...prev, isOnline: data.payload.online } : prev);
+    }
+    if (data.type === 'NEW_MESSAGE') {
+      const msg = data.payload;
+      if (msg.conversationId === selectedChatRef.current?.conversationId) {
+        setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [{ ...msg, status: 'sent' }, ...prev]);
+        setTypingUntil(0);
+        if (msg.senderType !== 'user') wsRef.current?.send(JSON.stringify({ type: 'MARK_AS_SEEN', conversationId: msg.conversationId }));
+        else { setSending(false); setMessage(''); setAttachments([]); }
       }
-    };
+      setTimeout(fetchConversations, 1200);
+    }
+  } });
 
-    ws.onerror = (e) => console.error("WebSocket error", e);
-    ws.onclose = () => console.log("WebSocket closed");
-
-    return () => {
-      ws.close();
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
 
 
   /* ── send message via WebSocket ── */
   const handleSend = () => {
-    if (!message.trim() || !selectedChat || !seller?.id) return;
-    const content = message.trim();
-    setMessage("");
-
-    // Optimistic UI
-    const optimistic: Message = {
-      id: `temp-${Date.now()}`,
-      conversationId: selectedChat.conversationId,
-      senderId: user?.id || "",
-      senderType: "user",
-      content,
-      attachments: [],
-      status: "sending",
-      createdAt: new Date().toISOString(),
-    };
-    setMessages((prev) => [optimistic, ...prev]);
-
-    const ws = wsRef.current;
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(
-        JSON.stringify({
-          fromUserId: user?.id,
-          toUserId: seller.id,
-          messageBody: content,
-          conversationId: selectedChat.conversationId,
-          senderType: "user",
-        }),
-      );
-    } else {
-      console.warn("WebSocket not open — message may not be delivered");
-    }
+    if ((!message.trim() && !attachments.length) || !selectedChat || !seller?.id || !chatReady || sending) return;
+    setSending(true); setChatError('');
+    wsRef.current?.send(JSON.stringify({ messageBody: message.trim(), attachments, conversationId: selectedChat.conversationId }));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -399,18 +336,23 @@ const Inbox = () => {
                 </div>
 
                 {/* input */}
+                <div className="text-sm px-4">{chatReady ? '' : 'Connecting…'}{typingUntil > 0 && <p>Typing…</p>}{chatError && <p role="alert">{chatError}</p>}{attachments.map(url => <AttachmentPreview key={url} url={url} onRemove={() => setAttachments(current => current.filter(item => item !== url))} />)}</div>
+                <div className="flex items-center gap-1 px-4 py-1.5">{selectedChat && <ChatAttachments key={selectedChat.conversationId} api={axiosInstance} conversationId={selectedChat.conversationId} onUploaded={url => setAttachments(prev => [...prev, url].slice(0, 5))} />}
+                <PushOptIn api={axiosInstance} /></div>
                 <div className="px-4 py-3 border-t border-gray-100 bg-white flex items-center gap-3">
                   <input
                     type="text"
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={e => { setMessage(e.target.value); if (chatReady && selectedChat) wsRef.current?.send(JSON.stringify({ type: 'TYPING', conversationId: selectedChat.conversationId, typing: !!e.target.value })); }}
                     onKeyDown={handleKeyDown}
                     placeholder="Type a message…"
-                    className="flex-1 text-sm bg-gray-100 rounded-full px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-300 transition placeholder:text-gray-400"
+                    className="min-w-0 flex-1 text-sm bg-gray-100 rounded-full px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-300 transition placeholder:text-gray-400"
                   />
                   <button
                     onClick={handleSend}
-                    disabled={!message.trim() || sending}
+                    title="Send message"
+                    aria-label="Send message"
+                    disabled={(!message.trim() && !attachments.length) || sending || !chatReady}
                     className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white transition active:scale-95"
                   >
                     {sending ? (
@@ -508,15 +450,13 @@ const MessageBubble = ({
       className="w-7 h-7 rounded-full object-cover flex-shrink-0 border border-gray-200"
     />
     <div
-      className={`max-w-[65%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
-        isOwn
-          ? "bg-blue-500 text-white rounded-br-none"
-          : "bg-white text-gray-800 rounded-bl-none border border-gray-100"
+      className={`max-w-[65%] text-sm leading-relaxed ${
+        msg.attachments?.length ? "" : `px-4 py-2.5 rounded-2xl shadow-sm ${isOwn ? "bg-blue-500 text-white rounded-br-none" : "bg-white text-gray-800 rounded-bl-none border border-gray-100"}`
       } ${msg.status === "sending" ? "opacity-60" : ""}`}
     >
-      <p>{msg.content}</p>
+      {msg.content && <p className={`break-words whitespace-pre-wrap ${msg.attachments?.length ? `px-4 py-2.5 rounded-2xl shadow-sm ${isOwn ? "bg-blue-500 text-white rounded-br-none" : "bg-white text-gray-800 rounded-bl-none border border-gray-100"}` : ""}`}>{msg.content}</p>}{msg.attachments?.map(url => <MessageAttachment key={url} url={url} />)}
       <p
-        className={`text-[10px] mt-1 text-right ${isOwn ? "text-blue-100" : "text-gray-400"}`}
+        className={`text-[10px] mt-1 text-right ${isOwn && !msg.attachments?.length ? "text-blue-100" : "text-gray-400"}`}
       >
         {msg.status === "sending" ? "Sending…" : formatTime(msg.createdAt)}
       </p>

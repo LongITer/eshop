@@ -1,0 +1,31 @@
+{
+  "name": "auth-service",
+  "sourceRoot": "apps/auth-service/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "apps/auth-service/dist",
+        "main": "apps/auth-service/src/main.ts",
+        "tsConfig": "apps/auth-service/tsconfig.app.json",
+        "webpackConfig": "apps/auth-service/webpack.config.js"
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "dependsOn": [
+        "build"
+      ],
+      "options": {
+        "buildTarget": "auth-service:build",
+        "inspect": false
+      }
+    }
+  }
+}

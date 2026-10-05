@@ -1,5 +1,5 @@
 {
-  "name": "@./chatting-service",
+  "name": "chatting-service",
   "version": "0.0.1",
   "private": true,
   "nx": {
@@ -11,18 +11,33 @@
           "build"
         ],
         "options": {
-          "buildTarget": "@./chatting-service:build",
+          "buildTarget": "chatting-service:build",
           "runBuildTargetDependencies": false
         },
         "configurations": {
           "development": {
-            "buildTarget": "@./chatting-service:build:development"
+            "buildTarget": "chatting-service:build"
           },
           "production": {
-            "buildTarget": "@./chatting-service:build:production"
+            "buildTarget": "chatting-service:build"
           }
         }
+      },
+      "build": {
+        "executor": "@nx/webpack:webpack",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "target": "node",
+          "compiler": "tsc",
+          "outputPath": "apps/chatting-service/dist",
+          "main": "apps/chatting-service/src/main.ts",
+          "tsConfig": "apps/chatting-service/tsconfig.app.json",
+          "webpackConfig": "apps/chatting-service/webpack.config.js"
+        }
       }
-    }
+    },
+    "name": "chatting-service"
   }
 }

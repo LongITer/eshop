@@ -1,44 +1,53 @@
-name: CI
-
+name: Quality and containers
 on:
   push:
-    branches:
-      - master
+    branches: [main, 'feat/**', 'codex/**']
   pull_request:
-
+  workflow_dispatch:
 permissions:
-  actions: read
   contents: read
-
 jobs:
-  main:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          filter: tree:0
-          fetch-depth: 0
-
-      
-      
-
-      # This enables task distribution via Nx Cloud
-      # Run this command as early as possible, before dependencies are installed
-      # Learn more at https://nx.dev/ci/reference/nx-cloud-cli#npx-nxcloud-startcirun
-      # Uncomment this line to enable task distribution
-      # - run: npx nx-cloud start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
-
-      
-      # Cache node_modules
       - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx prisma validate && npx prisma generate
+        env: { DATABASE_URL: 'mongodb://localhost:27017/eshop?replicaSet=rs0' }
+      - run: npm run typecheck
+      - run: npm run test:implementation
+      - run: npm run test:integration
+      - run: npm run build:services
+      - run: docker compose --env-file .env.example config --quiet
+      - run: npx next build apps/user-ui && npx next build apps/seller-ui && npx next build apps/admin-ui
+        env:
+          NX_DAEMON: 'false'
+          NEXT_PUBLIC_SERVER_URL: http://localhost:8080
+          NEXT_PUBLIC_STRIPE_PUBLIC_KEY: pk_test_build_placeholder
+  images:
+    needs: quality
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: write }
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [api-gateway, auth-service, product-service, order-service, admin-service, recommendation-service, chatting-service, chatbot-service, logger-service, kafka-service, user-ui, seller-ui, admin-ui]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: '${{ github.actor }}', password: '${{ secrets.GITHUB_TOKEN }}' }
+      - name: Image name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}/${{ matrix.app }}" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
         with:
-          node-version: 20
-          cache: 'npm'
-       
-      - run: npm ci --legacy-peer-deps
-      - uses: nrwl/nx-set-shas@v4
-
-      # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
-      # - run: npx nx-cloud record -- echo Hello World
-      # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
-      - run: npx nx affected -t lint test build
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          push: true
+          tags: ${{ steps.image.outputs.name }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,scope=${{ matrix.app }},mode=max

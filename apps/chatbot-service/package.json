@@ -1,5 +1,5 @@
 {
-  "name": "@./chatbot-service",
+  "name": "chatbot-service",
   "version": "0.0.1",
   "private": true,
   "nx": {
@@ -11,15 +11,15 @@
           "build"
         ],
         "options": {
-          "buildTarget": "@./chatbot-service:build",
+          "buildTarget": "chatbot-service:build",
           "runBuildTargetDependencies": false
         },
         "configurations": {
           "development": {
-            "buildTarget": "@./chatbot-service:build:development"
+            "buildTarget": "chatbot-service:build"
           },
           "production": {
-            "buildTarget": "@./chatbot-service:build:production"
+            "buildTarget": "chatbot-service:build"
           }
         }
       },
@@ -29,7 +29,22 @@
           "jestConfig": "apps/chatbot-service/jest.config.ts",
           "passWithNoTests": true
         }
+      },
+      "build": {
+        "executor": "@nx/webpack:webpack",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "target": "node",
+          "compiler": "tsc",
+          "outputPath": "apps/chatbot-service/dist",
+          "main": "apps/chatbot-service/src/main.ts",
+          "tsConfig": "apps/chatbot-service/tsconfig.app.json",
+          "webpackConfig": "apps/chatbot-service/webpack.config.js"
+        }
       }
-    }
+    },
+    "name": "chatbot-service"
   }
 }

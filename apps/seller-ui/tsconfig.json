@@ -28,23 +28,30 @@
       ],
       "@packages/*": [
         "../../packages/*"
+      ],
+      "apps/*": [
+        "../../apps/*"
+      ],
+      "packages/*": [
+        "../../packages/*"
       ]
     },
     "outDir": "dist",
     "rootDir": "../../",
-    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
+    "baseUrl": "."
   },
   "include": [
     "../../apps/seller-ui/.next/types/**/*.ts",
     "../../packages/components/**/*.tsx",
-    "../../packages/utils/**/*.ts",
     "../../dist/apps/seller-ui/.next/types/**/*.ts",
     "next-env.d.ts",
     "src/**/*.js",
     "src/**/*.jsx",
     "src/**/*.ts",
     "src/**/*.tsx",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "../../packages/**/*.ts"
   ],
   "exclude": [
     "out-tsc",

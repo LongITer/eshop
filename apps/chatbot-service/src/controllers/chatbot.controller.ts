@@ -7,7 +7,11 @@ import { NextFunction, Request, Response } from "express";
 import type { Prisma } from "@prisma/client";
 import prisma from "@packages/libs/prisma";
 import { processMessage, ConversationContext } from "../services/rule-engine.service";
-import { getAIResponse } from "../services/ai.service";
+import {
+  ChatLanguage,
+  getAIResponse,
+  localizeChatResponse,
+} from "../services/ai.service";
 import {
   findMatchingProducts,
   findBuildTemplates,
@@ -41,6 +45,7 @@ const toPrismaJson = (
 export const chat = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { conversationId, sessionId, message } = req.body;
+    const language: ChatLanguage = req.body.language === "en" ? "en" : "vi";
     const userId = (req as any).user?.id || null;
 
     if (
@@ -128,7 +133,8 @@ export const chat = async (req: Request, res: Response, next: NextFunction) => {
       const aiResult = await getAIResponse(
         message.trim(),
         chatHistory,
-        products
+        products,
+        language
       );
 
       // AI owns the response for deferred requests; do not mix in rule prompts.
@@ -140,6 +146,16 @@ export const chat = async (req: Request, res: Response, next: NextFunction) => {
           metadata: undefined,
         };
       }
+    }
+
+    if (!botResponse.needsAI) {
+      const localized = await localizeChatResponse(
+        botResponse.content,
+        botResponse.metadata,
+        language
+      );
+      botResponse.content = localized.content;
+      botResponse.metadata = localized.metadata;
     }
 
     // If action is search_products, find matching products
@@ -370,6 +386,7 @@ export const createConversation = async (
 ) => {
   try {
     const userId = (req as any).user?.id || null;
+    const language: ChatLanguage = req.body.language === "en" ? "en" : "vi";
     const requestedSessionId = req.body.sessionId;
     if (
       requestedSessionId != null &&
@@ -391,14 +408,19 @@ export const createConversation = async (
 
     // Generate initial greeting message
     const greetingResponse = processMessage("", null);
+    const localizedGreeting = await localizeChatResponse(
+      greetingResponse.content,
+      greetingResponse.metadata,
+      language
+    );
 
     const botMessage = await prisma.chatbotMessage.create({
       data: {
         conversationId: conversation.id,
         role: "bot",
-        content: greetingResponse.content,
+        content: localizedGreeting.content,
         messageType: greetingResponse.messageType,
-        metadata: toPrismaJson(greetingResponse.metadata),
+        metadata: toPrismaJson(localizedGreeting.metadata),
       },
     });
 
@@ -413,9 +435,9 @@ export const createConversation = async (
       message: {
         id: botMessage.id,
         role: "bot",
-        content: greetingResponse.content,
+        content: localizedGreeting.content,
         messageType: greetingResponse.messageType,
-        metadata: greetingResponse.metadata || null,
+        metadata: localizedGreeting.metadata || null,
         createdAt: botMessage.createdAt,
       },
     });

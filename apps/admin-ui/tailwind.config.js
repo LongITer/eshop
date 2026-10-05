@@ -1,3 +1,4 @@
+const { join } = require('node:path');
 // const { createGlobPatternsForDependencies } = require('@nx/next/tailwind');
 
 // The above utility import will not work if you are using Next.js' --turbo.
@@ -11,13 +12,7 @@
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    './{src,pages,components,app}/**/*.{ts,tsx,js,jsx,html}',
-    '../admin-ui/**/*.{ts,tsx,js,jsx,html}',
-    '../../packages/**/*.{ts,tsx,js,jsx,html}',
-    '!./{src,pages,components,app}/**/*.{stories,spec}.{ts,tsx,js,jsx,html}',
-//     ...createGlobPatternsForDependencies(__dirname)
-  ],
+  content: [join(__dirname, 'src/**/*.{ts,tsx,js,jsx,html}'), join(__dirname, '../../packages/components/**/*.{ts,tsx,js,jsx}')],
   theme: {
     extend: {
       fontFamily: {

@@ -12,6 +12,8 @@ import { HomeIcon } from 'apps/seller-ui/src/assets/icons/home';
 import SidebarMenu from './sidebar.menu';
 import { BellPlus, BellRing, CalendarPlus, ListOrdered, LogOut, Mail, PackageSearch, Settings, SquarePlus, TicketPercent } from 'lucide-react';
 import { PaymentIcon } from 'apps/seller-ui/src/assets/icons/payment';
+import { UnreadMessages } from '@packages/components/chat';
+import axiosInstance from 'apps/seller-ui/src/utils/axioInstance';
 
 
 
@@ -59,6 +61,8 @@ const SidebarBarWrapper = () => {
                     >
                     </SidebarItem>
                     <div className='mt-2 block'>
+                        {seller && <UnreadMessages api={axiosInstance} href="/dashboard/inbox" />}
+                        <div className="flex flex-col gap-3 px-4 py-3 text-blue-400"><Link href="/dashboard/shop-settings">Shop settings</Link><Link href="/dashboard/inventory">Inventory</Link><Link href="/dashboard/reports">Revenue reports</Link></div>
                         <SidebarMenu title='Main Menu'>
                             <SidebarItem
                                 title='Order'

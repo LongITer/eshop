@@ -1,5 +1,5 @@
 {
-  "name": "@./api-gateway",
+  "name": "api-gateway",
   "version": "0.0.1",
   "private": true,
   "nx": {
@@ -11,19 +11,34 @@
           "build"
         ],
         "options": {
-          "buildTarget": "@./api-gateway:build",
+          "buildTarget": "api-gateway:build",
           "runBuildTargetDependencies": false,
           "inspect": false
         },
         "configurations": {
           "development": {
-            "buildTarget": "@./api-gateway:build"
+            "buildTarget": "api-gateway:build"
           },
           "production": {
-            "buildTarget": "@./api-gateway:build"
+            "buildTarget": "api-gateway:build"
           }
         }
+      },
+      "build": {
+        "executor": "@nx/webpack:webpack",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "target": "node",
+          "compiler": "tsc",
+          "outputPath": "apps/api-gateway/dist",
+          "main": "apps/api-gateway/src/main.ts",
+          "tsConfig": "apps/api-gateway/tsconfig.app.json",
+          "webpackConfig": "apps/api-gateway/webpack.config.js"
+        }
       }
-    }
+    },
+    "name": "api-gateway"
   }
 }

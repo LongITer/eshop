@@ -8,7 +8,6 @@ import useUser from "../../hooks/useUser";
 import useLocationTracking from "../../hooks/useLocationTracking";
 import useDeviceTracking from "../../hooks/useDeviceTracking";
 import { useStore } from "../../store";
-import axios from "axios";
 import axiosInstance from "@/utils/axioInstance";
 import isProtected from "@/utils/protected";
 
@@ -25,14 +24,12 @@ const ProductDetailsCard = ({
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [timeLeft, setTimeLeft] = useState("");
 
   const { user } = useUser();
   const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
   const addtoWishlist = useStore((state: any) => state.addToWishlist);
   const addToCart = useStore((state: any) => state.addToCart);
-  const removeFromCart = useStore((state: any) => state.removeFromCart);
   const removeFromWishlist = useStore((state: any) => state.removeFromWishlist);
   const wishlist = useStore((state: any) => state.wishlist);
   const isWishlisted = wishlist.some((item: any) => item.id === data.id);
@@ -66,46 +63,63 @@ const ProductDetailsCard = ({
   };
   return (
     <div
-      className="fixed flex items-center justify-center top-0 left-0 h-screen w-full bg-[#0000001d] z-50"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/45 p-3 backdrop-blur-sm md:p-6"
       onClick={() => setOpen(false)}
     >
       <div
-        className="w-[90%] md:w-[70%] md:mt-14 2xl:mt-o h-max overflow-scroll min-h-[70vh] p-4 md:p-6 bg-white shadow-md rounded-lg"
+        className="relative grid max-h-[calc(100vh-24px)] w-full max-w-6xl grid-cols-1 overflow-y-auto rounded-xl bg-white shadow-2xl md:max-h-[calc(100vh-48px)] md:grid-cols-2"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="w-full flex flex-col md:flex-row">
-          <div className="w-full md:w-1/2 h-full">
+        <section className="bg-slate-50 p-4 md:p-7">
+          <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-slate-200 bg-white">
             <Image
-              src={data?.images?.[activeImage]?.url}
-              alt={data?.images?.[activeImage].url}
-              width={400}
-              height={400}
-              className="w-full rounded-lg object-contain"
+              src={data?.images?.[activeImage]?.url || "/default-image.jpg"}
+              alt={data?.title || "Product image"}
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-contain p-5 md:p-8"
             />
+            <span className="absolute bottom-3 right-3 rounded bg-white/90 px-2 py-1 text-xs font-medium text-slate-600 shadow-sm">
+              {activeImage + 1} / {data?.images?.length || 1}
+            </span>
+          </div>
 
-            {/* Thumbnail */}
-            <div className="flex gap-2 mt-4">
-              {data?.images?.map((img: any, index: number) => (
-                <div
-                  key={index}
-                  className={`cursor-pointer border rounded-md ${activeImage === index ? "border-gray-500 pt-1" : "border-transparent"}`}
+          {data?.images?.length > 1 && (
+            <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+              {data.images.map((img: any, index: number) => (
+                <button
+                  key={img.id || img.url || index}
+                  type="button"
+                  aria-label={`View product image ${index + 1}`}
+                  aria-pressed={activeImage === index}
+                  className={`h-[76px] w-[76px] shrink-0 overflow-hidden rounded-md border bg-white p-1 transition ${activeImage === index ? "border-blue-600 ring-2 ring-blue-100" : "border-slate-200 hover:border-slate-400"}`}
                   onClick={() => setActiveImage(index)}
                 >
                   <Image
-                    src={img.url}
-                    alt={img.url}
-                    width={100}
-                    height={100}
-                    className="w-full h-[80px] object-cover rounded-md"
+                    src={img.url || "/default-image.jpg"}
+                    alt={`${data?.title || "Product"} image ${index + 1}`}
+                    width={68}
+                    height={68}
+                    className="h-full w-full object-contain"
                   />
-                </div>
+                </button>
               ))}
             </div>
-          </div>
+          )}
 
-          <div className="w-full md:w-1/2 md:pl-8 mt-6 md:mt-0">
+        </section>
+
+        <section className="relative p-5 pt-14 md:p-8 md:pt-8">
+          <button
+            type="button"
+            aria-label="Close product preview"
+            className="absolute right-4 top-4 rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 md:right-6 md:top-6"
+            onClick={() => setOpen(false)}
+          >
+            <X size={20} />
+          </button>
             {/* Seller Information */}
-            <div className="border-b relative pb-3 border-gray-300 flex items-center justify-between">
+            <div className="border-b border-gray-300 pb-4 flex items-center justify-between gap-4">
               <div className="flex items-start gap-3">
                 {/* Shop Logo */}
                 {data?.shop?.avatar ? (
@@ -144,27 +158,41 @@ const ProductDetailsCard = ({
 
               {/* Chat with seller button*/}
               <button
-                className="flex cursor-pointer items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-sm font-medium rounded-full shadow-md hover:shadow-lg transition-all active:scale-95 whitespace-nowrap ml-auto"
+                className="flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
                 onClick={() => handleChat()}
+                disabled={isLoading}
               >
                 <MessageCircle size={16} />
-                Chat with Seller
-              </button>
-
-              <button className="w-full absolute cursor-pointer right-[-5px] top-[-5px] flex justify-end my-2 mt-[-10px]">
-                <X size={20} onClick={() => setOpen(false)} />
+                {isLoading ? "Opening..." : "Chat with Seller"}
               </button>
             </div>
 
-            <h3 className="text-xl font-semibold mt-3">{data?.title}</h3>
-            <p className="mt-2 text-gray-700 whitespace-pre-wrap w-full">
-              {data?.short_description}{" "}
-            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {data?.category && (
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                  {data.category}
+                </span>
+              )}
+              {data?.subCategory && (
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                  {data.subCategory}
+                </span>
+              )}
+            </div>
+
+            <h3 className="mt-3 text-2xl font-semibold leading-tight text-slate-900">
+              {data?.title}
+            </h3>
+            {data?.short_description && (
+              <p className="mt-3 rounded-md border-l-2 border-blue-500 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+                {data.short_description}
+              </p>
+            )}
 
             {/* Brand */}
             {data?.brand && (
-              <p className="mt-2">
-                <strong>Brand: </strong> {data.brand}
+              <p className="mt-4 text-sm text-slate-700">
+                <strong className="text-slate-900">Brand:</strong> {data.brand}
               </p>
             )}
             {/* Color & Size Selection */}
@@ -205,7 +233,7 @@ const ProductDetailsCard = ({
                 </div>
               )}
             </div>
-            <div>
+            <div className="mt-5 border-t border-slate-200 pt-1">
               {/* Price section */}
               <div className="mt-5 flex items-center gap-4">
                 <h3 className="text-2xl font-semibold text-gray-900">
@@ -296,8 +324,7 @@ const ProductDetailsCard = ({
                 <strong>{estimatedDelivery.toDateString()}</strong>
               </div>
             </div>
-          </div>
-        </div>
+        </section>
       </div>
     </div>
   );

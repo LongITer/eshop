@@ -1,0 +1,31 @@
+{
+  "name": "chatting-service",
+  "sourceRoot": "apps/chatting-service/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "apps/chatting-service/dist",
+        "main": "apps/chatting-service/src/main.ts",
+        "tsConfig": "apps/chatting-service/tsconfig.app.json",
+        "webpackConfig": "apps/chatting-service/webpack.config.js"
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "dependsOn": [
+        "build"
+      ],
+      "options": {
+        "buildTarget": "chatting-service:build",
+        "inspect": false
+      }
+    }
+  }
+}

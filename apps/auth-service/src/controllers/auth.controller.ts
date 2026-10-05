@@ -17,7 +17,7 @@ import Stripe from "stripe";
 import { sendBehaviorLog } from "@packages/utils/logs/behavior-log";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2026-04-22.dahlia",
+  apiVersion: "2026-08-26.dahlia",
 });
 
 // Register a new user
@@ -271,14 +271,14 @@ export const getUser = async (
   next: NextFunction,
 ) => {
   try {
-    const user = (req as any).user;
+    const user = await prisma.users.findUnique({ where: { id: req.user.id }, select: { id: true, name: true, email: true, role: true, createdAt: true, following: true, avatar: true } });
     if (!user) {
       return next(new ValidationError("User not found"));
     }
 
     res.status(200).json({
       success: true,
-      user,
+      user: { ...user, avatar: user.avatar[0]?.url ?? null },
     });
   } catch (error) {
     return next(error);
@@ -684,7 +684,7 @@ export const getSeller = async (
   next: NextFunction,
 ) => {
   try {
-    const seller = (req as any).seller;
+    const seller = await prisma.sellers.findUnique({ where: { id: req.seller!.id }, select: { id: true, name: true, email: true, phone_number: true, country: true, createdAt: true, stripe_id: true, shop: { include: { avatar: true } } } });
     if (!seller) {
       return next(new ValidationError("Seller not found"));
     }
@@ -853,8 +853,8 @@ export const loginAdmin = async (
     //   source: "auth-service",
     // })
 
-    res.clearCookie("seller-access-token");
-    res.clearCookie("seller-refresh-token");
+    res.clearCookie("seller_access_token");
+    res.clearCookie("seller_refresh_token");
 
     // Generate access token and refresh token
     const accessToken = await jwt.sign(
@@ -885,3 +885,4 @@ export const loginAdmin = async (
     return next(error);
   }
 };
+

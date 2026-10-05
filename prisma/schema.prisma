@@ -25,6 +25,45 @@ model images {
   products  products? @relation(fields: [productId], references: [id])
 }
 
+model oauthIdentity {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  subject String @unique
+  userId String @db.ObjectId
+  createdAt DateTime @default(now())
+}
+
+model pushSubscription {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  endpoint String @unique
+  actorId String @db.ObjectId
+  actorType String
+  subscription Json
+  createdAt DateTime @default(now())
+}
+
+model chatAttachment {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  url String @unique
+  actorId String @db.ObjectId
+  conversationId String @db.ObjectId
+  createdAt DateTime @default(now())
+}
+
+model paymentSession {
+  id String @id @map("_id")
+  userId String @db.ObjectId
+  payload Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model paymentReceipt {
+  id String @id @map("_id")
+  userId String @db.ObjectId
+  orderIds String[] @db.ObjectId
+  createdAt DateTime @default(now())
+}
+
 model users {
   id            String          @id @default(auto()) @map("_id") @db.ObjectId
   name          String
@@ -39,6 +78,7 @@ model users {
   orders        orders[]
   addresses     address[]
   notifications notifications[]
+  productReviews productReviews[]
 }
 
 model shopReviews {
@@ -147,6 +187,48 @@ model products {
   shopId               String        @db.ObjectId
   shop                 shops         @relation(fields: [shopId], references: [id])
   orderItems           orderItems[]
+  reviews              productReviews[]
+  inventoryHistory     inventoryHistory[]
+}
+
+model productReviews {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  productId String @db.ObjectId
+  product   products @relation(fields: [productId], references: [id])
+  userId    String @db.ObjectId
+  user      users @relation(fields: [userId], references: [id])
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([productId, userId])
+}
+
+model inventoryHistory {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  productId String @db.ObjectId
+  product   products @relation(fields: [productId], references: [id])
+  shopId    String @db.ObjectId
+  delta     Int
+  stockAfter Int
+  reason    String
+  actorId   String
+  createdAt DateTime @default(now())
+  @@index([shopId, createdAt])
+}
+
+model behaviorLog {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  eventId   String @unique
+  action    String
+  userId    String?
+  source    String
+  type      String
+  message   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  @@index([action, createdAt])
+  @@index([userId, createdAt])
 }
 
 enum orderStatus {
@@ -184,6 +266,8 @@ model orders {
   paymentStatus   paymentStatus @default(Pending)
   paymentMethod   String?
   stripePaymentId String?
+  stripeRefundId  String?
+  refundState     String?
   shippingAddress Json
   note            String?
   trackingNumber  String?

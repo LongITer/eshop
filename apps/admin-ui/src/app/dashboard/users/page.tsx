@@ -24,7 +24,7 @@ const fetchAdmins = async () => {
 
 const exportCSV = (users: any[]) => {
   const headers = ["Name", "Email", "Role", "Joined"];
-  const rows = users.map((u) => [
+  const rows = users.map((u: any) => [
     `"${u.name}"`,
     u.email,
     u.role,
@@ -86,7 +86,7 @@ const UsersPage = () => {
     setSearch(searchInput);
   };
 
-  const displayEntries = allEntries.filter((u) =>
+  const displayEntries = allEntries.filter((u: any) =>
     searchInput
       ? u.name?.toLowerCase().includes(searchInput.toLowerCase()) ||
         u.email?.toLowerCase().includes(searchInput.toLowerCase())
@@ -159,7 +159,7 @@ const UsersPage = () => {
               </tr>
             </thead>
             <tbody>
-              {displayEntries.map((user) => {
+              {displayEntries.map((user: any) => {
                 const joined = new Date(user.createdAt).toLocaleDateString(
                   "en-GB",
                 );
@@ -226,3 +226,4 @@ const UsersPage = () => {
 };
 
 export default UsersPage;
+

@@ -91,7 +91,6 @@ const GeographicalMap = ({ countries = defaultCountries }: GeographicalMapProps)
     setTooltip(null);
   };
 
-  const maxUsers = Math.max(...countries.map((c) => c.users), 1);
 
   // tooltip placement: keep it inside the viewBox
   const ttW = 150, ttH = 72;
@@ -287,3 +286,4 @@ const GeographicalMap = ({ countries = defaultCountries }: GeographicalMapProps)
 };
 
 export default GeographicalMap;
+

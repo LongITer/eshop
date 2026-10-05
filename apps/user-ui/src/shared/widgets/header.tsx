@@ -5,6 +5,8 @@ import { HeartIcon, Search, ShoppingCart, User } from "lucide-react";
 import HeaderBottom from "./header-bottom";
 import useUser from "../../hooks/useUser";
 import { useStore } from "../../store";
+import { NotificationBadge } from '../components/account-tools';
+import MobileNav from '@packages/components/mobile-nav';
 
 const Header = () => {
   const { user, isLoading } = useUser();
@@ -13,13 +15,13 @@ const Header = () => {
 
   return (
     <div className="w-full bg-white">
-      <div className="w-[80%] py-5 m-auto flex items-center justify-between">
+      <div className="w-[94%] xl:w-[80%] py-5 m-auto flex flex-wrap gap-4 items-center justify-between">
         <div>
           <Link href={"/"}>
             <span className="text-3xl font-[500]">Eshop</span>
           </Link>
         </div>
-        <div className="w-[50%] relative">
+        <div className="w-full md:w-[40%] order-last md:order-none relative">
           <input
             type="text"
             placeholder="Search for products ..."
@@ -31,7 +33,7 @@ const Header = () => {
             <Search color="#fff" />
           </div>
         </div>
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-3 md:gap-8">
           <div className="flex items-center gap-2">
             {!isLoading && user ? (
               <>
@@ -66,6 +68,7 @@ const Header = () => {
             )}
           </div>
           <div className="flex items-center gap-5">
+            <NotificationBadge />
             <Link href={"/wishlist"} className="relative">
               <HeartIcon />
               <div className="w-6 h-6 border-2 border-white bg-red-500 rounded-full flex items-center justify-center absolute top-[-10px] right-[-10px]">
@@ -86,7 +89,8 @@ const Header = () => {
         </div>
       </div>
       <div className="border-b border-b-slate-200" />
-      <HeaderBottom />
+      <MobileNav links={[{ label: 'Home', href: '/' }, { label: 'Products', href: '/products' }, { label: 'Shops', href: '/shop' }, { label: 'Offers', href: '/offers' }, { label: 'Wishlist', href: '/wishlist' }, { label: 'Cart', href: '/cart' }, { label: 'Messages', href: '/inbox' }, { label: 'Profile', href: '/profile' }]} />
+      <div className="hidden md:block"><HeaderBottom /></div>
     </div>
   );
 };

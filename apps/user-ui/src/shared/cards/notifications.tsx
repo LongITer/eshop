@@ -1,22 +1,15 @@
-"use client";
+'use client';
+import { useState } from 'react';
+import Link from 'next/link';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import axios from '@/utils/axioInstance';
+export default function Notifications() {
+  const [page, setPage] = useState(1);
+  const client = useQueryClient();
+  const query = useQuery({ queryKey: ['user-notifications', page], queryFn: async () => (await axios.get(`/api/user-notifications?page=${page}`)).data });
+  const read = useMutation({ mutationFn: (id?: string) => axios.patch(id ? `/api/notifications/${id}/read` : '/api/notifications/read-all'), onSuccess: () => client.invalidateQueries({ queryKey: ['user-notifications'] }) });
+  if (query.isLoading) return <p>Loading notifications…</p>;
+  if (query.isError) return <p role="alert">Unable to load notifications. <button onClick={() => query.refetch()}>Retry</button></p>;
+  return <section className="space-y-4"><div className="flex justify-between gap-3"><p>{query.data.unreadCount} unread</p><button disabled={read.isPending} onClick={() => read.mutate(undefined)} className="text-blue-600">Mark all as read</button></div>{read.isError && <p role="alert">Could not update notifications. Please retry.</p>}{!query.data.notifications.length && <p>No notifications yet.</p>}{query.data.notifications.map((n: any) => <article key={n.id} className={`rounded-xl border p-4 ${n.isRead ? '' : 'bg-blue-50'}`}><h2 className="font-semibold">{n.title}</h2><p>{n.message}</p><time className="text-sm text-gray-500">{new Date(n.createdAt).toLocaleString()}</time><div className="flex gap-4 mt-2">{!n.isRead && <button disabled={read.isPending} onClick={() => read.mutate(n.id)} className="text-blue-600">Mark as read</button>}{n.redirectUrl?.startsWith('/') && !n.redirectUrl.startsWith('//') && <Link href={n.redirectUrl}>View details</Link>}</div></article>)}<div className="flex gap-4"><button disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</button><span>Page {page}</span><button disabled={page * 20 >= query.data.total} onClick={() => setPage(page + 1)}>Next</button></div></section>;
+}
 
-import axiosInstance from "@/utils/axioInstance";
-import { useQuery } from "@tanstack/react-query";
-import { Bell, CheckCircle2 } from "lucide-react";
-
-type Notification = { id: string; title: string; message: string; isRead?: boolean; createdAt?: string };
-
-const fetchNotifications = async (): Promise<Notification[]> => {
-  const response = await axiosInstance.get("/api/notifications");
-  return Array.isArray(response.data) ? response.data : response.data?.notifications ?? [];
-};
-
-const Notifications = () => {
-  const { data: notifications = [], isLoading, isError } = useQuery({ queryKey: ["user-notifications"], queryFn: fetchNotifications, staleTime: 1000 * 60 });
-  if (isLoading) return <p className="py-8 text-center text-sm text-gray-500">Loading notifications...</p>;
-  if (isError) return <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-600">Unable to load notifications right now.</p>;
-  if (notifications.length === 0) return <div className="flex flex-col items-center gap-2 py-10 text-center text-gray-500"><Bell className="h-8 w-8 text-gray-300" /><p className="text-sm">You are all caught up.</p></div>;
-  return <div className="divide-y divide-gray-100">{notifications.map((notification) => <article key={notification.id} className={`flex gap-3 py-4 ${notification.isRead ? "" : "bg-blue-50/50"}`}><div className="mt-0.5 rounded-full bg-blue-100 p-2 text-blue-600">{notification.isRead ? <CheckCircle2 className="h-4 w-4" /> : <Bell className="h-4 w-4" />}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-baseline justify-between gap-2"><h3 className="text-sm font-semibold text-gray-800">{notification.title}</h3>{notification.createdAt && <time className="text-xs text-gray-400">{new Date(notification.createdAt).toLocaleDateString()}</time>}</div><p className="mt-1 text-sm text-gray-600">{notification.message}</p></div></article>)}</div>;
-};
-
-export default Notifications;

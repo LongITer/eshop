@@ -31,6 +31,10 @@ jest.mock("../services/product-matcher.service", () => ({
 
 jest.mock("../services/ai.service", () => ({
   getAIResponse: jest.fn(),
+  localizeChatResponse: jest.fn(async (content: string, metadata: any) => ({
+    content,
+    metadata,
+  })),
 }));
 
 describe("chat controller alternative configuration", () => {
@@ -89,13 +93,17 @@ describe("chat controller alternative configuration", () => {
     };
   });
 
-  const sendMessage = async (message = "Cấu hình khác") => {
+  const sendMessage = async (
+    message = "Cấu hình khác",
+    language: "vi" | "en" = "vi"
+  ) => {
     await chat(
       {
         body: {
           conversationId: "conversation-1",
           sessionId,
           message,
+          language,
         },
       } as any,
       res,
@@ -199,12 +207,13 @@ describe("chat controller alternative configuration", () => {
     findProductsMock.mockResolvedValue([]);
     aiResponseMock.mockResolvedValue({ content: "AI response for test" });
 
-    await sendMessage("CPU này có phù hợp với nhu cầu của tôi không?");
+    await sendMessage("CPU này có phù hợp với nhu cầu của tôi không?", "en");
 
     expect(aiResponseMock).toHaveBeenCalledWith(
       "CPU này có phù hợp với nhu cầu của tôi không?",
       [],
-      []
+      [],
+      "en"
     );
     expect(responseBody.message.content).toContain("AI response for test");
   });
@@ -229,7 +238,8 @@ describe("chat controller alternative configuration", () => {
     expect(aiResponseMock).toHaveBeenCalledWith(
       "Tôi có CPU AMD Ryzen 5 7600 và main ASUS PRIME B650M-A WIFI. Hai linh kiện này có lắp chung được không?",
       [],
-      []
+      [],
+      "vi"
     );
     expect(responseBody.message.content).toBe(
       "Có, CPU Ryzen 5 7600 và mainboard B650 đều dùng socket AM5."
@@ -266,7 +276,8 @@ describe("chat controller alternative configuration", () => {
     expect(aiResponseMock).toHaveBeenCalledWith(
       "CPU nào của shop mạnh nhất cho gaming",
       [],
-      shopProducts
+      shopProducts,
+      "vi"
     );
     expect(responseBody.message.content).toBe(
       "CPU mạnh nhất là AMD Ryzen 7 Example."

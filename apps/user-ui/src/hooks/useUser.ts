@@ -13,6 +13,8 @@ const useUser = () => {
         data: user,
         isLoading,
         isError,
+        error,
+        isFetching,
         refetch
     } = useQuery({
         queryKey: ["user"],
@@ -21,7 +23,7 @@ const useUser = () => {
         retry: 1,
     });
 
-    return { user, isLoading, isError, refetch };
+    return { user, isLoading, isError, error, isFetching, refetch };
 }
 
 export default useUser;

@@ -18,12 +18,12 @@ export const getCategories = async (
       return res.status(404).json({ message: "Categories not found" });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       categories: config.categories,
       subCategories: config.subCategories,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -53,11 +53,26 @@ export const createDiscountCode = async (
       },
     });
 
-    res
+    try {
+      await prisma.notifications.create({
+        data: {
+          title: "🎉 Promotion created",
+          message: `Your promotion "${public_name}" is ready.`,
+          type: "Promotion",
+          sellerId: req.seller.id,
+          redirectUrl: "/dashboard/discount-codes",
+          metadata: { discountCodeId: discount_code.id },
+        },
+      });
+    } catch (notificationError) {
+      console.error("Error creating promotion notification:", notificationError);
+    }
+
+    return res
       .status(201)
       .json({ message: "Discount code created successfully", discount_code });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -72,12 +87,12 @@ export const getDiscountCodes = async (
     const discountCodes = await prisma.discountCodes.findMany({
       where: { sellerId },
     });
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       discount_codes: discountCodes,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -112,9 +127,9 @@ export const deleteDiscountCodes = async (
       where: { id },
     });
 
-    res.status(200).json({ message: "Discount code deleted successfully" });
+    return res.status(200).json({ message: "Discount code deleted successfully" });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -137,12 +152,12 @@ export const uploadProductImages = async (
       folder: "/products",
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       file_url: response.url,
       fileName: response.fileId,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -155,9 +170,9 @@ export const deleteProductImages = async (
   try {
     const { fileId } = req.body;
     await imageKit.deleteFile(fileId);
-    res.status(200).json({ message: "Product image deleted successfully" });
+    return res.status(200).json({ message: "Product image deleted successfully" });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -299,13 +314,13 @@ export const createProduct = async (
       metadata: { sellerId: req.seller.id, productId: newProduct.id },
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Product created successfully",
       newProduct,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -330,7 +345,7 @@ export const getShopProducts = async (
       products,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -382,7 +397,7 @@ export const deleteProduct = async (
       deletedAt: deletedProduct.deleteAt,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -425,7 +440,7 @@ export const restoreProduct = async (
       message: "Product restored successfully",
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -476,7 +491,7 @@ export const getAllProducts = async (
       }),
     ]);
 
-    res.status(201).json({
+    return res.status(201).json({
       products,
       top10By: type === "latest" ? "latest" : "topSales",
       top10Products,
@@ -485,7 +500,7 @@ export const getAllProducts = async (
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -532,6 +547,7 @@ export const getFilteredProducts = async (
     const {
       priceRange = [0, 10000],
       categories = [],
+      subCategories = [],
       colors = [],
       sizes = [],
       excludeId = "",
@@ -572,6 +588,14 @@ export const getFilteredProducts = async (
       };
     }
 
+    if (subCategories && (subCategories as string[]).length > 0) {
+      filters.subCategory = {
+        in: Array.isArray(subCategories)
+          ? subCategories
+          : String(subCategories).split(","),
+      };
+    }
+
     if (colors && (colors as string[]).length > 0) {
       filters.colors = {
         hasSome: Array.isArray(colors) ? colors : [colors],
@@ -597,7 +621,13 @@ export const getFilteredProducts = async (
       prisma.products.count({ where: filters }),
     ]);
 
-    const activeFilterKeys = ["priceRange", "categories", "colors", "sizes"]
+    const activeFilterKeys = [
+      "priceRange",
+      "categories",
+      "subCategories",
+      "colors",
+      "sizes",
+    ]
       .filter((key) => req.query[key] !== undefined)
       .filter((key) => {
         const value = req.query[key];
@@ -615,7 +645,7 @@ export const getFilteredProducts = async (
 
     const totalPages = Math.ceil(total / parsedLimit);
 
-    res.json({
+    return res.json({
       products,
       pagination: {
         total,
@@ -624,7 +654,7 @@ export const getFilteredProducts = async (
       },
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 // Get filtered events
@@ -698,7 +728,7 @@ export const getFilteredEvents = async (
 
     const totalPages = Math.ceil(total / parsedLimit);
 
-    res.json({
+    return res.json({
       products,
       pagination: {
         total,
@@ -707,7 +737,7 @@ export const getFilteredEvents = async (
       },
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -723,6 +753,7 @@ export const getShopById = async (
     const shop = await prisma.shops.findUnique({
       where: { id },
       include: {
+        avatar: true,
         sellers: {
           select: {
             id: true,
@@ -746,15 +777,16 @@ export const getShopById = async (
       return res.status(404).json({ message: "Shop not found" });
     }
 
-    res.json({
+    return res.json({
       shop: {
         ...shop,
+        followerCount: await prisma.users.count({ where: { following: { has: id } } }),
         avatar: shop.avatar?.[0]?.url ?? "",
       },
       sellerId: shop.sellerId,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -811,7 +843,7 @@ export const getFilteredShops = async (
 
     const totalPages = Math.ceil(total / parsedLimit);
 
-    res.json({
+    return res.json({
       shops,
       pagination: {
         total,
@@ -820,7 +852,7 @@ export const getFilteredShops = async (
       },
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -874,7 +906,7 @@ export const searchProducts = async (
 
     return res.status(200).json({ products });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -1000,7 +1032,7 @@ export const getAllEvents = async (
       }),
     ]);
 
-    res.status(200).json({
+    return res.status(200).json({
       events,
       top10BySales,
       total,
@@ -1012,3 +1044,5 @@ export const getAllEvents = async (
     return next(error);
   }
 };
+
+

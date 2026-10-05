@@ -122,6 +122,12 @@ const ProductCard = ({
         </h3>
       </Link>
 
+      {product?.subCategory && (
+        <span className="inline-block mx-2 mt-1 text-xs text-gray-500">
+          {product.subCategory}
+        </span>
+      )}
+
       <div className="mt-2 px-2">
         <Ratings rating={product?.ratings} />
       </div>
