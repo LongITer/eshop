@@ -1,0 +1,9 @@
+process.env.ACCESS_TOKEN_JWT_SECRET = 'unit-test-access-secret';
+process.env.REFRESH_TOKEN_JWT_SECRET = 'unit-test-refresh-secret';
+process.env.STRIPE_SECRET_KEY = 'sk_test_placeholder';
+jest.mock('@packages/libs/prisma', () => require('./mocks/prisma'));
+jest.mock('stripe', () => require('./mocks/stripe'));
+jest.mock('@packages/libs/redis', () => ({ __esModule: true, default: { get: jest.fn(), getdel: jest.fn(), set: jest.fn(), setex: jest.fn(), del: jest.fn() } }));
+jest.mock('@packages/libs/imagekit', () => ({ imageKit: { upload: jest.fn(), deleteFile: jest.fn() } }));
+jest.mock('@packages/utils/logs/behavior-log', () => ({ sendBehaviorLog: jest.fn(), invalidateLogConfigCache: jest.fn() }));
+jest.mock('../../apps/order-service/src/utils/send-email', () => ({ sendEmail: jest.fn() }));

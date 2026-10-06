@@ -28,24 +28,31 @@
       ],
       "@packages/*": [
         "../../packages/*"
+      ],
+      "apps/*": [
+        "../../apps/*"
+      ],
+      "packages/*": [
+        "../../packages/*"
       ]
     },
-    "baseUrl": ".",
     "outDir": "dist",
     "rootDir": "../../",
-    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
+    "baseUrl": "."
   },
   "include": [
     "../../apps/user-ui/.next/types/**/*.ts",
-    "../../packages/components/**/*.tsx",
-    "../../packages/utils/**/*.ts",
     "../../dist/apps/user-ui/.next/types/**/*.ts",
+    "../../packages/**/*.ts",
+    "../../packages/components/**/*.tsx",
+    ".next/types/**/*.ts",
     "next-env.d.ts",
     "src/**/*.js",
     "src/**/*.jsx",
     "src/**/*.ts",
     "src/**/*.tsx",
-    ".next/types/**/*.ts"
+    "C:\\Users\\Dell\\AppData\\Local\\Temp\\nextjs-user-ui/types/**/*.ts"
   ],
   "exclude": [
     "out-tsc",

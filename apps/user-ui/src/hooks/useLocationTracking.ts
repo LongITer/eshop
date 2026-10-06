@@ -21,10 +21,14 @@ const useLocationTracking = () => {
   const [location, setLocation] = useState<{
     country: string;
     city: string;
-  } | null>(getStoredLocation);
+  } | null>(null);
 
   useEffect(() => {
-    if (location) return;
+    const storedLocation = getStoredLocation();
+    if (storedLocation) {
+      setLocation(storedLocation);
+      return;
+    }
 
     fetch("http://ip-api.com/json/")
       .then((res) => res.json())

@@ -1,5 +1,5 @@
 {
-  "name": "@./recommendation-service",
+  "name": "recommendation-service",
   "version": "0.0.1",
   "private": true,
   "nx": {
@@ -11,18 +11,33 @@
           "build"
         ],
         "options": {
-          "buildTarget": "@./recommendation-service:build",
+          "buildTarget": "recommendation-service:build",
           "runBuildTargetDependencies": false
         },
         "configurations": {
           "development": {
-            "buildTarget": "@./recommendation-service:build:development"
+            "buildTarget": "recommendation-service:build"
           },
           "production": {
-            "buildTarget": "@./recommendation-service:build:production"
+            "buildTarget": "recommendation-service:build"
           }
         }
+      },
+      "build": {
+        "executor": "@nx/webpack:webpack",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "target": "node",
+          "compiler": "tsc",
+          "outputPath": "apps/recommendation-service/dist",
+          "main": "apps/recommendation-service/src/main.ts",
+          "tsConfig": "apps/recommendation-service/tsconfig.app.json",
+          "webpackConfig": "apps/recommendation-service/webpack.config.js"
+        }
       }
-    }
+    },
+    "name": "recommendation-service"
   }
 }

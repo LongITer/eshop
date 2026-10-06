@@ -102,7 +102,7 @@ const CheckoutForm = ({
 
           <div className="flex justify-between font-semibold mt-2">
             <span>Total</span>
-            <span>${(total - (coupon?.discountAmount ?? 0)).toFixed(2)}</span>
+            <span>${(total - Number(coupon?.discountAmount ?? 0)).toFixed(2)}</span>
           </div>
         </div>
 

@@ -1,4 +1,5 @@
 "use client";
+import { ErrorState } from "../../../shared/admin-ui";
 
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "apps/admin-ui/src/utils/axioInstance";
@@ -24,7 +25,7 @@ const fetchAdmins = async () => {
 
 const exportCSV = (users: any[]) => {
   const headers = ["Name", "Email", "Role", "Joined"];
-  const rows = users.map((u) => [
+  const rows = users.map((u: any) => [
     `"${u.name}"`,
     u.email,
     u.role,
@@ -52,13 +53,13 @@ const UsersPage = () => {
   const [searchInput, setSearchInput] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | "user" | "admin">("all");
 
-  const { data: userData, isLoading: usersLoading } = useQuery({
+  const { data: userData, isLoading: usersLoading, isError: usersError, refetch: refetchUsers } = useQuery({
     queryKey: ["admin-users", page, search],
     queryFn: () => fetchUsers(page, search),
     staleTime: 1000 * 60 * 2,
   });
 
-  const { data: admins = [], isLoading: adminsLoading } = useQuery({
+  const { data: admins = [], isLoading: adminsLoading, isError: adminsError, refetch: refetchAdmins } = useQuery({
     queryKey: ["admin-admins"],
     queryFn: fetchAdmins,
     staleTime: 1000 * 60 * 5,
@@ -78,6 +79,7 @@ const UsersPage = () => {
         ? admins.map((a: any) => ({ ...a, role: "admin" }))
         : rawUsers;
 
+  const isError = usersError || (roleFilter !== "user" && adminsError);
   const isLoading = usersLoading || (roleFilter !== "user" && adminsLoading);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -86,7 +88,7 @@ const UsersPage = () => {
     setSearch(searchInput);
   };
 
-  const displayEntries = allEntries.filter((u) =>
+  const displayEntries = allEntries.filter((u: any) =>
     searchInput
       ? u.name?.toLowerCase().includes(searchInput.toLowerCase()) ||
         u.email?.toLowerCase().includes(searchInput.toLowerCase())
@@ -94,7 +96,7 @@ const UsersPage = () => {
   );
 
   return (
-    <div className="w-full min-h-screen p-8">
+    <div className="admin-page">
       {/* Header */}
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
         <h2 className="text-2xl text-white font-semibold">All Users</h2>
@@ -134,7 +136,7 @@ const UsersPage = () => {
         <input
           type="text"
           placeholder="Search users..."
-          className="w-full bg-transparent text-white outline-none"
+          aria-label="Search users" className="w-full bg-transparent text-white outline-none"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
@@ -142,10 +144,10 @@ const UsersPage = () => {
 
       {/* Table */}
       <div className="overflow-x-auto bg-gray-900 rounded-lg border border-gray-800">
-        {isLoading ? (
+        {isError ? <ErrorState retry={() => { refetchUsers(); refetchAdmins(); }} /> : isLoading ? (
           <p className="text-center text-white py-10">Loading users...</p>
         ) : (
-          <table className="w-full text-white">
+          <table className="admin-table text-white">
             <thead>
               <tr className="border-b border-gray-800">
                 {["Name", "Email", "Role", "Joined", "Actions"].map((h) => (
@@ -159,7 +161,7 @@ const UsersPage = () => {
               </tr>
             </thead>
             <tbody>
-              {displayEntries.map((user) => {
+              {displayEntries.map((user: any) => {
                 const joined = new Date(user.createdAt).toLocaleDateString(
                   "en-GB",
                 );
@@ -182,7 +184,7 @@ const UsersPage = () => {
                     <td className="p-3 text-sm text-slate-300">{joined}</td>
                     <td className="p-3">
                       <button
-                        title="Ban user"
+                        disabled title="Account suspension is not available yet" aria-label="Account suspension is not available yet"
                         className="text-red-500 hover:text-red-400 transition"
                       >
                         <Ban size={18} />
@@ -194,13 +196,13 @@ const UsersPage = () => {
             </tbody>
           </table>
         )}
-        {!isLoading && displayEntries.length === 0 && (
+        {!isLoading && !isError && displayEntries.length === 0 && (
           <p className="text-center py-10 text-slate-400">No users found!</p>
         )}
       </div>
 
       {/* Pagination (only for user role query) */}
-      {roleFilter === "user" && (
+      {roleFilter !== "admin" && (
         <div className="flex items-center justify-between mt-4">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -226,3 +228,4 @@ const UsersPage = () => {
 };
 
 export default UsersPage;
+

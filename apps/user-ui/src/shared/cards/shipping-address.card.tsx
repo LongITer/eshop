@@ -10,6 +10,7 @@ import { useForm } from "react-hook-form";
 
 const ShippingAddressSection = () => {
   const [showModel, setShowModel] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const {
@@ -29,21 +30,23 @@ const ShippingAddressSection = () => {
     },
   });
 
-  const { mutate: addAddress } = useMutation({
+  const { mutate: addAddress, isPending: saving } = useMutation({
     mutationFn: async (payload: any) => {
-      const res = await axiosInstance.post("/api/add-address", payload);
+      const res = editingId ? await axiosInstance.put(`/api/update-address/${editingId}`, payload) : await axiosInstance.post("/api/add-address", payload);
       return res.data.address;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shipping-addresses"] });
-      toast.success("Address added successfully!");
+      toast.success("Address saved successfully!");
+      setEditingId(null);
       reset();
       setShowModel(false);
     },
+    onError: () => toast.error('Unable to save address'),
   });
 
   // Get addresses
-  const { data: addresses, isLoading } = useQuery({
+  const { data: addresses, isLoading, isError, refetch } = useQuery({
     queryKey: ["shipping-addresses"],
     queryFn: async () => {
       const res = await axiosInstance.get("/api/shipping-addresses");
@@ -77,7 +80,7 @@ const ShippingAddressSection = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold text-gray-800">Saved Address</h2>
         <button
-          onClick={() => setShowModel(true)}
+          onClick={() => { setEditingId(null); reset(); setShowModel(true); }}
           className="flex items-center gap-1 text-sm text-blue-600 font-medium hover:underline"
         >
           <Plus className="w-4 h-4" />
@@ -89,7 +92,9 @@ const ShippingAddressSection = () => {
       <div>
         {isLoading ? (
           <p className="text-sm text-gray-500">Loading Addresses ...</p>
-        ) : !addAddress || addAddress.length === 0 ? (
+        ) : isError ? (
+          <p role="alert" className="text-sm text-red-600">Unable to load addresses. <button onClick={() => refetch()} className="underline">Retry</button></p>
+        ) : !addresses || addresses.length === 0 ? (
           <p className="text-sm text-gray-600">No saved addresses found.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -116,6 +121,7 @@ const ShippingAddressSection = () => {
                   </div>
                 </div>
                 <div className="flex gap-3 mt-4">
+                  <button className="min-h-11 text-blue-600" onClick={() => { setEditingId(address.id); reset({ ...address, isDefault: String(address.isDefault) }); setShowModel(true); }}>Edit</button>
                   <button
                     className="flex items-center gap-1 !cursor-pointer text-xs text-red-500"
                     onClick={() => deleteAddress(address.id)}
@@ -140,7 +146,7 @@ const ShippingAddressSection = () => {
               <X className="w-5 h-5" />
             </button>
             <h3 className="text-lg font-semibold mb-3 text-gray-800">
-              Add New Address
+              {editingId ? 'Edit Address' : 'Add New Address'}
             </h3>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
@@ -210,6 +216,7 @@ const ShippingAddressSection = () => {
 
               <button
                 type="submit"
+                disabled={saving}
                 className="w-full bg-blue-600 text-white text-sm py-2 rounded-md hover:bg-blue-700 transition"
               >
                 Save Address

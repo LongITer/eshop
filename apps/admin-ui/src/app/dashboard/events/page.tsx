@@ -1,4 +1,5 @@
 "use client";
+import { ErrorState } from "../../../shared/admin-ui";
 
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "apps/admin-ui/src/utils/axioInstance";
@@ -42,7 +43,7 @@ const EventsPage = () => {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-events", page, search],
     queryFn: () => fetchEvents(page, search),
     staleTime: 1000 * 60 * 2,
@@ -61,7 +62,7 @@ const EventsPage = () => {
     d ? new Date(d).toLocaleDateString("en-GB") : "—";
 
   return (
-    <div className="w-full min-h-screen p-8">
+    <div className="admin-page">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-2xl text-white font-semibold">All Events</h2>
@@ -86,7 +87,7 @@ const EventsPage = () => {
         <input
           type="text"
           placeholder="Search events..."
-          className="w-full bg-transparent text-white outline-none"
+          aria-label="Search events" className="w-full bg-transparent text-white outline-none"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
@@ -94,10 +95,10 @@ const EventsPage = () => {
 
       {/* Table */}
       <div className="overflow-x-auto bg-gray-900 rounded-lg border border-gray-800">
-        {isLoading ? (
+        {isError ? <ErrorState retry={() => refetch()} /> : isLoading ? (
           <p className="text-center text-white py-10">Loading events...</p>
         ) : (
-          <table className="w-full text-white">
+          <table className="admin-table text-white">
             <thead>
               <tr className="border-b border-gray-800">
                 {["Image", "Title", "Price", "Stock", "Start", "End", "Shop Name"].map(
@@ -155,7 +156,7 @@ const EventsPage = () => {
             </tbody>
           </table>
         )}
-        {!isLoading && events.length === 0 && (
+        {!isLoading && !isError && events.length === 0 && (
           <p className="text-center py-10 text-slate-400">No events found!</p>
         )}
       </div>

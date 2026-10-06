@@ -1,0 +1,31 @@
+{
+  "name": "kafka-service",
+  "sourceRoot": "apps/kafka-service/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "apps/kafka-service/dist",
+        "main": "apps/kafka-service/src/main.ts",
+        "tsConfig": "apps/kafka-service/tsconfig.app.json",
+        "webpackConfig": "apps/kafka-service/webpack.config.js"
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "dependsOn": [
+        "build"
+      ],
+      "options": {
+        "buildTarget": "kafka-service:build",
+        "inspect": false
+      }
+    }
+  }
+}

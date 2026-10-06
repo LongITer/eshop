@@ -24,11 +24,21 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@packages/*": [
+        "../../packages/*"
+      ],
+      "apps/*": [
+        "../../apps/*"
+      ],
+      "packages/*": [
+        "../../packages/*"
       ]
     },
     "outDir": "dist",
     "rootDir": "../../",
-    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
+    "baseUrl": "."
   },
   "include": [
     "../../apps/admin-ui/.next/types/**/*.ts",
@@ -39,7 +49,8 @@
     "src/**/*.jsx",
     "src/**/*.ts",
     "src/**/*.tsx",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "../../packages/**/*.ts"
   ],
   "exclude": [
     "out-tsc",

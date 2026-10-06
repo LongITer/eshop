@@ -1,4 +1,5 @@
 "use client";
+import toast from "react-hot-toast";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "apps/seller-ui/src/utils/axioInstance";
@@ -39,7 +40,12 @@ const OrderDetails = () => {
       );
       return response.data;
     },
+    onError: () => toast.error("Could not update status."),
     onSuccess: () => {
+      toast.success("Order status updated.");
+      queryClient.invalidateQueries({ queryKey: ["seller-payments"] });
+      queryClient.invalidateQueries({ queryKey: ["revenue-report"] });
+      queryClient.invalidateQueries({ queryKey: ["seller-stats"] });
       queryClient.invalidateQueries({ queryKey: ["seller-orders"] });
     },
   });
@@ -117,9 +123,6 @@ const OrderDetails = () => {
               <Loader2 size={14} className="animate-spin" />
               Saving...
             </span>
-          )}
-          {updateStatusMutation.isError && (
-            <span className="text-xs text-red-400">Could not update status.</span>
           )}
         </div>
 

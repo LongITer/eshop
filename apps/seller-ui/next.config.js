@@ -33,19 +33,19 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8080/api/:path*',
+        destination: `${process.env.GATEWAY_INTERNAL_URL || "http://localhost:8080"}/api/:path*`,
       },
       {
         source: '/product/:path*',
-        destination: 'http://localhost:8080/product/:path*',
+        destination: `${process.env.GATEWAY_INTERNAL_URL || "http://localhost:8080"}/product/:path*`,
       },
       {
         source: '/order/:path*',
-        destination: 'http://localhost:8080/order/:path*',
+        destination: `${process.env.GATEWAY_INTERNAL_URL || "http://localhost:8080"}/order/:path*`,
       },
       {
         source: '/chatting/:path*',
-        destination: 'http://localhost:8080/chatting/:path*',
+        destination: `${process.env.GATEWAY_INTERNAL_URL || "http://localhost:8080"}/chatting/:path*`,
       },
     ];
   },

@@ -50,7 +50,7 @@ export const getAllProducts = async (
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -105,7 +105,7 @@ export const getAllEvents = async (
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -127,7 +127,7 @@ export const getAllAdmin = async (
       admins,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -171,7 +171,7 @@ export const addAdmin = async (
       user: updated,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -191,7 +191,7 @@ export const getSiteConfig = async (
 
     return res.status(200).json({ success: true, config });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -226,7 +226,7 @@ export const updateSiteConfig = async (
       config: updated,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -278,7 +278,7 @@ export const getAllUsers = async (
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -338,6 +338,8 @@ export const getAllSellers = async (
       totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
+
+

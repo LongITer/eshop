@@ -15,6 +15,7 @@ const ProductListingPage = () => {
   const [isProductLoading, setIsProductLoading] = useState(false);
   const [priceRange, setPriceRange] = useState([0, 1199]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [page, setPage] = useState(1);
@@ -40,6 +41,8 @@ const ProductListingPage = () => {
         ? prev.filter((cat) => cat !== label)
         : [...prev, label],
     );
+    setSelectedSubCategories([]);
+    setPage(1);
   };
 
   const toggleSize = (label: string) => {
@@ -48,6 +51,15 @@ const ProductListingPage = () => {
         ? prev.filter((size) => size !== label)
         : [...prev, label],
     );
+  };
+
+  const toggleSubCategory = (label: string) => {
+    setSelectedSubCategories((prev) =>
+      prev.includes(label)
+        ? prev.filter((subCategory) => subCategory !== label)
+        : [...prev, label],
+    );
+    setPage(1);
   };
 
   const toggleColor = (label: string) => {
@@ -63,6 +75,10 @@ const ProductListingPage = () => {
     params.set("priceRange", priceRange.join(","));
     if (selectedCategories.length > 0)
       selectedCategories.forEach((cat) => params.append("categories", cat));
+    if (selectedSubCategories.length > 0)
+      selectedSubCategories.forEach((subCategory) =>
+        params.append("subCategories", subCategory),
+      );
     if (selectedColors.length > 0)
       selectedColors.forEach((color) => params.append("colors", color));
     if (selectedSizes.length > 0)
@@ -79,6 +95,8 @@ const ProductListingPage = () => {
       query.set("priceRange", priceRange.join(","));
       if (selectedCategories.length > 0)
         query.set("categories", selectedCategories.join(","));
+      if (selectedSubCategories.length > 0)
+        query.set("subCategories", selectedSubCategories.join(","));
       if (selectedColors.length > 0)
         query.set("colors", selectedColors.join(","));
       if (selectedSizes.length > 0) query.set("sizes", selectedSizes.join(","));
@@ -100,7 +118,14 @@ const ProductListingPage = () => {
   useEffect(() => {
     updateURL();
     fetchFilteredProducts();
-  }, [priceRange, selectedCategories, selectedColors, selectedSizes, page]);
+  }, [
+    priceRange,
+    selectedCategories,
+    selectedSubCategories,
+    selectedColors,
+    selectedSizes,
+    page,
+  ]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["categories"],
@@ -207,6 +232,41 @@ const ProductListingPage = () => {
                     </label>
                   </li>
                 ))
+              )}
+            </ul>
+
+            {/* Subcategories */}
+            <h3 className="text-xl font-Poppins font-medium border-b border-b-slate-300 pb-1">
+              Subcategories
+            </h3>
+            <ul className="space-y-2 !mt-3">
+              {isLoading ? (
+                <p>Loading ...</p>
+              ) : (
+                Object.entries(data?.subCategories ?? {})
+                  .filter(
+                    ([category]) =>
+                      selectedCategories.length === 0 ||
+                      selectedCategories.includes(category),
+                  )
+                  .flatMap(([, subCategories]) => subCategories as string[])
+                  .filter(
+                    (subCategory, index, all) =>
+                      all.indexOf(subCategory) === index,
+                  )
+                  .map((subCategory) => (
+                    <li key={subCategory}>
+                      <label className="flex items-center gap-3 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={selectedSubCategories.includes(subCategory)}
+                          onChange={() => toggleSubCategory(subCategory)}
+                          className="accent-blue-600"
+                        />
+                        {subCategory}
+                      </label>
+                    </li>
+                  ))
               )}
             </ul>
 

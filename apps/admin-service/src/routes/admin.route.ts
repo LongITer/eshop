@@ -15,8 +15,18 @@ import {
 } from "../controllers/log-config.controller";
 import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isAdmin } from "@packages/middleware/authorizeRoles";
+import * as ops from '../controllers/operations.controller';
 
 const router: Router = express.Router();
+router.get('/orders', isAuthenticated, isAdmin, ops.getOrders);
+router.get('/orders/:orderId', isAuthenticated, isAdmin, ops.orderDetail);
+router.patch('/update-order-status/:orderId', isAuthenticated, isAdmin, ops.updateStatus);
+router.get('/dashboard-stats', isAuthenticated, isAdmin, ops.dashboard);
+router.get('/notifications', isAuthenticated, isAdmin, ops.notifications);
+router.post('/send-notification', isAuthenticated, isAdmin, ops.sendNotification);
+router.get('/payments', isAuthenticated, isAdmin, ops.payments);
+router.post('/refund/:paymentId', isAuthenticated, isAdmin, ops.refund);
+router.get('/logs', isAuthenticated, isAdmin, ops.logs);
 
 // Products
 // GET /admin/get-all-products?page=1&limit=20&search=...

@@ -1,0 +1,32 @@
+{
+  "name": "chatbot-service",
+  "sourceRoot": "apps/chatbot-service/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "apps/chatbot-service/dist",
+        "main": "apps/chatbot-service/src/main.ts",
+        "tsConfig": "apps/chatbot-service/tsconfig.app.json",
+        "webpackConfig": "apps/chatbot-service/webpack.config.js"
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "dependsOn": [
+        "build"
+      ],
+      "options": {
+        "buildTarget": "chatbot-service:build",
+        "runBuildTargetDependencies": false,
+        "inspect": false
+      }
+    }
+  }
+}

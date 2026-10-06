@@ -1,66 +1,33 @@
 import SellerProfile from "@/shared/modules/seller/seller-profile";
-import axiosInstance from "@/utils/axioInstance";
-import { Metadata } from "next";
-
-async function fetchSellerDetails(id: string) {
+import axios from "@/utils/axioInstance";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { cache } from "react";
+const fetchShop = cache(async (id: string) => {
+  if (!/^[a-f\d]{24}$/i.test(id)) notFound();
+  try { return (await axios.get(`/product/api/get-shop/${id}`)).data; }
+  catch (error: any) { if (error.response?.status === 404) notFound(); throw error; }
+});
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  let data;
   try {
-    const response = await axiosInstance.get(`/product/api/get-shop/${id}`);
-    // Strip non-serializable objects (AxiosHeaders, etc.) before passing to Client Component
-    return JSON.parse(JSON.stringify(response.data));
-  } catch (error) {
-    console.error("Failed to fetch seller details:", error);
-    return null;
+    data = await fetchShop(id);
+  } catch {
+    // Leave route errors to ShopPage rather than metadata streaming.
+    return { title: "Shop | Eshop", robots: { index: false, follow: false } };
   }
+  const { shop } = data;
+  if (!shop) return { title: "Shop not found | Eshop", robots: { index: false, follow: false } };
+  const title = `${shop.name} | Eshop`;
+  const description = shop.bio || `Shop products from ${shop.name} on Eshop.`;
+  const url = `/shop/${id}`;
+  const image = shop.coverBanner || shop.avatar?.[0]?.url;
+  const images = image ? [image] : [];
+  return { title, description, alternates: { canonical: url }, openGraph: { title, description, url, images, type: 'website' }, twitter: { card: 'summary_large_image', title, description, images } };
 }
-
-// Dynamic metadata generator
-export async function generateMetadata({
-  params,
-}: {
-  params: { id: string };
-}): Promise<Metadata> {
-  const data = await fetchSellerDetails(params.id);
-
-  return {
-    title: `${data?.shop?.name || "Eshop Marketplace"}`,
-    description: `${data?.shop?.bio || "Check out amazing products from this seller"}`,
-    icons: {
-      icon: data?.shop?.logoUrl,
-    },
-    openGraph: {
-      title: data?.shop?.name,
-      description:
-        data?.shop?.bio || "Check out amazing products from this seller",
-      type: "website",
-      images: [
-        {
-          url: data?.shop?.avatar || "/default.png",
-          width: 800,
-          height: 600,
-          alt: data?.shop?.name || "Shop Logo",
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: data?.shop?.name,
-      description:
-        data?.shop?.bio || "Check out amazing products from this seller",
-      images: [
-        {
-          url: data?.shop?.logoUrl,
-          width: 800,
-          height: 600,
-          alt: data?.shop?.name,
-        },
-      ],
-    },
-  };
+export default async function ShopPage({ params }: { params: Promise<{ id: string }> }) {
+  const data = await fetchShop((await params).id);
+  if (!data.shop) notFound();
+  return <SellerProfile sellerData={data} />;
 }
-
-const ShopIdPage = async ({ params }: { params: { id: string } }) => {
-  const sellerData = await fetchSellerDetails(params.id);
-  return <SellerProfile sellerData={sellerData} />;
-};
-
-export default ShopIdPage;

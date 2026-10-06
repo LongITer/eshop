@@ -1,5 +1,5 @@
 {
-  "name": "@./auth-service",
+  "name": "auth-service",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -33,6 +33,20 @@
       "test": {
         "options": {
           "passWithNoTests": true
+        }
+      },
+      "build": {
+        "executor": "@nx/webpack:webpack",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "target": "node",
+          "compiler": "tsc",
+          "outputPath": "apps/auth-service/dist",
+          "main": "apps/auth-service/src/main.ts",
+          "tsConfig": "apps/auth-service/tsconfig.app.json",
+          "webpackConfig": "apps/auth-service/webpack.config.js"
         }
       }
     }

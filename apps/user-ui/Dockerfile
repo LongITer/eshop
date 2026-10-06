@@ -1,0 +1,23 @@
+FROM node:22-bookworm-slim AS build
+WORKDIR /app
+COPY . .
+ARG GATEWAY_INTERNAL_URL=http://api-gateway:8080
+ARG NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ARG NEXT_PUBLIC_CHAT_WS_URL=ws://localhost:6006
+ARG NEXT_PUBLIC_STRIPE_PUBLIC_KEY
+ENV GATEWAY_INTERNAL_URL=$GATEWAY_INTERNAL_URL
+ENV NEXT_PUBLIC_SERVER_URL=$GATEWAY_INTERNAL_URL
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_CHAT_WS_URL=$NEXT_PUBLIC_CHAT_WS_URL
+ENV NEXT_PUBLIC_STRIPE_PUBLIC_KEY=$NEXT_PUBLIC_STRIPE_PUBLIC_KEY
+ENV NX_DAEMON=false
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm ci --include=dev
+RUN npx prisma generate
+RUN npx next build apps/user-ui
+RUN chown -R node:node apps/user-ui/.next
+ENV NODE_ENV=production
+EXPOSE 3000
+USER node
+CMD ["node", "node_modules/next/dist/bin/next", "start", "apps/user-ui", "-H", "0.0.0.0", "-p", "3000"]
+

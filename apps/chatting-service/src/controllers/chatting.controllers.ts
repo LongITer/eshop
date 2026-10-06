@@ -3,7 +3,6 @@ import prisma from "@packages/libs/prisma";
 import redis from "@packages/libs/redis";
 import {
   clearUnseenCount,
-  getUnseenCount,
 } from "@packages/libs/redis/message.redis";
 import { NextFunction, Request, Response } from "express";
 
@@ -64,7 +63,7 @@ export const newConversation = async (
       isNew: true,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -131,7 +130,7 @@ export const getUserConversations = async (
           isOnline = !!redisResult;
         }
 
-        const unreadCount = await getUnseenCount("user", group.id);
+        const unreadCount = (await prisma.participant.findFirst({ where: { conversationId: group.id, userId } }))?.unreadCount ?? 0;
 
         return {
           conversationId: group.id,
@@ -151,7 +150,7 @@ export const getUserConversations = async (
 
     return res.status(200).json({ conversations: responseData });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -217,7 +216,7 @@ export const getSellerConversations = async (
           isOnline = !!redisResult;
         }
 
-        const unreadCount = await getUnseenCount("seller", group.id);
+        const unreadCount = (await prisma.participant.findFirst({ where: { conversationId: group.id, sellerId } }))?.unreadCount ?? 0;
 
         return {
           conversationId: group.id,
@@ -238,7 +237,7 @@ export const getSellerConversations = async (
 
     return res.status(200).json({ conversations: responseData });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -288,6 +287,7 @@ export const fetchMessages = async (
     }
 
     await clearUnseenCount("user", conversationId);
+    await prisma.participant.updateMany({ where: { conversationId, userId }, data: { lastSeenAt: new Date(), unreadCount: 0 } });
 
     const sellerParticipant = await prisma.participant.findFirst({
       where: {
@@ -380,6 +380,7 @@ export const fetchSellerMessages = async (
 
     // Clear unread count for seller
     await clearUnseenCount("seller", conversationId);
+    await prisma.participant.updateMany({ where: { conversationId, sellerId }, data: { lastSeenAt: new Date(), unreadCount: 0 } });
 
     // Find the buyer participant in this conversation
     const userParticipant = await prisma.participant.findFirst({

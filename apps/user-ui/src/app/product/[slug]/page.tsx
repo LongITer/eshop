@@ -1,41 +1,34 @@
 import ProductDetails from "@/shared/modules/product/product-detail";
-import axiosInstance from "@/utils/axioInstance";
-import { Metadata } from "next";
-import React from "react";
+import axios from "@/utils/axioInstance";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { cache } from "react";
+import ProductReviews from "@/shared/components/product-reviews";
+import Recommendations from "@/shared/components/recommendations";
 
-async function fetchProductDetails(slug: string) {
-  const response = await axiosInstance.get(`/product/api/get-product/${slug}`);
-  return response.data.product;
-}
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
+const fetchProduct = cache(async (slug: string) => {
+  try { return (await axios.get(`/product/api/get-product/${encodeURIComponent(slug)}`)).data.product; }
+  catch (error: any) { if (error.response?.status === 404) notFound(); throw error; }
+});
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const product = await fetchProductDetails(slug);
-  return {
-    title: `${product.title} | Becodemy Marketplace`,
-    description:
-      product?.short_description ||
-      "Discover high-quality products on Becodemy Marketplace.",
-    openGraph: {
-      title: product.title,
-      description:
-        product?.short_description ||
-        "Discover high-quality products on Becodemy Marketplace",
-      images: [product?.images?.[0]?.url || "/default-image.jpg"],
-      type: "website",
-    },
-  };
+  let product;
+  try {
+    product = await fetchProduct(slug);
+  } catch {
+    // Metadata must resolve to serializable values even when the API fails.
+    // ProductPage still handles the original error or not-found response.
+    return { title: "Product | Eshop", robots: { index: false, follow: false } };
+  }
+  if (!product) return { title: "Product not found | Eshop", robots: { index: false, follow: false } };
+  const title = `${product.title} | Eshop`;
+  const description = product.short_description || `Explore ${product.title} on Eshop.`;
+  const url = `/product/${encodeURIComponent(slug)}`;
+  const images = product.images?.[0]?.url ? [product.images[0].url] : [];
+  return { title, description, alternates: { canonical: url }, openGraph: { title, description, url, images, type: "website" }, twitter: { card: "summary_large_image", title, description, images } };
 }
-
-const page = async ({ params }: { params: Promise<{ slug: string }> }) => {
-  const { slug } = await params;
-  const productDetails = await fetchProductDetails(slug);
-  console.log(productDetails);
-  return <ProductDetails productDetails={productDetails} />;
-};
-
-export default page;
+export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  const product = await fetchProduct((await params).slug);
+  if (!product) notFound();
+  return <><ProductDetails productDetails={product} /><ProductReviews productId={product.id} /><Recommendations productId={product.id} /></>;
+}

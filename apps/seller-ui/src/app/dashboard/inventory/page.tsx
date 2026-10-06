@@ -1,0 +1,12 @@
+'use client';
+import { useState } from 'react';
+import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'apps/seller-ui/src/utils/axioInstance';
+export default function Inventory() {
+  const [low, setLow] = useState(false);
+  const [threshold, setThreshold] = useState(5);
+  const [page, setPage] = useState(1);
+  const query = useQuery({ queryKey: ['inventory', low, threshold, page], queryFn: async () => (await axios.get(`/product/api/inventory?low=${low}&threshold=${threshold}&page=${page}`)).data });
+  return <main className="p-6 text-white space-y-5"><h1 className="text-2xl font-bold">Inventory</h1><div className="flex flex-wrap items-center gap-4"><label><input type="checkbox" checked={low} onChange={e => setLow(e.target.checked)} /> Low stock only</label><label>Threshold <input className="bg-slate-900 border rounded p-2 w-20" type="number" min={1} max={1000} value={threshold} onChange={e => setThreshold(Number(e.target.value))} /></label></div>{query.isLoading && <p>Loading inventory…</p>}{query.isError && <p role="alert">Could not load inventory. <button onClick={() => query.refetch()}>Retry</button></p>}{query.data && <><div className="overflow-x-auto"><table className="w-full text-left"><thead><tr><th className="p-3">Product</th><th>Stock</th><th>Action</th></tr></thead><tbody>{query.data.products.map((p: any) => <tr key={p.id} className="border-t border-slate-700"><td className="p-3">{p.title}</td><td className={p.stock < threshold ? 'text-amber-400' : ''}>{p.stock}{p.stock < threshold ? ' · Low stock' : ''}</td><td><Link className="text-blue-400" href={`/dashboard/edit-product/${p.id}`}>Adjust stock</Link></td></tr>)}</tbody></table>{!query.data.products.length && <p>No matching products.</p>}</div><h2 className="text-xl">Stock history</h2>{query.data.history.map((h: any) => <article key={h.id} className="border-b border-slate-700 py-3"><strong>{h.product.title}</strong><p>{h.delta > 0 ? '+' : ''}{h.delta} → {h.stockAfter} · {h.reason}</p><time>{new Date(h.createdAt).toLocaleString()}</time></article>)}{!query.data.history.length && <p>No stock changes recorded yet.</p>}<div className="flex gap-4"><button disabled={page === 1} onClick={() => setPage(page - 1)}>Previous</button><span>Page {page}</span><button disabled={query.data.history.length < 20} onClick={() => setPage(page + 1)}>Next</button></div></>}</main>;
+}

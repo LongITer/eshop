@@ -1,79 +1,33 @@
 import axios from "axios";
 
 const axiosInstance = axios.create({
-    baseURL: typeof window !== "undefined" ? "" : process.env.NEXT_PUBLIC_SERVER_URL,
-    withCredentials: true,
+  baseURL: typeof window !== "undefined" ? "" : (process.env.GATEWAY_INTERNAL_URL || process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:8080"),
+  withCredentials: true,
 });
 
-let isRefreshing = false;
-let refreshSubscribers: (() => void)[] = []
-
-// Public routes that don't require authentication
-const PUBLIC_ROUTES = ["/login", "/signup", "/forgot-password"];
-
-// Handle logout and prevent infinite loops
-const handleLogout = () => {
-    const currentPath = window.location.pathname;
-    const isPublicRoute = PUBLIC_ROUTES.some((route) => currentPath.startsWith(route));
-    if (!isPublicRoute) {
-        window.location.href = "/login";
+// One shared promise settles every concurrent request, including refresh failures.
+let refresh: Promise<unknown> | null = null;
+axiosInstance.interceptors.response.use(response => response, async error => {
+  const request = error.config;
+  if (error.response?.status !== 401 || !request || request._retry || typeof window === "undefined") {
+    return Promise.reject(error);
+  }
+  if (/\/(login-user|refresh-token|user-registration|verify-user|forgot-password-user|reset-password-user)/.test(request.url ?? "")) {
+    return Promise.reject(error);
+  }
+  request._retry = true;
+  try {
+    refresh ??= axios.post("/api/refresh-token", {}, { withCredentials: true }).finally(() => { refresh = null; });
+    await refresh;
+    // Await the retried request so a rejected session reaches the handler below.
+    return await axiosInstance(request);
+  } catch (refreshError) {
+    // Browsing products, cart and wishlist remains available to guests.
+    if (/^\/(profile|inbox|notifications|order|checkout|payment-success)(\/|$)/.test(window.location.pathname)) {
+      window.location.assign("/login");
     }
-}
-
-// Handle adding a new access token to queued requests
-const subscribeTokenRefresh = (callback: () => void) => {
-    refreshSubscribers.push(callback);
-}
-
-// Execute queued requests after refresh
-const onRefreshSuccess = () => {
-    refreshSubscribers.forEach((callback) => callback());
-    refreshSubscribers = [];
-}
-
-// Handle API requests
-axiosInstance.interceptors.request.use(
-    (config) => config,
-    (error) => Promise.reject(error)
-)
-
-// Handle expired tokens and refresh token
-axiosInstance.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-        const originalRequest = error.config;
-
-        // Prevent infinite retry loop — skip refresh on public routes
-        const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
-        const isPublicRoute = PUBLIC_ROUTES.some((route) => currentPath.startsWith(route));
-        if (error.response?.status === 401 && !originalRequest._retry && !isPublicRoute) {
-            if (isRefreshing) {
-                return new Promise((resolve) => {
-                    subscribeTokenRefresh(() => resolve(axiosInstance(originalRequest)))
-                })
-            }
-            originalRequest._retry = true;
-            isRefreshing = true;
-            try {
-                await axios.post(
-                    "/api/refresh-token",
-                    {},
-                    { withCredentials: true }
-                );
-
-                isRefreshing = false;
-                onRefreshSuccess();
-
-                return axiosInstance(originalRequest)
-            } catch (error) {
-                isRefreshing = false;
-                refreshSubscribers = [];
-                handleLogout();
-                return Promise.reject(error);
-            }
-        }
-        return Promise.reject(error);
-    }
-)
+    return Promise.reject(refreshError);
+  }
+});
 
 export default axiosInstance;

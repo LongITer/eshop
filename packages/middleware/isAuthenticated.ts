@@ -6,9 +6,8 @@ import jwt from "jsonwebtoken";
 const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
     try {
         // Get token
-        const token = req.cookies['access_token'] ||
-            req.cookies['seller_access_token'] ||
-            req.headers.authorization?.split(' ')[1];
+        const token = req.headers.authorization?.split(' ')[1] ||
+            req.cookies?.['access_token'] || req.cookies?.['seller_access_token'];
 
         if (!token) {
             return res.status(401).json({
@@ -22,7 +21,7 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
             role: "user" | "seller" | "admin";
         }
 
-        if (!decoded) {
+        if (!decoded || !['user', 'seller', 'admin'].includes(decoded.role) || !/^[a-f\d]{24}$/i.test(decoded.id)) {
             return res.status(401).json({
                 message: "Unauthorized! Invalid Token."
             })
@@ -45,6 +44,13 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
 
         if (!account) {
             return res.status(401).json({ message: "Unauthorized! Account not found." })
+        }
+
+        // Customer sessions carry only customer permissions, even when the
+        // account can also sign in as an administrator. Privileged sessions
+        // must still lose access when their account role is revoked.
+        if (decoded.role === 'admin' && (account as any).role !== 'admin') {
+            return res.status(401).json({ message: 'Account role changed. Please sign in again.' });
         }
 
         (req as any).role = decoded.role;

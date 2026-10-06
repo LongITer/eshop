@@ -1,10 +1,10 @@
 "use client";
+import toast from "react-hot-toast";
 import React, { useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
   flexRender,
-  getPaginationRowModel,
   getFilteredRowModel,
 } from "@tanstack/react-table";
 import Link from "next/link";
@@ -44,8 +44,6 @@ const restoreProduct = async (productId: string) => {
 
 const ProductList = () => {
   const [globalFilter, setGlobalFilter] = useState("");
-  const [analyticsData, setAnalyticsData] = useState(null);
-  const [showAnalytics, setShowAnalytics] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>();
   const queryClient = useQueryClient();
@@ -59,7 +57,9 @@ const ProductList = () => {
   // Delete Product Mutation
   const deleteMutation = useMutation({
     mutationFn: deleteProduct,
+    onError: () => toast.error("Could not delete product"),
     onSuccess: () => {
+      toast.success("Product deleted");
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setShowDeleteModal(false);
     },
@@ -68,7 +68,9 @@ const ProductList = () => {
   // Restore Product Mutation
   const restoreMutation = useMutation({
     mutationFn: restoreProduct,
+    onError: () => toast.error("Could not restore product"),
     onSuccess: () => {
+      toast.success("Product restored");
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setShowDeleteModal(false);
     },
@@ -111,7 +113,7 @@ const ProductList = () => {
 
           return (
             <Link
-              href={`${process.env.NEXT_PUBLIC_USER_UI_LINK}/product/edit-product/${row.original.slug}`}
+              href={`${process.env.NEXT_PUBLIC_USER_UI_LINK}/product/${row.original.slug}`}
               className="font-medium text-blue-400 hover:underline"
               title={row.original.title}
             >
@@ -159,7 +161,7 @@ const ProductList = () => {
             </Link>
 
             <Link
-              href={`/product/edit/${row.original.id}`}
+              href={`/dashboard/edit-product/${row.original.id}`}
               className="text-yellow-400 hover:text-yellow-300 transition"
             >
               <Pencil size={18} />
@@ -292,3 +294,5 @@ const ProductList = () => {
 };
 
 export default ProductList;
+
+

@@ -10,8 +10,10 @@ import Logo from 'apps/seller-ui/src/assets/svgs/Logo';
 import SidebarItem from './sidebar.item';
 import { HomeIcon } from 'apps/seller-ui/src/assets/icons/home';
 import SidebarMenu from './sidebar.menu';
-import { BellPlus, BellRing, CalendarPlus, ListOrdered, LogOut, Mail, PackageSearch, Settings, SquarePlus, TicketPercent } from 'lucide-react';
+import { BarChart3, Boxes, BellPlus, BellRing, CalendarPlus, ListOrdered, LogOut, Mail, PackageSearch, Settings, SquarePlus, TicketPercent } from 'lucide-react';
 import { PaymentIcon } from 'apps/seller-ui/src/assets/icons/payment';
+import { UnreadMessages } from '@packages/components/chat';
+import axiosInstance from 'apps/seller-ui/src/utils/axioInstance';
 
 
 
@@ -22,7 +24,7 @@ const SidebarBarWrapper = () => {
 
     useEffect(() => {
         setActiveSidebar(pathname)
-    }, [pathname, seller])
+    }, [pathname, setActiveSidebar])
 
     const getIconColor = (route: string) => activeSidebar === route ? "#0085ff" : "#969696"
 
@@ -74,6 +76,12 @@ const SidebarBarWrapper = () => {
                                 href='/dashboard/payment'
                             >
                             </SidebarItem>
+                            <SidebarItem
+                                title='Revenue reports'
+                                icon={<BarChart3 size={22} strokeWidth={1.5} color={getIconColor('/dashboard/reports')} />}
+                                isActive={activeSidebar === '/dashboard/reports'}
+                                href='/dashboard/reports'
+                            />
                             <SidebarMenu title='Products'>
                                 <SidebarItem
                                     title='Add Product'
@@ -85,10 +93,16 @@ const SidebarBarWrapper = () => {
                                 <SidebarItem
                                     title='All Products'
                                     icon={<PackageSearch size={22} strokeWidth={1.5} color={getIconColor('/dashboard/all-products')} />}
-                                    isActive={activeSidebar === '/dashboard/all-products'}
+                                    isActive={activeSidebar === '/dashboard/all-products' || pathname.startsWith('/dashboard/edit-product/')}
                                     href='/dashboard/all-products'
                                 >
                                 </SidebarItem>
+                                <SidebarItem
+                                    title='Inventory'
+                                    icon={<Boxes size={22} strokeWidth={1.5} color={getIconColor('/dashboard/inventory')} />}
+                                    isActive={activeSidebar === '/dashboard/inventory'}
+                                    href='/dashboard/inventory'
+                                />
                             </SidebarMenu>
 
                             <SidebarMenu title='Events'>
@@ -108,17 +122,20 @@ const SidebarBarWrapper = () => {
                                 </SidebarItem>
                             </SidebarMenu>
                             <SidebarMenu title='Controllers'>
+                                {seller && <UnreadMessages api={axiosInstance} href="/dashboard/inbox" renderLink={count => (
+                                    <SidebarItem
+                                        title='Inbox'
+                                        icon={<Mail size={22} strokeWidth={1.5} color={getIconColor('/dashboard/inbox')} />}
+                                        isActive={activeSidebar === '/dashboard/inbox'}
+                                        href='/dashboard/inbox'
+                                        badge={count}
+                                    />
+                                )} />}
                                 <SidebarItem
-                                    title='Inbox'
-                                    icon={<Mail size={22} strokeWidth={1.5} color={getIconColor('/dashboard/inbox')} />}
-                                    isActive={activeSidebar === '/dashboard/inbox'}
-                                    href='/dashboard/inbox'
-                                ></SidebarItem>
-                                <SidebarItem
-                                    title='Setting'
-                                    icon={<Settings size={22} strokeWidth={1.5} color={getIconColor('/dashboard/setting')} />}
-                                    isActive={activeSidebar === '/dashboard/setting'}
-                                    href='/dashboard/setting'
+                                    title='Shop settings'
+                                    icon={<Settings size={22} strokeWidth={1.5} color={getIconColor('/dashboard/shop-settings')} />}
+                                    isActive={activeSidebar === '/dashboard/shop-settings'}
+                                    href='/dashboard/shop-settings'
                                 ></SidebarItem>
                                 <SidebarItem
                                     title='Notifications'

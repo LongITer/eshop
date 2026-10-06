@@ -4,8 +4,8 @@ import redis from "@packages/libs/redis";
 import crypto from "crypto";
 import { NextFunction, Request, Response } from "express";
 import Stripe from "stripe";
-import { Prisma, orderStatus } from "@prisma/client";
-import { sendEmail } from "../utils/send-email";
+import { orderStatus } from "@prisma/client";
+
 import { sendBehaviorLog } from "@packages/utils/logs/behavior-log";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -64,7 +64,7 @@ export const createPaymentIntent = async (
       intentData.transfer_data = { destination: sellerAccountIds[0] };
     }
 
-    const paymentIntent = await stripe.paymentIntents.create(intentData);
+    const paymentIntent = await stripe.paymentIntents.create(intentData, { idempotencyKey: `checkout-${sessionId}` });
     await sendBehaviorLog("paymentAttempt", {
       type: "info",
       source: "order-service",
@@ -126,6 +126,9 @@ export const createPaymentSession = async (
         title: true,
         sale_price: true,
         stock: true,
+        discount_codes: true,
+        colors: true,
+        sizes: true,
         shopId: true,
         images: { select: { url: true } },
       },
@@ -146,11 +149,14 @@ export const createPaymentSession = async (
       );
     }
 
+    let shippingAddress: any;
+    if (!selectedAddressId) return next(new ValidationError("Choose a shipping address."));
     if (selectedAddressId) {
       const address = await prisma.address.findFirst({
         where: { id: selectedAddressId, userId },
-        select: { id: true },
+        select: { id: true, name: true, street: true, city: true, zip: true, country: true, label: true },
       });
+      shippingAddress = address;
       if (!address) {
         return next(new ValidationError("Shipping address is invalid."));
       }
@@ -158,6 +164,7 @@ export const createPaymentSession = async (
 
     const trustedCart = requestedItems.map((item: any) => {
       const product = productById.get(item.id)!;
+      if ((item.selectedOptions.color && !product.colors.includes(item.selectedOptions.color)) || (item.selectedOptions.size && !product.sizes.includes(item.selectedOptions.size))) throw new ValidationError("Invalid product variant");
       return {
         ...item,
         title: product.title,
@@ -167,45 +174,6 @@ export const createPaymentSession = async (
       };
     });
 
-    const normalizedCart = JSON.stringify(
-      trustedCart
-        .map((item: any) => ({
-          id: item.id,
-          quantity: item.quantity,
-          sale_price: item.sale_price,
-          shopId: item.shopId,
-          selectedOptions: item.selectedOptions || {},
-        }))
-        .sort((a, b) => a.id.localeCompare(b.id)),
-    );
-
-    const keys = await redis.keys("payment-session:*");
-
-    for (const key of keys) {
-      const data = await redis.get(key);
-      if (data) {
-        const session = JSON.parse(data);
-        if (session.userId === userId) {
-          const existingCart = JSON.stringify(
-            session.cart
-              .map((item: any) => ({
-                id: item.id,
-                quantity: item.quantity,
-                sale_price: item.sale_price,
-                shopId: item.shopId,
-                selectedOptions: item.selectedOptions || {},
-              }))
-              .sort((a: any, b: any) => a.id.localeCompare(b.id)),
-          );
-
-          if (existingCart === normalizedCart) {
-            return res.status(200).json({ sessionId: key.split(":")[1] });
-          } else {
-            await redis.del(key);
-          }
-        }
-      }
-    }
     // Fetch all seller and their stripe account
     const uniqueShopIds = [
       ...new Set(trustedCart.map((item: any) => item.shopId)),
@@ -235,10 +203,25 @@ export const createPaymentSession = async (
     }));
 
     // Calculate total
-    const totalAmount = trustedCart.reduce((total: number, item: any) => {
+    const subTotal = trustedCart.reduce((total: number, item: any) => {
       return total + item.quantity * item.sale_price;
     }, 0);
 
+    let trustedCoupon: any = null;
+    if (coupon?.code || coupon?.couponCode || coupon?.discountCode) {
+      const code = coupon.code || coupon.couponCode || coupon.discountCode;
+      if (typeof code !== 'string') throw new ValidationError('Invalid coupon');
+      const record = await prisma.discountCodes.findFirst({ where: { discountCode: code } });
+      if (!record) throw new ValidationError('Coupon no longer exists');
+      const eligible = trustedCart.find(item => productById.get(item.id)!.discount_codes.includes(record.id));
+      if (!eligible) throw new ValidationError('Coupon does not apply to these products');
+      const price = eligible.sale_price * eligible.quantity;
+      const discountAmount = Math.round(Math.min(price, record.discountType === 'percentage' ? price * record.discountValue / 100 : record.discountValue) * 100) / 100;
+      if (discountAmount < 0 || !Number.isFinite(discountAmount)) throw new ValidationError('Invalid coupon amount');
+      trustedCoupon = { id: record.id, code, discountAmount, discountedProductId: eligible.id };
+    }
+    const totalAmount = Math.round((subTotal - (trustedCoupon?.discountAmount || 0)) * 100) / 100;
+    if (totalAmount <= 0) throw new ValidationError('Order total must be positive');
     // Create session payload
     const sessionId = crypto.randomUUID();
 
@@ -248,9 +231,11 @@ export const createPaymentSession = async (
       seller: sellerData,
       totalAmount,
       shippingAddressId: selectedAddressId || null,
-      coupon: coupon || null,
+      coupon: trustedCoupon,
+      shippingAddress,
     };
 
+    await prisma.paymentSession.create({ data: { id: sessionId, userId, payload: sessionData, expiresAt: new Date(Date.now() + 600000) } });
     await redis.setex(
       `payment-session:${sessionId}`,
       600, // 10 minutes
@@ -285,6 +270,7 @@ export const verifyPaymentSession = async (
     }
 
     const session = JSON.parse(sessionData);
+    if (session.userId !== req.user.id) return res.status(403).json({ message: "Session does not belong to you" });
 
     return res.status(200).json({
       success: true,
@@ -295,329 +281,7 @@ export const verifyPaymentSession = async (
   }
 };
 
-// Create order
-export const createOrder = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const stripeSignature = req.headers["stripe-signature"];
-    if (!stripeSignature) {
-      return res.status(400).send("Missing stripe signature!");
-    }
-
-    const rawBody = (req as any).rawBody;
-
-    let event;
-    try {
-      event = stripe.webhooks.constructEvent(
-        rawBody,
-        stripeSignature,
-        process.env.STRIPE_WEBHOOK_SECRET!,
-      );
-
-      if (event.type === "payment_intent.succeeded") {
-        const paymentIntent = event.data.object;
-        const sessionId = paymentIntent.metadata.sessionId;
-        const userId = paymentIntent.metadata.userId;
-
-        if (
-          !sessionId ||
-          !userId ||
-          paymentIntent.amount_received !== paymentIntent.amount
-        ) {
-          return res.status(400).send("Invalid payment metadata or amount");
-        }
-
-        const existingOrder = await prisma.orders.findFirst({
-          where: { stripePaymentId: paymentIntent.id },
-          select: { id: true },
-        });
-        if (existingOrder) {
-          return res.status(200).json({ received: true, duplicate: true });
-        }
-
-        const lockKey = `payment-processing:${paymentIntent.id}`;
-        const lockAcquired = await redis.set(lockKey, "1", "EX", 300, "NX");
-        if (lockAcquired !== "OK") {
-          return res.status(200).json({ received: true, processing: true });
-        }
-
-        const sessionKey = `payment-session:${sessionId}`;
-        const sessionData = await redis.get(sessionKey);
-
-        if (!sessionData) {
-          console.warn("Session data expired or missing for", sessionId);
-          return res
-            .status(200)
-            .send("No session found, skipping order creation");
-        }
-
-        const { cart, totalAmount, shippingAddressId, coupon } =
-          JSON.parse(sessionData);
-        const expectedAmount = Math.round(
-          (coupon?.discountAmount
-            ? totalAmount - coupon.discountAmount
-            : totalAmount) * 100,
-        );
-        if (paymentIntent.amount_received !== expectedAmount) {
-          return res.status(400).send("Payment amount does not match order");
-        }
-
-        const user = await prisma.users.findUnique({ where: { id: userId } });
-        const name = user?.name!;
-        const email = user?.email!;
-
-        const shopGrouped = cart.reduce((acc: any, item: any) => {
-          if (!acc[item.shopId]) acc[item.shopId] = [];
-          acc[item.shopId].push(item);
-          return acc;
-        }, {});
-
-        // Fetch shipping address
-        let shippingAddressData: any = {};
-        if (shippingAddressId) {
-          const addr = await prisma.address.findUnique({
-            where: { id: shippingAddressId },
-          });
-          if (addr) {
-            shippingAddressData = {
-              name: addr.name,
-              street: addr.street,
-              city: addr.city,
-              zip: addr.zip,
-              country: addr.country,
-              label: addr.label,
-            };
-          }
-        }
-
-        let totalDiscount = 0;
-        for (const shopId in shopGrouped) {
-          const orderItems = shopGrouped[shopId];
-
-          const subTotal = orderItems.reduce(
-            (sum: number, p: any) => sum + p.quantity * p.sale_price,
-            0,
-          );
-
-          let discount = 0;
-
-          // Apply discount if applicable
-          if (
-            coupon &&
-            coupon.discountedProductId &&
-            orderItems.some(
-              (item: any) => item.id === coupon.discountedProductId,
-            )
-          ) {
-            const discountedItem = orderItems.find(
-              (item: any) => item.id === coupon.discountedProductId,
-            );
-
-            if (coupon.discountType === "percentage") {
-              discount =
-                discountedItem.sale_price * (coupon.discountValue / 100);
-            } else {
-              discount = coupon.discountValue;
-            }
-          }
-
-          const orderTotal = subTotal - discount;
-          totalDiscount += discount;
-          const orderNumber = `ORD-${Date.now()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
-
-          // Create order
-          const createdOrder = await prisma.orders.create({
-            data: {
-              orderNumber,
-              userId,
-              shopId,
-              subTotal,
-              discount,
-              totalAmount: orderTotal,
-              paymentStatus: "Paid",
-              paymentMethod: "card",
-              stripePaymentId: paymentIntent.id,
-              shippingAddress: shippingAddressData,
-              items: {
-                create: orderItems.map((item: any) => ({
-                  productId: item.id,
-                  title: item.title || "Untitled Product",
-                  image: item.image || null,
-                  color: item.selectedOptions?.color || null,
-                  size: item.selectedOptions?.size || null,
-                  quantity: item.quantity,
-                  unitPrice: item.sale_price,
-                  totalPrice: item.quantity * item.sale_price,
-                })),
-              },
-            },
-          });
-
-          await sendBehaviorLog("orderCreated", {
-            type: "success",
-            source: "order-service",
-            message: "Order created after successful payment",
-            metadata: {
-              userId,
-              orderId: createdOrder.id,
-              orderNumber,
-              shopId,
-              amount: orderTotal,
-            },
-          });
-
-          // Update product & analytics
-          for (const item of orderItems) {
-            const { id: productId, quantity } = item;
-
-            await prisma.products.update({
-              where: { id: productId },
-              data: {
-                stock: { decrement: quantity },
-                totalSales: { increment: quantity },
-              },
-            });
-
-            await prisma.productAnalytics.upsert({
-              where: { productId },
-              create: {
-                productId,
-                shopId,
-                purchases: quantity,
-                lastViewedAt: new Date(),
-              },
-              update: {
-                purchases: { increment: quantity },
-              },
-            });
-
-            const existingAnalytics = await prisma.userAnalytics.findUnique({
-              where: { userId },
-            });
-
-            const newAction = {
-              productId,
-              shopId,
-              action: "purchase",
-              timestamp: Date.now(),
-            };
-
-            const currentActions = Array.isArray(existingAnalytics?.actions)
-              ? (existingAnalytics.actions as Prisma.InputJsonValue[])
-              : [];
-
-            if (existingAnalytics) {
-              await prisma.userAnalytics.update({
-                where: { userId },
-                data: {
-                  lastVisited: new Date(),
-                  actions: [...currentActions, newAction],
-                },
-              });
-            } else {
-              await prisma.userAnalytics.create({
-                data: {
-                  userId,
-                  lastVisited: new Date(),
-                  actions: [newAction],
-                },
-              });
-            }
-          }
-        }
-
-        await sendBehaviorLog("paymentSuccess", {
-          type: "success",
-          source: "order-service",
-          message: "Payment completed successfully",
-          metadata: {
-            userId,
-            paymentIntentId: paymentIntent.id,
-            amount: paymentIntent.amount_received / 100,
-          },
-        });
-
-        if (totalDiscount > 0) {
-          await sendBehaviorLog("couponUsed", {
-            type: "info",
-            source: "order-service",
-            message: "Coupon applied to a paid order",
-            metadata: { userId, discount: totalDiscount },
-          });
-        }
-
-        // Send email for user
-        await sendEmail(
-          email,
-          "🛍️ Your Eshop Order Confirmation",
-          "order-confirmation",
-          {
-            name,
-            cart,
-            totalAmount: coupon?.discountAmount
-              ? totalAmount - coupon?.discountAmount
-              : totalAmount,
-            trackingUrl: `https://eshop.com/order/${sessionId}`,
-          },
-        );
-
-        const createdShopIds = Object.keys(shopGrouped);
-
-        const sellerShops = await prisma.shops.findMany({
-          where: {
-            id: { in: createdShopIds },
-          },
-          select: {
-            id: true,
-            sellerId: true,
-            name: true,
-          },
-        });
-
-        for (const shop of sellerShops) {
-          const firstProduct = shopGrouped[shop.id][0];
-          const productTitle = firstProduct?.title || "new item";
-
-          await prisma.notifications.create({
-            data: {
-              title: "🛒 New Order Received",
-              message: `A customer just ordered ${productTitle} from your shop.`,
-              type: "NewOrder",
-              sellerId: shop.sellerId,
-              redirectUrl: `/order/${sessionId}`,
-              metadata: { buyerId: userId },
-            },
-          });
-        }
-
-        // Create notification for admin
-        await prisma.notifications.create({
-          data: {
-            title: "📦 Platform Order Alert",
-            message: `A new order was placed by ${name}.`,
-            type: "System",
-            userId,
-            redirectUrl: `https://eshop.com/order/${sessionId}`,
-          },
-        });
-
-        // Delete session
-        await redis.del(sessionKey);
-      }
-
-      return res.status(200).json({ received: true });
-    } catch (err: any) {
-      console.error("Webhook signature verification failed.", err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-  } catch (error) {
-    console.log(error);
-    return next(error);
-  }
-};
+export { paymentWebhook as createOrder } from "./payment-webhook.controller";
 
 // Get Seller Orders
 export const getSellerOrders = async (
@@ -811,7 +475,7 @@ export const verifyConponCode = async (
       return next(new ValidationError("Coupon code and cart are required!"));
     }
 
-    const discount = await prisma.discountCodes.findUnique({
+    const discount = await prisma.discountCodes.findFirst({
       where: { discountCode: couponCode },
     });
 
@@ -882,3 +546,4 @@ export const getAdminOrders = async (
     next(error);
   }
 };
+

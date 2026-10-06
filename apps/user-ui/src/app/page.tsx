@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "../utils/axioInstance";
 import ProductCard from "../shared/cards/product-card";
 import ShopCard from "@/shared/cards/shop.cart";
+import Recommendations from '@/shared/components/recommendations';
 
 const Page = () => {
   const {
@@ -57,6 +58,7 @@ const Page = () => {
   return (
     <div className="bg-white">
       <Hero />
+      <Recommendations />
       <div className="md:w-[80%] w-[90%] my-10 m-auto">
         <div className="mb-8">
           <SectionTitle

@@ -58,9 +58,9 @@ const CartPage = () => {
 
       if (res.data.valid) {
         setStoredCouponCode(couponCode.trim());
-        setDiscountAmount(res.data.discountAmount);
+        setDiscountAmount(Number(res.data.discountAmount));
         setDiscountPercent(res.data.discount);
-        setDiscountedProductId(res.data.productId);
+        setDiscountedProductId(res.data.discountProductId);
         setCouponCode("");
       } else {
         setDiscountAmount(0);

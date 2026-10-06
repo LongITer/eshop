@@ -19,8 +19,10 @@ import {
   MapPin,
   MessageSquareText,
   Package,
+  Plus,
   ShoppingCart,
   Store,
+  X,
   WalletMinimal,
 } from "lucide-react";
 import Link from "next/link";
@@ -72,11 +74,11 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   const [chatLoading, setChatLoading] = useState(false);
 
   const [isSelectedColor, setIsSelectedColor] = useState(
-    productDetails?.color?.[0] || "",
+    productDetails?.colors?.[0] || "",
   );
 
   const [isSelectedSize, setIsSelectedSize] = useState(
-    productDetails?.size?.[0] || "",
+    productDetails?.sizes?.[0] || "",
   );
 
   const [quantity, setQuantity] = useState(1);
@@ -84,6 +86,10 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   const [priceRange] = useState([0, 2000]);
 
   const [recommendedProducts, setRecommendedProducts] = useState([]);
+  const [comboItems, setComboItems] = useState<any[]>([]);
+  const [selectedComboIds, setSelectedComboIds] = useState<string[]>([productDetails?.id]);
+  const [comboLoading, setComboLoading] = useState(false);
+  const [showCompatibility, setShowCompatibility] = useState(false);
   const specifications = getProductSpecifications(productDetails);
 
   const addToCart = useStore((state: any) => state.addToCart);
@@ -95,6 +101,53 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   const isWishlisted = wishlist.some(
     (item: any) => item.id === productDetails.id,
   );
+
+  useEffect(() => {
+    let active = true;
+    const loadCombo = async () => {
+      if (!productDetails?.id) return;
+      setComboLoading(true);
+      try {
+        const { data } = await axiosInstance.get("/product/api/get-all-products?page=1&limit=50");
+        const products = Array.isArray(data?.products) ? data.products : [];
+        const available = products.filter((item: any) => item.id !== productDetails.id && item.stock > 0);
+        const text = (item: any) => `${item.title ?? ""} ${item.category ?? ""} ${item.subCategory ?? ""}`.toLowerCase();
+        const wanted = productDetails.subCategory?.toLowerCase() === "cpu"
+          ? ["motherboard", "mainboard", "ram", "memory"]
+          : productDetails.subCategory?.toLowerCase() === "gpu"
+            ? ["cpu", "processor", "motherboard"]
+            : [productDetails.category?.toLowerCase() || "computer"];
+        const picks = wanted.map((keyword: string) => available.find((item: any) => text(item).includes(keyword))).filter(Boolean);
+        const unique = picks.filter((item: any, index, list) => list.findIndex((candidate: any) => candidate.id === item.id) === index).slice(0, 3);
+        if (active) {
+          setComboItems([productDetails, ...unique]);
+          setSelectedComboIds([productDetails.id, ...unique.map((item: any) => item.id)]);
+        }
+      } catch {
+        if (active) {
+          setComboItems([productDetails]);
+          setSelectedComboIds([productDetails.id]);
+        }
+      } finally {
+        if (active) setComboLoading(false);
+      }
+    };
+    loadCombo();
+    return () => { active = false; };
+  }, [productDetails]);
+
+  const toggleComboItem = (id: string) => {
+    if (id === productDetails.id) return;
+    setSelectedComboIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
+  };
+
+  const addCombo = () => {
+    comboItems.filter(item => selectedComboIds.includes(item.id)).forEach(item => {
+      addToCart({ ...item, quantity: 1 }, user, location, deviceInfo);
+    });
+  };
+
+  const compatibility = specifications.filter((item: any) => /socket|memory|vram|power|length|form/i.test(item.name));
 
   const prevImage = () => {
     if (currentIndex > 0) {
@@ -268,7 +321,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
             <div className="flex items-center gap-2 text-yellow-500">
               <Ratings rating={productDetails?.rating} />
               <Link href={"#reviews"} className="text-sm text-blue-500 hover:underline">
-                (0 review)
+                Customer reviews
               </Link>
               <span className="text-gray-300">|</span>
               <span className="text-sm text-gray-500">
@@ -473,7 +526,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
             <div className="flex items-center text-gray-700 gap-1.5 mt-1.5">
               <MapPin size={16} className="text-gray-400 flex-shrink-0" />
               <span className="text-sm font-medium">
-                {location?.city + ", " + location?.country}
+                {location ? `${location.city}, ${location.country}` : "Detecting location…"}
               </span>
             </div>
           </div>
@@ -590,7 +643,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
             )}
           </div>
 
-          <div className="min-w-0 border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+          <div className="min-w-0 max-w-full overflow-hidden border border-slate-200 bg-white p-5 shadow-sm md:p-6">
             <h2 className="border-b border-slate-100 pb-3 text-base font-bold text-slate-900">
               Product Details &amp; Summary
             </h2>
@@ -601,11 +654,14 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
             )}
             {productDetails?.detailed_description ? (
               <div
-                className="prose prose-sm mt-4 max-w-none break-words leading-relaxed text-slate-700
+                className="prose prose-sm mt-4 max-w-full min-w-0 break-words leading-relaxed text-slate-700 [overflow-wrap:anywhere]
                   prose-headings:font-semibold prose-headings:text-slate-900
                   prose-p:leading-relaxed prose-strong:text-slate-800
                   prose-a:text-blue-600 prose-li:text-slate-700
-                  prose-img:rounded-lg prose-img:shadow-sm"
+                  prose-img:max-w-full prose-img:h-auto prose-img:rounded-lg prose-img:shadow-sm
+                  [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto
+                  [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_code]:break-words
+                  [&_*]:!border-0 [&_*]:!outline-0"
                 dangerouslySetInnerHTML={{
                   __html: productDetails.detailed_description,
                 }}
@@ -620,40 +676,42 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
               Recommended Combo
             </h2>
             <div className="divide-y divide-slate-100">
-              {[
-                { name: "This item: Intel Core i5-12400F", price: "$135" },
-                { name: "B660M DDR4 Motherboard", price: "$109" },
-                { name: "16GB (2×8GB) 3200MHz RAM", price: "$42" },
-              ].map((item) => (
-                <div key={item.name} className="flex items-center gap-2 py-3">
+              {comboLoading && <p className="py-4 text-xs text-slate-500">Finding compatible components…</p>}
+              {!comboLoading && comboItems.map((item: any) => (
+                <div key={item.id} className="flex items-center gap-2 py-3">
                   <input
                     type="checkbox"
-                    checked
+                    checked={selectedComboIds.includes(item.id)}
+                    onChange={() => toggleComboItem(item.id)}
+                    disabled={item.id === productDetails.id}
                     readOnly
-                    aria-label={`${item.name} included in sample combo`}
+                    aria-label={`${item.title} included in combo`}
                     className="accent-blue-600"
                   />
-                  <span className="min-w-0 flex-1 truncate text-xs text-slate-600">
-                    {item.name}
-                  </span>
+                  <Link href={`/product/${item.slug}`} className="min-w-0 flex-1 truncate text-xs text-slate-600 hover:text-blue-600" title={item.title}>
+                    {item.id === productDetails.id ? `This item: ${item.title}` : item.title}
+                  </Link>
                   <span className="shrink-0 text-xs font-semibold text-slate-900">
-                    {item.price}
+                    ${Number(item.sale_price ?? item.price ?? 0).toFixed(2)}
                   </span>
                 </div>
               ))}
+              {!comboLoading && comboItems.length <= 1 && <p className="py-3 text-xs text-slate-500">No compatible components found yet.</p>}
             </div>
             <div className="flex items-center justify-between border-t border-slate-100 pt-3">
               <div>
                 <p className="text-[11px] text-slate-500">Bundle Total</p>
                 <p className="text-lg font-bold text-slate-900">
-                  $286.00
+                  ${comboItems.filter(item => selectedComboIds.includes(item.id)).reduce((total, item) => total + Number(item.sale_price ?? item.price ?? 0), 0).toFixed(2)}
                 </p>
               </div>
               <button
                 type="button"
+                onClick={addCombo}
+                disabled={comboLoading || selectedComboIds.length === 0}
                 className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white"
               >
-                Add Combo
+                <span className="inline-flex items-center gap-1"><Plus size={14} />Add Combo</span>
               </button>
             </div>
           </div>
@@ -666,27 +724,16 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
             <p className="mt-2 text-xs leading-relaxed text-slate-300">
               Compare socket, memory type, and component dimensions before building your PC.
             </p>
-            <span className="mt-3 inline-flex rounded-md border border-slate-600 px-3 py-2 text-xs font-semibold text-white">
-              View Compatibility Specs
-            </span>
+            <button type="button" onClick={() => setShowCompatibility(current => !current)} className="mt-3 inline-flex items-center gap-1 rounded-md border border-slate-600 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">
+              {showCompatibility ? <X size={14} /> : <CircleHelp size={14} />} {showCompatibility ? "Hide Compatibility Specs" : "View Compatibility Specs"}
+            </button>
+            {showCompatibility && <div className="mt-3 rounded-md bg-slate-800 p-3 text-xs text-slate-300">
+              <p className="mb-2 font-semibold text-white">Detected compatibility data</p>
+              {compatibility.length > 0 ? <dl className="space-y-1">{compatibility.map((item: any) => <div key={item.name} className="flex justify-between gap-3"><dt>{item.name}</dt><dd className="text-right text-white">{formatSpecificationValue(item.value)}</dd></div>)}</dl> : <p>Compatibility specifications have not been added for this product.</p>}
+            </div>}
           </div>
         </aside>
       </section>
-
-      {/* Ratings & Reviews Section */}
-      <div className="mx-auto mt-5 grid w-[90%] min-w-0 grid-cols-1 gap-4 lg:w-[80%] lg:grid-cols-[minmax(0,2fr)_minmax(260px,0.95fr)]">
-        <div
-          id="reviews"
-          className="min-w-0 border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <h3 className="text-lg font-bold text-gray-900 pb-3 border-b border-gray-100">
-            Ratings & Reviews
-          </h3>
-          <p className="text-center text-gray-400 py-12">
-            No reviews available yet. Be the first to review this product!
-          </p>
-        </div>
-      </div>
 
       {/* Recommended Products Section */}
       {recommendedProducts.length > 0 && (

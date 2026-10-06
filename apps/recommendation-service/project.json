@@ -1,0 +1,31 @@
+{
+  "name": "recommendation-service",
+  "sourceRoot": "apps/recommendation-service/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "apps/recommendation-service/dist",
+        "main": "apps/recommendation-service/src/main.ts",
+        "tsConfig": "apps/recommendation-service/tsconfig.app.json",
+        "webpackConfig": "apps/recommendation-service/webpack.config.js"
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "dependsOn": [
+        "build"
+      ],
+      "options": {
+        "buildTarget": "recommendation-service:build",
+        "inspect": false
+      }
+    }
+  }
+}

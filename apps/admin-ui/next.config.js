@@ -17,19 +17,19 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8080/api/:path*",
+        destination: `${process.env.GATEWAY_INTERNAL_URL || "http://localhost:8080"}/api/:path*`,
       },
       {
         source: "/order/get-admin-orders",
-        destination: "http://localhost:8080/order/get-admin-orders",
+        destination: `${process.env.GATEWAY_INTERNAL_URL || "http://localhost:8080"}/order/get-admin-orders`,
       },
       {
         source: "/product/:path*",
-        destination: "http://localhost:8080/product/:path*",
+        destination: `${process.env.GATEWAY_INTERNAL_URL || "http://localhost:8080"}/product/:path*`,
       },
       {
         source: "/admin/:path*",
-        destination: "http://localhost:8080/admin/:path*",
+        destination: `${process.env.GATEWAY_INTERNAL_URL || "http://localhost:8080"}/admin/:path*`,
       },
     ];
   },

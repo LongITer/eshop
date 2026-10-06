@@ -31,7 +31,8 @@ server.on("upgrade", (request: any, socket: any, head: any) => {
   });
 });
 
-const port = process.env.PORT || 6008;
+// Keep the log WebSocket separate from the recommendation API.
+const port = process.env.PORT || 6009;
 server.listen(port, () => {
   console.log(`Listening at http://localhost:${port}/api`);
 });

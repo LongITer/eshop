@@ -7,6 +7,7 @@ import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 // import axios from 'axios';
 import cookieParser from "cookie-parser";
 import initializeSiteConfig from "./libs/initizeSizeConfig";
+import { requestLimit } from "./libs/request-limit";
 
 const app = express();
 
@@ -36,7 +37,7 @@ const proxyOptions = {
 
 app.post(
   "/api/create-order",
-  proxy("http://localhost:6004", {
+  proxy(process.env.ORDER_SERVICE_URL || "http://localhost:6004", {
     ...proxyOptions,
     proxyReqPathResolver: () => "/api/create-order",
   }),
@@ -67,11 +68,13 @@ app.set("trust proxy", 1);
 // Apply rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: (req: any) => (req?.user ? 1000 : 100),
+  // SSR and HMR fan out into several guest API calls during local development.
+  // Keep production protection unchanged while avoiding false 429s locally.
+  max: process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test' ? 1000 : requestLimit,
   message: "Too many requests from this IP, please try again later.",
   standardHeaders: true,
   legacyHeaders: true,
-  keyGenerator: (req: any) => ipKeyGenerator(req),
+  keyGenerator: (req: any) => ipKeyGenerator(req.ip || req.socket.remoteAddress || "127.0.0.1"),
 });
 app.use(limiter);
 
@@ -81,7 +84,7 @@ app.get("/gateway-health", (req, res) => {
 
 app.use(
   "/product",
-  proxy("http://localhost:6002", {
+  proxy(process.env.PRODUCT_SERVICE_URL || "http://localhost:6002", {
     ...proxyOptions,
     proxyReqPathResolver: (req) =>
       req.originalUrl.replace(/^\/product/, ""),
@@ -89,21 +92,21 @@ app.use(
 );
 app.use(
   "/order",
-  proxy("http://localhost:6004", {
+  proxy(process.env.ORDER_SERVICE_URL || "http://localhost:6004", {
     ...proxyOptions,
     proxyReqPathResolver: (req) => req.originalUrl.replace(/^\/order/, ""),
   }),
 );
 app.use(
   "/admin",
-  proxy("http://localhost:6005", {
+  proxy(process.env.ADMIN_SERVICE_URL || "http://localhost:6005", {
     ...proxyOptions,
     proxyReqPathResolver: (req) => req.originalUrl,
   }),
 );
 app.use(
   "/chatbot",
-  proxy("http://localhost:6007", {
+  proxy(process.env.CHATBOT_SERVICE_URL || "http://localhost:6007", {
     ...proxyOptions,
     proxyReqPathResolver: (req) =>
       req.originalUrl.replace(/^\/chatbot/, ""),
@@ -111,13 +114,14 @@ app.use(
 );
 app.use(
   "/chatting",
-  proxy("http://localhost:6006", {
+  proxy(process.env.CHATTING_SERVICE_URL || "http://localhost:6006", {
     ...proxyOptions,
     proxyReqPathResolver: (req) =>
       req.originalUrl.replace(/^\/chatting/, ""),
   }),
 );
-app.use("/", proxy("http://localhost:6001", proxyOptions));
+app.use('/recommendation', proxy(process.env.RECOMMENDATION_SERVICE_URL || 'http://localhost:6008', { ...proxyOptions, proxyReqPathResolver: req => req.originalUrl.replace(/^\/recommendation/, '') }));
+app.use("/", proxy(process.env.AUTH_SERVICE_URL || "http://localhost:6001", proxyOptions));
 
 const port = process.env.PORT || 8080;
 const server = app.listen(port, () => {

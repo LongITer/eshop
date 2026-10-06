@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "projects": {
+    "admin-service": "apps/admin-service",
+    "api-gateway": "apps/api-gateway",
+    "auth-service": "apps/auth-service",
+    "chatbot-service": "apps/chatbot-service",
+    "chatting-service": "apps/chatting-service",
+    "kafka-service": "apps/kafka-service",
+    "logger-service": "apps/logger-service",
+    "order-service": "apps/order-service",
+    "product-service": "apps/product-service",
+    "recommendation-service": "apps/recommendation-service",
+    "admin-ui": "apps/admin-ui",
+    "seller-ui": "apps/seller-ui",
+    "user-ui": "apps/user-ui"
+  }
+}

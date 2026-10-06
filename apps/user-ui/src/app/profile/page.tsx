@@ -12,7 +12,6 @@ import {
   Lock,
   LogOut,
   MapPin,
-  Pencil,
   PhoneCall,
   Receipt,
   Settings,
@@ -23,45 +22,83 @@ import {
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axioInstance";
-import Image from "next/image";
+
 import QuickActionCard from "@/shared/cards/quick-action.card";
 import ShippingAddressSection from "@/shared/cards/shipping-address.card";
 import OrdersTable from "@/shared/cards/orders.table";
 import Notifications from "@/shared/cards/notifications";
+import { ProfileEditor } from "@/shared/components/account-tools";
 import ChangePassword from "@/shared/cards/change-password";
+import toast from "react-hot-toast";
+import { isAxiosError } from "axios";
 
-const page = () => {
-  const { user, isLoading } = useUser();
+const profileTabs = ["Profile", "My Orders", "Inbox", "Notifications", "Shipping Address", "Change Password"];
+
+const ProfilePage = () => {
+  const { user, isLoading, isError, error, isFetching, refetch } = useUser();
+  const [loggingOut, setLoggingOut] = useState(false);
+  const { data: orders, isError: ordersError } = useQuery({
+    queryKey: ["user-orders"],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await axiosInstance.get("/order/get-user-orders");
+      return (Array.isArray(data) ? data : data.orders ?? []) as { status: string }[];
+    },
+  });
 
   const searchParams = useSearchParams();
   const router = useRouter();
   const queryClient = useQueryClient();
   const queryTab = searchParams.get("active") || "Profile";
-  const [activeTab, setActiveTab] = useState(queryTab);
+  const activeTab = profileTabs.includes(queryTab) ? queryTab : "Profile";
 
   useEffect(() => {
     if (queryTab === "Inbox") {
       router.push("/inbox");
     }
-  }, [queryTab]);
+  }, [queryTab, router]);
 
-  useEffect(() => {
-    if (activeTab !== queryTab && activeTab !== "Inbox") {
-      const newParams = new URLSearchParams(searchParams);
-      newParams.set("active", activeTab);
-      router.replace(`/profile?${newParams.toString()}`);
-    }
-  }, [activeTab]);
+  const setActiveTab = (tab: string) => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.set("active", tab);
+    router.push(`/profile?${newParams.toString()}`, { scroll: false });
+  };
 
   const logOutHandler = async () => {
-    await axiosInstance.get("/api/logout-user").then((res) => {
-      queryClient.invalidateQueries({ queryKey: ["user"] });
-
-      router.push("/login");
-    });
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await axiosInstance.get("/api/logout-user");
+      await queryClient.cancelQueries();
+      queryClient.setQueryData(["user"], null);
+      queryClient.removeQueries({ predicate: query => query.queryKey[0] !== "user" });
+      router.replace("/login");
+    } catch {
+      toast.error("Unable to log out. Please try again.");
+    } finally {
+      setLoggingOut(false);
+    }
   };
+
+  if (isLoading) return <p className="p-6" role="status">Loading profile…</p>;
+  if (isError || !user) {
+    const status = isAxiosError(error) ? error.response?.status : undefined;
+    const message = status === 429
+      ? "Too many requests. Please wait a few minutes and retry."
+      : status === 401 || (!isError && !user)
+        ? "Your session has expired. Please sign in again."
+        : "Unable to connect to the profile service. Please retry.";
+    return <div className="p-6 space-y-4" role="alert">
+      <p>{message}</p>
+      {status && <p className="text-sm text-gray-500">Error {status}</p>}
+      <div className="flex flex-wrap gap-4">
+        <button disabled={isFetching} className="rounded border px-4 py-2 text-blue-600 disabled:opacity-50" onClick={() => refetch()}>{isFetching ? "Retrying…" : "Retry"}</button>
+        <button className="rounded bg-blue-600 px-4 py-2 text-white" onClick={() => router.replace("/login")}>Sign in</button>
+      </div>
+    </div>;
+  }
 
   return (
     <div className="bg-gray-50 p-6 pb-14">
@@ -82,10 +119,11 @@ const page = () => {
 
         {/* Profile Overview*/}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          <StatCard title="Total Orders" count={10} Icon={Clock} />
-          <StatCard title="Processing Orders" count={4} Icon={Truck} />
-          <StatCard title="Completed Orders" count={4} Icon={CheckCircle} />
+          <StatCard title="Total Orders" count={orders?.length ?? "—"} Icon={Clock} />
+          <StatCard title="Processing Orders" count={orders?.filter(order => ['Pending', 'Confirmed', 'Processing', 'Shipped'].includes(order.status)).length ?? "—"} Icon={Truck} />
+          <StatCard title="Completed Orders" count={orders?.filter(order => order.status === 'Delivered').length ?? "—"} Icon={CheckCircle} />
         </div>
+        {ordersError && <p role="alert">Unable to load order totals.</p>}
 
         {/* Sidebar and content layout */}
         <div className="mt-10 flex flex-col md:flex-row gap-6">
@@ -132,6 +170,7 @@ const page = () => {
                 label="Logout"
                 Icon={LogOut}
                 danger
+                disabled={loggingOut}
                 onClick={() => logOutHandler()}
               />
             </nav>
@@ -142,43 +181,7 @@ const page = () => {
               {activeTab}
             </h2>
             {activeTab === "Profile" && !isLoading && user ? (
-              <div className="space-y-4 text-sm text-gray-700">
-                <div className="flex items-center gap-3">
-                  <Image
-                    src={
-                      user?.avatar ||
-                      "https://hunggiaco.com/wp-content/uploads/2026/03/avatar-mac-dinh-facebook-1-1.jpg"
-                    }
-                    alt="profile"
-                    width={60}
-                    height={60}
-                    className="w-16 h-16 rounded-full border border-gray-200"
-                  />
-                  <button className="flex items-center gap-1 text-blue-500 text-xs font-medium">
-                    <Pencil className="w-4 h-4" /> Change Photo
-                  </button>
-                </div>
-
-                <p>
-                  <span className="font-semibold">Name: </span>
-                  {user.name}
-                </p>
-
-                <p>
-                  <span className="font-semibold">Email: </span>
-                  {user.email}
-                </p>
-
-                <p>
-                  <span className="font-semibold">Joined: </span>{" "}
-                  {new Date(user.createdAt).toLocaleDateString()}
-                </p>
-
-                <p>
-                  <span className="font-semibold">Earned Points:</span>{" "}
-                  {user.points || 0}
-                </p>
-              </div>
+              <ProfileEditor key={user.id} user={user} />
             ) : activeTab === "Shipping Address" ? (
               <ShippingAddressSection />
             ) : activeTab === "My Orders" ? (
@@ -229,10 +232,12 @@ const page = () => {
   );
 };
 
-export default page;
+export default ProfilePage;
 
-const NavItem = ({ label, Icon, active, danger, onClick }: any) => (
+const NavItem = ({ label, Icon, active, danger, disabled, onClick }: any) => (
   <button
+    type="button"
+    disabled={disabled}
     onClick={onClick}
     className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition ${
       active
@@ -246,3 +251,5 @@ const NavItem = ({ label, Icon, active, danger, onClick }: any) => (
     {label}
   </button>
 );
+
+

@@ -1,5 +1,5 @@
 {
-  "name": "@./admin-service",
+  "name": "admin-service",
   "version": "0.0.1",
   "private": true,
   "nx": {
@@ -11,18 +11,33 @@
           "build"
         ],
         "options": {
-          "buildTarget": "@./admin-service:build",
+          "buildTarget": "admin-service:build",
           "runBuildTargetDependencies": false
         },
         "configurations": {
           "development": {
-            "buildTarget": "@./admin-service:build:development"
+            "buildTarget": "admin-service:build"
           },
           "production": {
-            "buildTarget": "@./admin-service:build:production"
+            "buildTarget": "admin-service:build"
           }
         }
+      },
+      "build": {
+        "executor": "@nx/webpack:webpack",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "target": "node",
+          "compiler": "tsc",
+          "outputPath": "apps/admin-service/dist",
+          "main": "apps/admin-service/src/main.ts",
+          "tsConfig": "apps/admin-service/tsconfig.app.json",
+          "webpackConfig": "apps/admin-service/webpack.config.js"
+        }
       }
-    }
+    },
+    "name": "admin-service"
   }
 }

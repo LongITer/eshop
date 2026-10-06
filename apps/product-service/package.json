@@ -1,5 +1,5 @@
 {
-  "name": "@./product-service",
+  "name": "product-service",
   "version": "0.0.1",
   "private": true,
   "nx": {
@@ -11,19 +11,34 @@
           "build"
         ],
         "options": {
-          "buildTarget": "@./product-service:build",
+          "buildTarget": "product-service:build",
           "runBuildTargetDependencies": false,
           "inspect": false
         },
         "configurations": {
           "development": {
-            "buildTarget": "@./product-service:build"
+            "buildTarget": "product-service:build"
           },
           "production": {
-            "buildTarget": "@./product-service:build"
+            "buildTarget": "product-service:build"
           }
         }
+      },
+      "build": {
+        "executor": "@nx/webpack:webpack",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "target": "node",
+          "compiler": "tsc",
+          "outputPath": "apps/product-service/dist",
+          "main": "apps/product-service/src/main.ts",
+          "tsConfig": "apps/product-service/tsconfig.app.json",
+          "webpackConfig": "apps/product-service/webpack.config.js"
+        }
       }
-    }
+    },
+    "name": "product-service"
   }
 }

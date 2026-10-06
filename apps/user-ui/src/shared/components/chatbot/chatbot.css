@@ -152,7 +152,24 @@
 
 .chatbot-header-actions {
   display: flex;
+  align-items: center;
   gap: 4px;
+}
+
+.chatbot-language-select {
+  height: 32px;
+  padding: 0 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1f5f9;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.chatbot-language-select option {
+  color: #111827;
 }
 
 .chatbot-header-btn {

@@ -38,7 +38,7 @@ const Page = () => {
   const [processing, setProcessing] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
   const [pictureUploadingLoader, setPictureUploadingLoader] = useState(false);
-  const [isChanged, setIsChanged] = useState(true);
+  const [isChanged] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [activeEffect, setActiveEffect] = useState<string | null>(null);
   const router = useRouter();
@@ -671,10 +671,11 @@ const Page = () => {
                     valueAsNumber: true,
                     min: { value: 1, message: "Price must be at least 1" },
                     validate: (value) => {
-                      !isNaN(value) || "Please enter a valid number";
+                      if (isNaN(value)) return "Please enter a valid number";
                       if (regularPrice && value >= regularPrice) {
                         return "Sale price must be less than regular price";
                       }
+                      return true;
                     },
                   })}
                 />
@@ -840,3 +841,4 @@ const Page = () => {
 };
 
 export default Page;
+
