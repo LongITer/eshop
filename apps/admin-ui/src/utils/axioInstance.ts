@@ -16,7 +16,7 @@ const PUBLIC_ROUTES = ["/login", "/signup", "/forgot-password"];
 // Handle logout and prevent infinite loops
 const handleLogout = () => {
   const currentPath = window.location.pathname;
-  const isPublicRoute = PUBLIC_ROUTES.some((route) =>
+  const isPublicRoute = currentPath === "/" || PUBLIC_ROUTES.some((route) =>
     currentPath.startsWith(route),
   );
   if (!isPublicRoute) {
@@ -50,7 +50,7 @@ axiosInstance.interceptors.response.use(
     // Prevent infinite retry loop — skip refresh on public routes
     const currentPath =
       typeof window !== "undefined" ? window.location.pathname : "";
-    const isPublicRoute = PUBLIC_ROUTES.some((route) =>
+    const isPublicRoute = currentPath === "/" || PUBLIC_ROUTES.some((route) =>
       currentPath.startsWith(route),
     );
     if (

@@ -1,4 +1,5 @@
 "use client";
+import { ErrorState } from "../../../shared/admin-ui";
 
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "apps/admin-ui/src/utils/axioInstance";
@@ -43,7 +44,7 @@ const SellersPage = () => {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-sellers", page, search],
     queryFn: () => fetchSellers(page, search),
     staleTime: 1000 * 60 * 2,
@@ -59,7 +60,7 @@ const SellersPage = () => {
   };
 
   return (
-    <div className="w-full min-h-screen p-8">
+    <div className="admin-page">
       {/* Header */}
       <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
         <h2 className="text-2xl text-white font-semibold">All Sellers</h2>
@@ -86,7 +87,7 @@ const SellersPage = () => {
         <input
           type="text"
           placeholder="Search sellers..."
-          className="w-full bg-transparent text-white outline-none"
+          aria-label="Search sellers" className="w-full bg-transparent text-white outline-none"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
@@ -94,10 +95,10 @@ const SellersPage = () => {
 
       {/* Table */}
       <div className="overflow-x-auto bg-gray-900 rounded-lg border border-gray-800">
-        {isLoading ? (
+        {isError ? <ErrorState retry={() => refetch()} /> : isLoading ? (
           <p className="text-center text-white py-10">Loading sellers...</p>
         ) : (
-          <table className="w-full text-white">
+          <table className="admin-table text-white">
             <thead>
               <tr className="border-b border-gray-800">
                 {[
@@ -175,7 +176,7 @@ const SellersPage = () => {
                     {/* Actions */}
                     <td className="p-3">
                       <button
-                        title="Ban seller"
+                        disabled title="Account suspension is not available yet" aria-label="Account suspension is not available yet"
                         className="text-red-500 hover:text-red-400 transition"
                       >
                         <Ban size={18} />
@@ -187,7 +188,7 @@ const SellersPage = () => {
             </tbody>
           </table>
         )}
-        {!isLoading && sellers.length === 0 && (
+        {!isLoading && !isError && sellers.length === 0 && (
           <p className="text-center py-10 text-slate-400">No sellers found!</p>
         )}
       </div>

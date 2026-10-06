@@ -1,4 +1,5 @@
 "use client";
+import { ErrorState } from "../../../shared/admin-ui";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "apps/admin-ui/src/utils/axioInstance";
@@ -23,7 +24,7 @@ const ManagementPage = () => {
   const [newRole, setNewRole] = useState("user");
   const [error, setError] = useState("");
 
-  const { data: admins = [], isLoading } = useQuery({
+  const { data: admins = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-admins"],
     queryFn: fetchAdmins,
     staleTime: 1000 * 60 * 5,
@@ -59,7 +60,7 @@ const ManagementPage = () => {
   };
 
   return (
-    <div className="w-full min-h-screen p-8">
+    <div className="admin-page">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-2xl text-white font-semibold">Team Management</h2>
@@ -86,7 +87,7 @@ const ManagementPage = () => {
         <input
           type="text"
           placeholder="Search admins..."
-          className="w-full bg-transparent text-white outline-none"
+          aria-label="Search management" className="w-full bg-transparent text-white outline-none"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -94,10 +95,10 @@ const ManagementPage = () => {
 
       {/* Table */}
       <div className="overflow-x-auto bg-gray-900 rounded-lg border border-gray-800">
-        {isLoading ? (
+        {isError ? <ErrorState retry={() => refetch()} /> : isLoading ? (
           <p className="text-center text-white py-10">Loading...</p>
         ) : (
-          <table className="w-full text-white">
+          <table className="admin-table text-white">
             <thead>
               <tr className="border-b border-gray-800">
                 {["Name", "Email", "Role"].map((h) => (
@@ -128,7 +129,7 @@ const ManagementPage = () => {
             </tbody>
           </table>
         )}
-        {!isLoading && filtered.length === 0 && (
+        {!isLoading && !isError && filtered.length === 0 && (
           <p className="text-center py-10 text-slate-400">No admins found!</p>
         )}
       </div>

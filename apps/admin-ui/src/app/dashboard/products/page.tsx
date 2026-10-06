@@ -1,4 +1,5 @@
 "use client";
+import { ErrorState } from "../../../shared/admin-ui";
 
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "apps/admin-ui/src/utils/axioInstance";
@@ -53,7 +54,7 @@ const ProductsPage = () => {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["admin-products", page, search],
     queryFn: () => fetchProducts(page, search),
     staleTime: 1000 * 60 * 2,
@@ -69,7 +70,7 @@ const ProductsPage = () => {
   };
 
   return (
-    <div className="w-full min-h-screen p-8">
+    <div className="admin-page">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-2xl text-white font-semibold">All Products</h2>
@@ -99,7 +100,7 @@ const ProductsPage = () => {
         <input
           type="text"
           placeholder="Search products..."
-          className="w-full bg-transparent text-white outline-none"
+          aria-label="Search products" className="w-full bg-transparent text-white outline-none"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
@@ -107,10 +108,10 @@ const ProductsPage = () => {
 
       {/* Table */}
       <div className="overflow-x-auto bg-gray-900 rounded-lg border border-gray-800">
-        {isLoading ? (
+        {isError ? <ErrorState retry={() => refetch()} /> : isLoading ? (
           <p className="text-center text-white py-10">Loading products...</p>
         ) : (
-          <table className="w-full text-white">
+          <table className="admin-table text-white">
             <thead>
               <tr className="border-b border-gray-800">
                 {[
@@ -213,7 +214,7 @@ const ProductsPage = () => {
           </table>
         )}
 
-        {!isLoading && products.length === 0 && (
+        {!isLoading && !isError && products.length === 0 && (
           <p className="text-center py-10 text-slate-400">
             No products found!
           </p>
