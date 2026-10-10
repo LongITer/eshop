@@ -1,5 +1,8 @@
 "use client";
 
+import toast from 'react-hot-toast';
+import useProductVariant from '@/hooks/useProductVariant';
+import { cartLineKey } from '@packages/utils/cart';
 import useDeviceTracking from "@/hooks/useDeviceTracking";
 import useLocationTracking from "@/hooks/useLocationTracking";
 import useUser from "@/hooks/useUser";
@@ -61,9 +64,9 @@ const formatSpecificationValue = (value: unknown): string => {
   return String(value);
 };
 
-const ProductDetails = ({ productDetails }: { productDetails: any }) => {
+const ProductDetails = ({ productDetails: rawProduct }: { productDetails: any }) => {
   const [currentImage, setCurrentImage] = useState(
-    productDetails?.images?.[0]?.url || "/default-image.jpg",
+    rawProduct?.images?.[0]?.url || "/default-image.jpg",
   );
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -74,13 +77,14 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   const [chatLoading, setChatLoading] = useState(false);
 
   const [isSelectedColor, setIsSelectedColor] = useState(
-    productDetails?.colors?.[0] || "",
+    rawProduct?.colors?.[0] || "",
   );
 
   const [isSelectedSize, setIsSelectedSize] = useState(
-    productDetails?.sizes?.[0] || "",
+    rawProduct?.sizes?.[0] || "",
   );
 
+  const productDetails = useProductVariant(rawProduct, isSelectedColor, isSelectedSize);
   const [quantity, setQuantity] = useState(1);
 
   const [priceRange] = useState([0, 2000]);
@@ -94,7 +98,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
 
   const addToCart = useStore((state: any) => state.addToCart);
   const cart = useStore((state: any) => state.cart);
-  const isInCart = cart.some((item: any) => item.id === productDetails.id);
+  const isInCart = cart.some((item: any) => cartLineKey(item) === cartLineKey({ ...productDetails, selectedOptions: { color: isSelectedColor, size: isSelectedSize } }));
   const addToWishlist = useStore((state: any) => state.addToWishlist);
   const removeFromWishlist = useStore((state: any) => state.removeFromWishlist);
   const wishlist = useStore((state: any) => state.wishlist);
@@ -134,17 +138,27 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
     };
     loadCombo();
     return () => { active = false; };
-  }, [productDetails]);
+  }, [rawProduct]);
 
   const toggleComboItem = (id: string) => {
     if (id === productDetails.id) return;
     setSelectedComboIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
   };
 
-  const addCombo = () => {
-    comboItems.filter(item => selectedComboIds.includes(item.id)).forEach(item => {
-      addToCart({ ...item, quantity: 1 }, user, location, deviceInfo);
-    });
+  const addCombo = async () => {
+    setComboLoading(true);
+    try {
+      const prepared = await Promise.all(comboItems.filter(item => selectedComboIds.includes(item.id)).map(async item => {
+        const { data } = await axiosInstance.get(`/product/api/variants/${item.id}`);
+        const selected = item.id === productDetails.id ? productDetails : item;
+        const variant = data.variants.find((v: any) => v.id === selected.variantId) || data.variants.find((v: any) => v.stock > 0);
+        if (data.variants.length && !variant) throw new Error('A component is out of stock');
+        return { ...item, quantity: 1, variantId: variant?.id || null, sale_price: variant?.price ?? item.sale_price, selectedOptions: { color: variant?.color ?? item.colors?.[0] ?? '', size: variant?.size ?? item.sizes?.[0] ?? '' } };
+      }));
+      prepared.forEach(item => addToCart(item, user, location, deviceInfo));
+      toast.success('Components added to cart');
+    } catch { toast.error('Could not add these components. Check availability and try again.'); }
+    finally { setComboLoading(false); }
   };
 
   const compatibility = specifications.filter((item: any) => /socket|memory|vram|power|length|form/i.test(item.name));
@@ -503,7 +517,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                     deviceInfo,
                   )
                 }
-                disabled={isInCart || productDetails?.stock === 0}
+                disabled={isInCart || productDetails?.stock < quantity}
               >
                 <ShoppingCart size={18} />
                 {isInCart
