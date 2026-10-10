@@ -8,7 +8,10 @@ const axiosInstance = axios.create({
 });
 
 let isRefreshing = false;
-let refreshSubscribers: (() => void)[] = [];
+let refreshSubscribers: Array<{
+  resolve: () => void;
+  reject: (error: unknown) => void;
+}> = [];
 
 // Public routes that don't require authentication
 const PUBLIC_ROUTES = ["/login", "/signup", "/forgot-password"];
@@ -25,13 +28,21 @@ const handleLogout = () => {
 };
 
 // Handle adding a new access token to queued requests
-const subscribeTokenRefresh = (callback: () => void) => {
-  refreshSubscribers.push(callback);
+const subscribeTokenRefresh = (
+  resolve: () => void,
+  reject: (error: unknown) => void,
+) => {
+  refreshSubscribers.push({ resolve, reject });
 };
 
 // Execute queued requests after refresh
 const onRefreshSuccess = () => {
-  refreshSubscribers.forEach((callback) => callback());
+  refreshSubscribers.forEach(({ resolve }) => resolve());
+  refreshSubscribers = [];
+};
+
+const onRefreshFailure = (error: unknown) => {
+  refreshSubscribers.forEach(({ reject }) => reject(error));
   refreshSubscribers = [];
 };
 
@@ -59,15 +70,18 @@ axiosInstance.interceptors.response.use(
       !isPublicRoute
     ) {
       if (isRefreshing) {
-        return new Promise((resolve) => {
-          subscribeTokenRefresh(() => resolve(axiosInstance(originalRequest)));
+        return new Promise((resolve, reject) => {
+          subscribeTokenRefresh(
+            () => resolve(axiosInstance(originalRequest)),
+            reject,
+          );
         });
       }
       originalRequest._retry = true;
       isRefreshing = true;
       try {
         await axios.post(
-          `/api/seller-refresh-token`,
+          `/api/refresh-token`,
           {},
           { withCredentials: true },
         );
@@ -78,7 +92,7 @@ axiosInstance.interceptors.response.use(
         return axiosInstance(originalRequest);
       } catch (error) {
         isRefreshing = false;
-        refreshSubscribers = [];
+        onRefreshFailure(error);
         handleLogout();
         return Promise.reject(error);
       }
