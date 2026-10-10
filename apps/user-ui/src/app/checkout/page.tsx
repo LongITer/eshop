@@ -16,6 +16,7 @@ const Page = () => {
   const [clientSecret, setClientSecret] = useState("");
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [coupon, setCoupon] = useState();
+  const [summary, setSummary] = useState({ totalAmount: 0, shippingFee: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
@@ -48,6 +49,7 @@ const Page = () => {
 
         setCartItems(cart);
         setCoupon(coupon);
+        setSummary({ totalAmount: sessionTotal, shippingFee: verifyRes.data.session.shippingFee || 0 });
 
         const intentRes = await axiosInstance.post(
           "/order/create-payment-intent",
@@ -127,6 +129,8 @@ const Page = () => {
         cartItems={cartItems}
         coupon={coupon}
         sessionId={sessionId}
+        totalAmount={summary.totalAmount}
+        shippingFee={summary.shippingFee}
       />
     </Elements>
   );
