@@ -34,23 +34,37 @@ export const createDiscountCode = async (
   next: NextFunction,
 ) => {
   try {
-    const { public_name, discountType, discountValue, discountCode } = req.body;
+    const { public_name, discountType, discountValue, discountCode, productIds = [] } = req.body;
+    const value = Number(discountValue);
+    if (typeof public_name !== 'string' || !public_name.trim() || typeof discountCode !== 'string' || !discountCode.trim() || discountCode.length > 100 || !['percentage', 'fixed', 'flat'].includes(discountType) || !Number.isFinite(value) || value <= 0 || (discountType === 'percentage' && value > 100)) throw new ValidationError('Provide a valid name, code and discount value');
+    if (!Array.isArray(productIds) || productIds.length > 1000 || productIds.some(id => typeof id !== 'string' || !/^[a-f\d]{24}$/i.test(id))) throw new ValidationError('Invalid selected products');
+    const selectedIds = [...new Set<string>(productIds)];
+    if (selectedIds.length && !req.seller.shop?.id) throw new ValidationError('Create a shop before selecting products');
     const isDiscountCodeExists = await prisma.discountCodes.findFirst({
-      where: { discountCode },
+      where: { discountCode: discountCode.trim() },
     });
 
     if (isDiscountCodeExists) {
       return res.status(400).json({ message: "Discount code already exists" });
     }
 
-    const discount_code = await prisma.discountCodes.create({
+    const discount_code = await prisma.$transaction(async tx => {
+      const where = { id: { in: selectedIds }, shopId: req.seller.shop?.id, isDeleted: false };
+      if (selectedIds.length && await tx.products.count({ where }) !== selectedIds.length) throw new ValidationError('Select available products belonging to your shop');
+      const code = await tx.discountCodes.create({
       data: {
-        public_name,
-        discountType,
-        discountValue: parseFloat(discountValue),
-        discountCode,
+        public_name: public_name.trim(),
+        discountType: discountType === 'flat' ? 'fixed' : discountType,
+        discountValue: value,
+        discountCode: discountCode.trim(),
         sellerId: req.seller.id,
       },
+      });
+      if (selectedIds.length) {
+        const updated = await tx.products.updateMany({ where, data: { discount_codes: { push: code.id } } });
+        if (updated.count !== selectedIds.length) throw new ValidationError('Selected products changed. Please retry');
+      }
+      return code;
     });
 
     try {
