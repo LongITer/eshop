@@ -40,8 +40,6 @@ const ProductCard = ({
   const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
   const addtoWishlist = useStore((state: any) => state.addToWishlist);
-  const addToCart = useStore((state: any) => state.addToCart);
-  const removeFromCart = useStore((state: any) => state.removeFromCart);
   const removeFromWishlist = useStore((state: any) => state.removeFromWishlist);
   const wishlist = useStore((state: any) => state.wishlist);
   const productImage = getProductImageUrl(product);
@@ -188,16 +186,7 @@ const ProductCard = ({
             className="cursor-pointer hover:scale-110 transition"
             fill={isInCart ? "#4b5563" : "none"}
             stroke={isInCart ? "#4b5563" : "#4b5563"}
-            onClick={() =>
-              isInCart
-                ? removeFromCart(product.id, user, location, deviceInfo)
-                : addToCart(
-                    { ...product, quantity: 1 },
-                    user,
-                    location,
-                    deviceInfo,
-                  )
-            }
+            onClick={() => setOpen(true)}
           />
         </div>
       </div>
