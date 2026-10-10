@@ -24,6 +24,7 @@
       ],
       "options": {
         "buildTarget": "auth-service:build",
+        "runBuildTargetDependencies": false,
         "inspect": false
       }
     }
