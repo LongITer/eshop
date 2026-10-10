@@ -7,7 +7,7 @@ const useRequireAuth = (redirectTo = "/login") => {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && (!user || isError)) {
+    if (!isLoading && !isError && !user) {
       router.push(redirectTo);
     }
   }, [user, isLoading, isError, redirectTo, router]);
