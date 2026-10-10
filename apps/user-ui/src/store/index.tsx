@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { cartLineKey } from '@packages/utils/cart';
 
 // Helper to send tracking events to the server-side Kafka producer
 const sendKafkaEvent = async (eventData: Record<string, any>) => {
@@ -78,12 +79,12 @@ export const useStore = create<Store>()(
       // Add to Cart
       addToCart: (product, user, location, deviceInfo) => {
         set((state) => {
-          const existing = state.cart?.find((item) => item.id === product.id);
+          const existing = state.cart?.find((item) => cartLineKey(item) === cartLineKey(product));
           if (existing) {
             return {
               cart: state.cart.map((item) =>
-                item.id === product.id
-                  ? { ...item, quantity: product?.quantity ?? 1 }
+                cartLineKey(item) === cartLineKey(product)
+                  ? { ...item, quantity: (item.quantity ?? 1) + (product.quantity ?? 1) }
                   : item,
               ),
             };
@@ -109,9 +110,9 @@ export const useStore = create<Store>()(
 
       // Remove from Cart
       removeFromCart: (id, user, location, deviceInfo) => {
-        const removeProduct = get().cart.find((item) => item.id === id);
+        const removeProduct = get().cart.find((item) => cartLineKey(item) === id || item.id === id);
         set((state) => ({
-          cart: state.cart?.filter((item) => item.id !== id),
+          cart: state.cart?.filter((item) => cartLineKey(item) !== id && item.id !== id),
         }));
 
         // Send kafka event
