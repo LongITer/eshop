@@ -1,3 +1,5 @@
+import useProductVariant from '@/hooks/useProductVariant';
+import { cartLineKey } from '@packages/utils/cart';
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState } from "react";
@@ -12,15 +14,16 @@ import axiosInstance from "@/utils/axioInstance";
 import isProtected from "@/utils/protected";
 
 const ProductDetailsCard = ({
-  data,
+  data: rawProduct,
   setOpen,
 }: {
   data: any;
   setOpen: (open: boolean) => void;
 }) => {
   const [activeImage, setActiveImage] = useState(0);
-  const [isSelected, setIsSelected] = useState(data?.colors?.[0] || "");
-  const [isSizeSelected, setIsSizeSelected] = useState(data?.sizes?.[0] || "");
+  const [isSelected, setIsSelected] = useState(rawProduct?.colors?.[0] || "");
+  const [isSizeSelected, setIsSizeSelected] = useState(rawProduct?.sizes?.[0] || "");
+  const data = useProductVariant(rawProduct, isSelected, isSizeSelected);
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -34,7 +37,7 @@ const ProductDetailsCard = ({
   const wishlist = useStore((state: any) => state.wishlist);
   const isWishlisted = wishlist.some((item: any) => item.id === data.id);
   const cart = useStore((state: any) => state.cart);
-  const isInCart = cart.some((item: any) => item.id === data.id);
+  const isInCart = cart.some((item: any) => cartLineKey(item) === cartLineKey({ ...data, selectedOptions: { color: isSelected, size: isSizeSelected } }));
 
   const estimatedDelivery = new Date();
   estimatedDelivery.setDate(estimatedDelivery.getDate() + 5);
@@ -267,7 +270,7 @@ const ProductDetailsCard = ({
                 </div>
 
                 <button
-                  disabled={isInCart}
+                  disabled={isInCart || data.stock < quantity}
                   onClick={() =>
                     addToCart(
                       {
@@ -286,7 +289,7 @@ const ProductDetailsCard = ({
                   className={`flex items-center gap-2 px-4 py-2 bg-[#ff5722] hover:bg-[#e64a19] text-white font-medium rounded-lg transition ${isInCart ? "cursor-not-allowed opacity-70" : "cursor-pointer"} `}
                 >
                   <ShoppingCart size={18} />
-                  {isInCart ? "In Cart" : "Add to Cart"}
+                  {isInCart ? "In Cart" : data.stock < quantity ? "Unavailable" : "Add to Cart"}
                 </button>
 
                 <button
