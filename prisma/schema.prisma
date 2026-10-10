@@ -59,9 +59,11 @@ model paymentSession {
 
 model paymentReceipt {
   id String @id @map("_id")
+  sessionId String?
   userId String @db.ObjectId
   orderIds String[] @db.ObjectId
   createdAt DateTime @default(now())
+  @@index([sessionId, userId])
 }
 
 model users {
@@ -189,6 +191,21 @@ model products {
   orderItems           orderItems[]
   reviews              productReviews[]
   inventoryHistory     inventoryHistory[]
+  variants             productVariant[]
+}
+
+model productVariant {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  productId String @db.ObjectId
+  product   products @relation(fields: [productId], references: [id])
+  sku       String
+  color     String @default("")
+  size      String @default("")
+  price     Float
+  stock     Int
+  active    Boolean @default(true)
+  @@unique([productId, sku])
+  @@unique([productId, color, size])
 }
 
 model productReviews {
@@ -265,6 +282,7 @@ model orders {
   status          orderStatus   @default(Pending)
   paymentStatus   paymentStatus @default(Pending)
   paymentMethod   String?
+  currency        String @default("usd")
   stripePaymentId String?
   stripeRefundId  String?
   refundState     String?
@@ -279,11 +297,38 @@ model orders {
   updatedAt       DateTime      @updatedAt
 }
 
+model orderEvent {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String @db.ObjectId
+  actorId   String
+  from      String
+  to        String
+  reason    String?
+  createdAt DateTime @default(now())
+  @@index([orderId, createdAt])
+}
+
+model returnRequest {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  orderId     String @unique @db.ObjectId
+  userId      String @db.ObjectId
+  shopId      String @db.ObjectId
+  reason      String
+  evidence    String[]
+  status      String @default("Requested")
+  sellerNote  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([shopId, status])
+}
+
 model orderItems {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   orderId     String   @db.ObjectId
   order       orders   @relation(fields: [orderId], references: [id])
   productId   String   @db.ObjectId
+  variantId   String?  @db.ObjectId
+  sku         String?
   product     products @relation(fields: [productId], references: [id])
   title       String
   image       String?
