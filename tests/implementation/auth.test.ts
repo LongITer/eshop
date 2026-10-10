@@ -12,6 +12,14 @@ import bcrypt from 'bcryptjs';
 beforeEach(resetDb);
 const app = express(); app.use(cookieParser()); app.get('/admin', isAuthenticated, isAdmin, (_req, res) => { res.json({ ok: true }); }); app.get('/seller', isAuthenticated, isSeller, (_req, res) => { res.json({ ok: true }); }); app.use(errorMiddleware);
 test('missing authentication is rejected before database access', async () => { expect((await request(app).get('/admin')).status).toBe(401); expect(db.users.findUnique).not.toHaveBeenCalled(); });
+
+test('seller session is selected correctly when buyer and seller cookies coexist', async () => {
+  db.sellers.findUnique.mockResolvedValue({ id: userId, shop: { id: 'shop' } });
+  const buyerToken = jwt.sign({ id: userId, role: 'user' }, process.env.ACCESS_TOKEN_JWT_SECRET!);
+  const sellerToken = jwt.sign({ id: userId, role: 'seller' }, process.env.ACCESS_TOKEN_JWT_SECRET!);
+  expect((await request(app).get('/seller').set('X-Session-Role', 'seller').set('Cookie', `access_token=${buyerToken}; seller_access_token=${sellerToken}`)).status).toBe(200);
+  expect(db.users.findUnique).not.toHaveBeenCalled();
+});
 test('buyer token cannot access admin endpoints', async () => { db.users.findUnique.mockResolvedValue({ id: userId, role: 'user' }); const token = jwt.sign({ id: userId, role: 'user' }, process.env.ACCESS_TOKEN_JWT_SECRET!); expect((await request(app).get('/admin').set('Authorization', `Bearer ${token}`)).status).toBe(401); });
 test('invalid token cannot access seller endpoints', async () => { expect((await request(app).get('/seller').set('Authorization', 'Bearer invalid')).status).toBe(401); });
 test('seller authentication resolves the seller shop', async () => { db.sellers.findUnique.mockResolvedValue({ id: userId, shop: { id: 'shop' } }); const token = jwt.sign({ id: userId, role: 'seller' }, process.env.ACCESS_TOKEN_JWT_SECRET!); expect((await request(app).get('/seller').set('Authorization', `Bearer ${token}`)).status).toBe(200); expect(db.sellers.findUnique.mock.calls[0][0].include).toEqual({ shop: true }); });
@@ -21,6 +29,32 @@ profileApp.use(express.json());
 profileApp.use(cookieParser());
 profileApp.use('/api', authRouter);
 profileApp.use(errorMiddleware);
+
+test('guest profile probe identifies absent session without database access', async () => {
+  const response = await request(profileApp).get('/api/logged-in-user');
+  expect(response.status).toBe(401);
+  expect(response.body.code).toBe('SESSION_MISSING');
+  expect(response.headers['cache-control']).toBe('no-store');
+  expect(db.users.findUnique).not.toHaveBeenCalled();
+});
+
+test.each(['/api/refresh-token', '/api/seller-refresh-token'])('missing refresh cookie returns authentication status for %s', async path => {
+  const response = await request(profileApp).post(path);
+  expect(response.status).toBe(401);
+  expect(response.body.message).toContain('sign in again');
+  expect(db.users.findUnique).not.toHaveBeenCalled();
+});
+
+test('refresh-only customer session remains eligible for automatic refresh', async () => {
+  db.users.findUnique.mockResolvedValue({ id: userId, role: 'user' });
+  const token = jwt.sign({ id: userId, role: 'user' }, process.env.REFRESH_TOKEN_JWT_SECRET!);
+  const probe = await request(profileApp).get('/api/logged-in-user').set('Cookie', `refresh_token=${token}`);
+  expect(probe.status).toBe(401);
+  expect(probe.body.code).not.toBe('SESSION_MISSING');
+  const refreshed = await request(profileApp).post('/api/refresh-token').set('Cookie', `refresh_token=${token}`);
+  expect(refreshed.status).toBe(201);
+  expect(refreshed.headers['set-cookie'].some((cookie: string) => cookie.startsWith('access_token='))).toBe(true);
+});
 
 test('seller cookie cannot reach the buyer profile controller and cause a 500', async () => {
   db.sellers.findUnique.mockResolvedValue({ id: userId, shop: null });
@@ -59,6 +93,15 @@ test('admin account can refresh its customer session', async () => {
   expect(response.status).toBe(201);
   const cookie = response.headers['set-cookie'].find((value: string) => value.startsWith('access_token='));
   expect(jwt.verify(cookie.split(';')[0].slice('access_token='.length), process.env.ACCESS_TOKEN_JWT_SECRET!)).toMatchObject({ role: 'user' });
+});
+
+test('admin session refresh preserves the admin role', async () => {
+  db.users.findUnique.mockResolvedValue({ id: userId, role: 'admin' });
+  const token = jwt.sign({ id: userId, role: 'admin' }, process.env.REFRESH_TOKEN_JWT_SECRET!);
+  const response = await request(profileApp).post('/api/refresh-token').set('Cookie', `refresh_token=${token}`);
+  expect(response.status).toBe(201);
+  const cookie = response.headers['set-cookie'].find((value: string) => value.startsWith('access_token='));
+  expect(jwt.verify(cookie.split(';')[0].slice('access_token='.length), process.env.ACCESS_TOKEN_JWT_SECRET!)).toMatchObject({ id: userId, role: 'admin' });
 });
 
 test('revoking admin role still rejects an existing admin session', async () => {
