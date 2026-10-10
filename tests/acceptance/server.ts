@@ -22,6 +22,14 @@ export async function start() {
   const image = 'https://hunggiaco.com/wp-content/uploads/2026/03/avatar-mac-dinh-facebook-1-1.jpg';
   const cpu = await prisma.products.create({ data: { title: 'Ryzen Gaming CPU', slug: 'acceptance-cpu', category: 'PC Components', subCategory: 'CPU', short_description: 'A fast processor for daily work and gaming.', detailed_description: 'Six cores for your next desktop build.', tags: ['gaming'], colors: ['Black'], sizes: [], stock: 3, sale_price: 80, regular_price: 100, warranty: '24 months', shopId: shop.id, discount_codes: [], images: { create: { url: image, file_id: 'acceptance-image' } } } });
   await prisma.site_config.create({ data: { categories: ['PC Components'], subCategories: { 'PC Components': ['CPU', 'GPU', 'Memory'] } } });
+  await prisma.products.update({ where: { id: cpu.id }, data: { custom_specification: { socket: 'AM5' } } });
+  for (const [subCategory, title, price, specs] of [
+    ['Motherboard', 'AM5 DDR5 Motherboard', 120, { socket: 'AM5', memoryType: 'DDR5' }],
+    ['RAM', 'DDR5 Memory Kit', 60, { memoryType: 'DDR5' }],
+    ['Motherboard', 'Incompatible Intel Motherboard', 100, { socket: 'LGA1700', memoryType: 'DDR4' }],
+  ] as const) {
+    await prisma.products.create({ data: { title, slug: title.toLowerCase().replaceAll(' ', '-'), category: 'PC Components', subCategory, detailed_description: title, tags: [], colors: [], sizes: [], stock: 10, sale_price: price, regular_price: price, warranty: '24 months', shopId: shop.id, discount_codes: [], custom_specification: specs } });
+  }
   const address = await prisma.address.create({ data: { userId: buyer.id, name: buyer.name, label: 'Home', street: '12 Nguyen Hue', city: 'Ho Chi Minh City', zip: '70000', country: 'Vietnam', isDefault: true } });
   const orders: any[] = [];
   for (const [i, status] of ['Pending', 'Delivered', 'Shipped', 'Cancelled'].entries()) {
@@ -45,6 +53,7 @@ export async function start() {
   app.get('/recommendation/api/recommendations/:userId', isAuthenticated, isUser, recommendations.personalized);
   app.get('/gateway-health', handle(async (_req, res) => { res.json({ fixture: true }); }));
   app.use(errorMiddleware);
-  const server = app.listen(8080, '127.0.0.1', () => console.log('ACCEPTANCE_READY http://localhost:8080 (isolated MongoDB; Stripe/Redis/logging doubles)'));
+  const port = Number(process.env.ACCEPTANCE_PORT || 8080);
+  const server = app.listen(port, '127.0.0.1', () => console.log(`ACCEPTANCE_READY http://localhost:${port} (isolated MongoDB; Stripe/Redis/logging doubles)`));
   return { server, prisma };
 }
