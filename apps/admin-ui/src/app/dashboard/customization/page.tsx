@@ -471,7 +471,7 @@ const ImageTab = ({
 };
 
 const LoadingSkeleton = () => (
-  <div className="space-y-4 max-w-3xl animate-pulse">
+  <div className="space-y-4 max-w-3xl ">
     {[...Array(3)].map((_, i) => (
       <div key={i} className="h-14 bg-gray-800/60 rounded-xl" />
     ))}
