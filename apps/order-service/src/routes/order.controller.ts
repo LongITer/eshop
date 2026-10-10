@@ -1,10 +1,11 @@
+import { trustedCartItems, trustedDiscount, shippingQuote } from './checkout-quote';
+import { STORE_CURRENCY, usdCents } from '@packages/utils/money';
 import { NotFoundError, ValidationError } from "@packages/error-handler";
 import prisma from "@packages/libs/prisma";
 import redis from "@packages/libs/redis";
 import crypto from "crypto";
 import { NextFunction, Request, Response } from "express";
 import Stripe from "stripe";
-import { orderStatus } from "@prisma/client";
 
 import { sendBehaviorLog } from "@packages/utils/logs/behavior-log";
 
@@ -36,7 +37,7 @@ export const createPaymentIntent = async (
       );
     }
 
-    const customerAmount = Math.round(session.totalAmount * 100);
+    const customerAmount = usdCents(session.totalAmount);
     if (!Number.isSafeInteger(customerAmount) || customerAmount <= 0) {
       return next(new ValidationError("Payment amount is invalid."));
     }
@@ -44,7 +45,7 @@ export const createPaymentIntent = async (
 
     const intentData: Stripe.PaymentIntentCreateParams = {
       amount: customerAmount,
-      currency: "usd",
+      currency: STORE_CURRENCY,
       payment_method_types: ["card"],
       metadata: {
         sessionId,
@@ -65,6 +66,9 @@ export const createPaymentIntent = async (
     }
 
     const paymentIntent = await stripe.paymentIntents.create(intentData, { idempotencyKey: `checkout-${sessionId}` });
+    const savedSession = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
+    if (!savedSession || savedSession.userId !== req.user.id) throw new ValidationError('Payment session unavailable');
+    await prisma.paymentSession.update({ where: { id: sessionId }, data: { payload: { ...(savedSession.payload as any), paymentIntentId: paymentIntent.id } } });
     await sendBehaviorLog("paymentAttempt", {
       type: "info",
       source: "order-service",
@@ -93,61 +97,7 @@ export const createPaymentSession = async (
     const { cart, selectedAddressId, coupon } = req.body;
     const userId = req.user.id;
 
-    if (!cart || !Array.isArray(cart) || cart.length === 0) {
-      return next(new ValidationError("Cart is empty or invalid."));
-    }
-
-    const requestedItems = cart.map((item: any) => ({
-      id: item?.id,
-      quantity: Number(item?.quantity),
-      selectedOptions: item?.selectedOptions || {},
-    }));
-
-    if (
-      requestedItems.some(
-        (item: any) =>
-          typeof item.id !== "string" ||
-          !Number.isInteger(item.quantity) ||
-          item.quantity <= 0,
-      )
-    ) {
-      return next(new ValidationError("Cart contains invalid items."));
-    }
-
-    const productIds = requestedItems.map((item: any) => item.id);
-    if (new Set(productIds).size !== productIds.length) {
-      return next(new ValidationError("Cart contains duplicate products."));
-    }
-
-    const products = await prisma.products.findMany({
-      where: { id: { in: productIds }, isDeleted: false, status: "Active" },
-      select: {
-        id: true,
-        title: true,
-        sale_price: true,
-        stock: true,
-        discount_codes: true,
-        colors: true,
-        sizes: true,
-        shopId: true,
-        images: { select: { url: true } },
-      },
-    });
-    const productById = new Map(
-      products.map((product) => [product.id, product]),
-    );
-    if (
-      products.length !== requestedItems.length ||
-      requestedItems.some(
-        (item: any) =>
-          !productById.has(item.id) ||
-          productById.get(item.id)!.stock < item.quantity,
-      )
-    ) {
-      return next(
-        new ValidationError("A product is unavailable or out of stock."),
-      );
-    }
+    const trustedCart = await trustedCartItems(cart);
 
     let shippingAddress: any;
     if (!selectedAddressId) return next(new ValidationError("Choose a shipping address."));
@@ -161,18 +111,6 @@ export const createPaymentSession = async (
         return next(new ValidationError("Shipping address is invalid."));
       }
     }
-
-    const trustedCart = requestedItems.map((item: any) => {
-      const product = productById.get(item.id)!;
-      if ((item.selectedOptions.color && !product.colors.includes(item.selectedOptions.color)) || (item.selectedOptions.size && !product.sizes.includes(item.selectedOptions.size))) throw new ValidationError("Invalid product variant");
-      return {
-        ...item,
-        title: product.title,
-        sale_price: product.sale_price,
-        shopId: product.shopId,
-        image: product.images[0]?.url || null,
-      };
-    });
 
     // Fetch all seller and their stripe account
     const uniqueShopIds = [
@@ -202,25 +140,11 @@ export const createPaymentSession = async (
       stripeAccountId: shop?.sellers?.stripe_id,
     }));
 
-    // Calculate total
-    const subTotal = trustedCart.reduce((total: number, item: any) => {
-      return total + item.quantity * item.sale_price;
-    }, 0);
-
-    let trustedCoupon: any = null;
-    if (coupon?.code || coupon?.couponCode || coupon?.discountCode) {
-      const code = coupon.code || coupon.couponCode || coupon.discountCode;
-      if (typeof code !== 'string') throw new ValidationError('Invalid coupon');
-      const record = await prisma.discountCodes.findFirst({ where: { discountCode: code } });
-      if (!record) throw new ValidationError('Coupon no longer exists');
-      const eligible = trustedCart.find(item => productById.get(item.id)!.discount_codes.includes(record.id));
-      if (!eligible) throw new ValidationError('Coupon does not apply to these products');
-      const price = eligible.sale_price * eligible.quantity;
-      const discountAmount = Math.round(Math.min(price, record.discountType === 'percentage' ? price * record.discountValue / 100 : record.discountValue) * 100) / 100;
-      if (discountAmount < 0 || !Number.isFinite(discountAmount)) throw new ValidationError('Invalid coupon amount');
-      trustedCoupon = { id: record.id, code, discountAmount, discountedProductId: eligible.id };
-    }
-    const totalAmount = Math.round((subTotal - (trustedCoupon?.discountAmount || 0)) * 100) / 100;
+    const subTotal = trustedCart.reduce((sum, item) => sum + usdCents(item.sale_price) * item.quantity, 0) / 100;
+    const trustedCoupon = await trustedDiscount(trustedCart, coupon?.code || coupon?.couponCode || coupon?.discountCode);
+    const shippingByShop = shippingQuote(uniqueShopIds);
+    const shippingFee = Object.values(shippingByShop).reduce((sum, fee) => sum + usdCents(fee), 0) / 100;
+    const totalAmount = (usdCents(subTotal) - usdCents(trustedCoupon?.discountAmount || 0) + usdCents(shippingFee)) / 100;
     if (totalAmount <= 0) throw new ValidationError('Order total must be positive');
     // Create session payload
     const sessionId = crypto.randomUUID();
@@ -230,6 +154,7 @@ export const createPaymentSession = async (
       cart: trustedCart,
       seller: sellerData,
       totalAmount,
+      subTotal, shippingFee, shippingByShop, currency: STORE_CURRENCY,
       shippingAddressId: selectedAddressId || null,
       coupon: trustedCoupon,
       shippingAddress,
@@ -296,6 +221,7 @@ export const getSellerOrders = async (
       },
     });
 
+    if (!shop) throw new NotFoundError('Seller shop not found');
     // Fetch order for this shop
     const orders = await prisma.orders.findMany({
       where: {
@@ -383,84 +309,8 @@ export const getOrderById = async (
   }
 };
 
-// Update Order Status
-export const updateOrderStatus = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { orderId } = req.params;
-    const { status } = req.body;
-
-    if (!orderId || typeof orderId !== "string") {
-      return next(new ValidationError("Order ID is required."));
-    }
-
-    if (typeof status !== "string" || !(status in orderStatus)) {
-      return next(new ValidationError("Invalid order status."));
-    }
-
-    const shop = await prisma.shops.findUnique({
-      where: { sellerId: req.seller.id },
-      select: { id: true },
-    });
-
-    if (!shop) {
-      return next(new NotFoundError("Seller shop not found."));
-    }
-
-    const existingOrder = await prisma.orders.findFirst({
-      where: { id: orderId, shopId: shop.id },
-      select: { id: true, status: true },
-    });
-
-    if (!existingOrder) {
-      return next(new NotFoundError("Order not found."));
-    }
-
-    const nextStatus = orderStatus[status as keyof typeof orderStatus];
-    const updatedOrder = await prisma.orders.update({
-      where: { id: existingOrder.id },
-      data: {
-        status: nextStatus,
-        deliveredAt: nextStatus === orderStatus.Delivered ? new Date() : null,
-        cancelledAt: nextStatus === orderStatus.Cancelled ? new Date() : null,
-      },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true, avatar: true },
-        },
-        items: true,
-      },
-    });
-
-    await sendBehaviorLog("orderStatusChange", {
-      type: "info",
-      source: "order-service",
-      message: "Seller changed order status",
-      metadata: {
-        sellerId: req.seller.id,
-        orderId: updatedOrder.id,
-        previousStatus: existingOrder.status,
-        status: updatedOrder.status,
-      },
-    });
-
-    if (nextStatus === orderStatus.Cancelled) {
-      await sendBehaviorLog("orderCancelled", {
-        type: "warn",
-        source: "order-service",
-        message: "Order cancelled by seller",
-        metadata: { sellerId: req.seller.id, orderId: updatedOrder.id },
-      });
-    }
-
-    return res.status(200).json(updatedOrder);
-  } catch (error) {
-    return next(error);
-  }
-};
+// Keep the legacy export on the same validated lifecycle path.
+export { sellerOrderStatus as updateOrderStatus } from './order-management.controller';
 
 // Verify coupon code
 export const verifyConponCode = async (
@@ -471,52 +321,10 @@ export const verifyConponCode = async (
   try {
     const { couponCode, cart } = req.body;
 
-    if (!couponCode || !cart || cart.length === 0) {
-      return next(new ValidationError("Coupon code and cart are required!"));
-    }
-
-    const discount = await prisma.discountCodes.findFirst({
-      where: { discountCode: couponCode },
-    });
-
-    if (!discount) {
-      return next(new NotFoundError("Discount code is not valid or expired."));
-    }
-
-    // Find matching products that includes this discount code
-    const matchingProduct = cart.find((item: any) => {
-      return item.discountCodes?.some((d: any) => d === discount.id);
-    });
-
-    if (!matchingProduct) {
-      return res.status(200).json({
-        valid: false,
-        discount: 0,
-        discountAmount: 0,
-        message: "No matching products found for this coupon!",
-      });
-    }
-
-    // Calculate discount amount
-    let discountAmount = 0;
-    const price = matchingProduct.sale_price * matchingProduct.quantity;
-
-    if (discount.discountType === "percentage") {
-      discountAmount = (price * discount.discountValue) / 100;
-    } else if (discount.discountType === "fixed") {
-      discountAmount = discount.discountValue;
-    }
-
-    discountAmount = Math.min(discountAmount, price);
-
-    res.status(200).json({
-      valid: true,
-      discount: discount.discountValue,
-      discountAmount: discountAmount.toFixed(2),
-      discountProductId: matchingProduct.id,
-      discountType: discount.discountType,
-      message: "Discount applied to 1 eligible product",
-    });
+    if (!couponCode) throw new ValidationError('Coupon code is required');
+    const items = await trustedCartItems(cart);
+    const discount = await trustedDiscount(items, couponCode);
+    res.json({ valid: true, discount: discount!.discountValue, discountAmount: discount!.discountAmount, discountProductId: discount!.discountedProductId, discountLineKey: discount!.discountedLineKey, discountType: discount!.discountType });
   } catch (error) {
     return next(error);
   }
