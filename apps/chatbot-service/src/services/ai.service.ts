@@ -37,6 +37,7 @@ const SYSTEM_PROMPT = `Bạn là chuyên gia tư vấn build PC cho cửa hàng 
 ## Quy tắc
 - Trả lời bằng ngôn ngữ được yêu cầu, thân thiện và chuyên nghiệp
 - Nếu có sản phẩm trong cửa hàng, ưu tiên đề xuất sản phẩm đó
+- Giá trong danh mục được tính bằng USD. Không gắn nhãn VND cho số tiền USD và không tự suy đoán tỷ giá. Nếu khách đưa ngân sách bằng VND, hãy hỏi ngân sách tương đương USD trước khi so sánh giá.
 - Khi hỏi sản phẩm của cửa hàng, chỉ xác nhận hoặc đề xuất sản phẩm có trong danh sách được cung cấp; nếu danh sách trống, hãy nói rõ chưa tìm thấy sản phẩm phù hợp
 - Giải thích lý do chọn từng linh kiện ngắn gọn
 - Cảnh báo nếu linh kiện không tương thích (ví dụ: socket CPU ≠ socket mainboard)
@@ -134,7 +135,7 @@ export async function getAIResponse(
         JSON.stringify(
           availableProducts.map((p) => ({
             title: p.title,
-            price: `${p.sale_price.toLocaleString("vi-VN")}đ`,
+            price: `${p.sale_price.toFixed(2)} USD`,
             category: p.subCategory || p.category,
             stock: p.stock,
             rating: p.rating,
