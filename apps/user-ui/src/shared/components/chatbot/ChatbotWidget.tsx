@@ -3,10 +3,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { ShoppingCart } from 'lucide-react';
-import { useStore } from '../../../store';
-import useUser from '../../../hooks/useUser';
-import useLocationTracking from '../../../hooks/useLocationTracking';
-import useDeviceTracking from '../../../hooks/useDeviceTracking';
 
 const CONVERSATION_STORAGE_KEY = 'chatbot_conversation_id';
 const LANGUAGE_STORAGE_KEY = 'chatbot_language';
@@ -70,11 +66,6 @@ const ChatbotWidget: React.FC = () => {
       setSessionId(newId);
     }
   }, []);
-  const { user } = useUser();
-  const location = useLocationTracking();
-  const deviceInfo = useDeviceTracking();
-  const addToCart = useStore((state) => state.addToCart);
-  const cart = useStore((state) => state.cart);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -359,11 +350,11 @@ const ChatbotWidget: React.FC = () => {
                       <div className="chatbot-product-info">
                         <p className="chatbot-product-title">{product.title}</p>
                         <p className="chatbot-product-price">
-                          {product.sale_price.toLocaleString('vi-VN')}đ
+                          ${product.sale_price.toFixed(2)} USD
                         </p>
                         {product.regular_price > product.sale_price && (
                           <p className="chatbot-product-old-price">
-                            {product.regular_price.toLocaleString('vi-VN')}đ
+                            ${product.regular_price.toFixed(2)} USD
                           </p>
                         )}
                         <div className="chatbot-product-meta">
@@ -372,32 +363,10 @@ const ChatbotWidget: React.FC = () => {
                         </div>
                       </div>
                     </a>
-                    <button
-                      type="button"
-                      className="chatbot-product-add-btn"
-                      title={cart.some((item) => item.id === product.id) ? 'Đã có trong giỏ' : 'Thêm vào giỏ'}
-                      aria-label={`Thêm ${product.title} vào giỏ hàng`}
-                      disabled={cart.some((item) => item.id === product.id)}
-                      onClick={() => addToCart(
-                        {
-                          id: product.id,
-                          title: product.title,
-                          price: product.sale_price,
-                          sale_price: product.sale_price,
-                          regular_price: product.regular_price,
-                          images: product.image ? [product.image] : [],
-                          slug: product.slug,
-                          shopId: product.shopId,
-                          quantity: 1,
-                        },
-                        user,
-                        location,
-                        deviceInfo
-                      )}
-                    >
+                    <a className="chatbot-product-add-btn" href={`/product/${product.slug}`}>
                       <ShoppingCart size={14} aria-hidden="true" />
-                      <span>{cart.some((item) => item.id === product.id) ? 'Trong giỏ' : 'Thêm giỏ'}</span>
-                    </button>
+                      <span>{language === 'en' ? 'Choose options' : 'Chọn sản phẩm'}</span>
+                    </a>
                   </div>
                 ))}
               </div>
