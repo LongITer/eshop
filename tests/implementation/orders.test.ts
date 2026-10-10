@@ -27,6 +27,19 @@ test('buyer cancellation lookup requires both buyer ownership and Pending', asyn
   expect((await request(appFor('post', '/:orderId', cancelOrder)).post('/' + otherId)).status).toBe(404);
   expect(db.orders.findFirst.mock.calls[0][0].where).toEqual({ id: otherId, userId, status: 'Pending' });
 });
+
+test('legacy order cancellation does not invent SKU stock after a product gains variants', async () => {
+  db.orders.findFirst.mockResolvedValue(order);
+  db.productVariant.count.mockResolvedValue(2);
+  db.products.update.mockResolvedValue({ id: productId, title: 'RAM', stock: 10 });
+  db.shops.findUniqueOrThrow.mockResolvedValue({ sellerId: userId });
+  db.orders.update.mockResolvedValue({ ...order, status: 'Cancelled' });
+  await transitionOrder(otherId, 'Cancelled', { userId }, userId);
+  expect(db.products.update.mock.calls[0][0].data.stock).toEqual({ increment: 0 });
+  expect(db.productVariant.update).not.toHaveBeenCalled();
+  expect(db.inventoryHistory.create.mock.calls[0][0].data.reason).toContain('manual SKU allocation');
+  expect(db.notifications.create.mock.calls[0][0].data.sellerId).toBe(userId);
+});
 test('shipment persists tracking and ETA and notifies buyer', async () => {
   db.orders.findFirst.mockResolvedValue({ ...order, status: 'Processing' }); db.orders.update.mockResolvedValue(order);
   await transitionOrder(otherId, 'Shipped', { shopId }, userId, { trackingNumber: 'TRACK123', estimatedDelivery: '2026-10-15' });
