@@ -1,11 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import axiosInstance from '../utils/axioInstance';
+import axios from 'axios';
 
 
 // Fetch user data from API
 const fetchUser = async () => {
-    const response = await axiosInstance.get("/api/logged-in-seller");
-    return response.data.seller;
+    try {
+        const response = await axiosInstance.get("/api/logged-in-seller");
+        return response.data.seller;
+    } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) return null;
+        throw error;
+    }
 }
 
 const useSeller = () => {
