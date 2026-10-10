@@ -118,8 +118,6 @@ export const loginUser = async (
       return next(new AuthError("Invalid email or password!"));
     }
     // Delete seller token
-    res.clearCookie("seller_access_token");
-    res.clearCookie("seller_refresh_token");
     // Generate access token and refresh token
     const accessToken = await jwt.sign(
       { id: user.id, role: "user" },
@@ -165,10 +163,10 @@ export const refreshUserToken = async (
 ) => {
   try {
     const token =
-      req.cookies["refresh_token"] || req.headers.authorization?.split(" ")[1];
+      req.cookies?.["refresh_token"] || req.headers.authorization?.split(" ")[1];
 
     if (!token) {
-      return next(new ValidationError("Unauthorized! No refresh token!"));
+      return next(new AuthError("Your session has ended. Please sign in again."));
     }
 
     const decoded = jwt.verify(
@@ -176,9 +174,12 @@ export const refreshUserToken = async (
       process.env.REFRESH_TOKEN_JWT_SECRET as string,
     ) as { id: string; role: string };
 
-    if (!decoded || !decoded.id || decoded.role !== "user") {
+    // Admin sessions use the same user account cookies as customer sessions,
+    // but retain the admin role so the admin UI can refresh without being
+    // downgraded to a customer session.
+    if (!decoded || !decoded.id || !["user", "admin"].includes(decoded.role)) {
       return next(
-        new JsonWebTokenError("Forbidden! Invalid user refresh token!"),
+        new JsonWebTokenError("Forbidden! Invalid account refresh token!"),
       );
     }
 
@@ -191,7 +192,7 @@ export const refreshUserToken = async (
     }
 
     const newAccessToken = jwt.sign(
-      { id: decoded.id, role: "user" },
+      { id: decoded.id, role: decoded.role },
       process.env.ACCESS_TOKEN_JWT_SECRET as string,
       { expiresIn: "15m" },
     );
@@ -218,12 +219,12 @@ export const refreshSellerToken = async (
 ) => {
   try {
     const token =
-      req.cookies["seller_refresh_token"] ||
+      req.cookies?.["seller_refresh_token"] ||
       req.headers.authorization?.split(" ")[1];
 
     if (!token) {
       return next(
-        new ValidationError("Unauthorized! No seller refresh token!"),
+        new AuthError("Your session has ended. Please sign in again."),
       );
     }
 
@@ -638,8 +639,6 @@ export const loginSeller = async (
       return next(new AuthError("Invalid email or password!"));
     }
     // Delete user token
-    res.clearCookie("access_token");
-    res.clearCookie("refresh_token");
     // Generate access token and refresh token
     const accessToken = await jwt.sign(
       { id: seller.id, role: "seller" },
@@ -853,8 +852,6 @@ export const loginAdmin = async (
     //   source: "auth-service",
     // })
 
-    res.clearCookie("seller_access_token");
-    res.clearCookie("seller_refresh_token");
 
     // Generate access token and refresh token
     const accessToken = await jwt.sign(
