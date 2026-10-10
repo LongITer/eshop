@@ -50,8 +50,13 @@ test-output
 
 # Next.js
 .next
+.next-*/
 out
 
 *.tsbuildinfo
 .build/
 .tmp-*
+
+# Local tunnel credentials and runtime logs
+/ngrok.yml
+/.nx/*.log
