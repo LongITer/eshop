@@ -14,7 +14,7 @@ export function ErrorState({ retry }: { retry: () => void }) {
   return <div role="alert" className="flex flex-wrap items-center gap-4 rounded-xl border border-red-500/20 bg-red-500/5 p-5"><AlertCircle size={23} className="text-red-400" /><div className="flex-1"><p className="text-sm font-medium text-red-300">Unable to load data</p><p className="mt-1 text-xs text-slate-400">Check your filters and connection, then try again.</p></div><button className="admin-button" onClick={retry}><RefreshCw size={14} /> Retry</button></div>;
 }
 export function LoadingState() {
-  return <div role="status" aria-label="Loading data" className="space-y-5"><div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{[0, 1, 2, 3].map(i => <div key={i} className="h-28 animate-pulse rounded-xl border border-gray-800 bg-gray-900" />)}</div><div className="h-72 animate-pulse rounded-xl border border-gray-800 bg-gray-900" /><span className="sr-only">Loading data…</span></div>;
+  return <div role="status" aria-label="Loading data" className="space-y-5"><div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{[0, 1, 2, 3].map(i => <div key={i} className="h-28  rounded-xl border border-gray-800 bg-gray-900" />)}</div><div className="h-72  rounded-xl border border-gray-800 bg-gray-900" /><span className="sr-only">Loading data…</span></div>;
 }
 export function StatusBadge({ status }: { status: string }) {
   const color = /delivered|paid|succeeded/i.test(status) ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : /cancel|fail|return/i.test(status) ? 'border-red-500/20 bg-red-500/10 text-red-400' : /pending|processing|requires/i.test(status) ? 'border-amber-500/20 bg-amber-500/10 text-amber-400' : 'border-blue-500/20 bg-blue-500/10 text-blue-400';
