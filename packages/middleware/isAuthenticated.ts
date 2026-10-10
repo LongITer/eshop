@@ -6,8 +6,11 @@ import jwt from "jsonwebtoken";
 const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
     try {
         // Get token
-        const token = req.headers.authorization?.split(' ')[1] ||
-            req.cookies?.['access_token'] || req.cookies?.['seller_access_token'];
+        const sessionRole = req.headers['x-session-role'];
+        const cookieToken = sessionRole === 'seller' ? req.cookies?.seller_access_token
+            : sessionRole === 'user' ? req.cookies?.access_token
+            : req.cookies?.access_token || req.cookies?.seller_access_token;
+        const token = req.headers.authorization?.split(' ')[1] || cookieToken;
 
         if (!token) {
             return res.status(401).json({
