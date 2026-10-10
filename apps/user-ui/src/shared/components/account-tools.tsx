@@ -24,7 +24,39 @@ export function ProfileEditor({ user }: { user: any }) {
     }
     return axios.put('/api/update-user', { name, avatar });
   }, onSuccess: () => client.invalidateQueries({ queryKey: ['user'] }) });
-  return <form onSubmit={e => { e.preventDefault(); save.mutate(); }} className="space-y-4"><label className="block">Name<input className="block border rounded p-3 w-full" value={name} required maxLength={100} onChange={e => setName(e.target.value)} /></label><p>{user.email}</p><label className="block">Avatar<input className="block py-2" type="file" accept="image/png,image/jpeg,image/webp" onChange={e => setFile(e.target.files?.[0] ?? null)} /></label><button disabled={save.isPending} className="bg-blue-600 text-white px-5 py-3 rounded">{save.isPending ? 'Saving…' : 'Save profile'}</button>{save.isSuccess && <p role="status">Profile saved.</p>}{save.isError && <p role="alert">Unable to save profile. Check the name and image size (maximum 5 MB).</p>}<Link className="block text-blue-600" href="/profile/following">Following shops</Link></form>;
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  return <form onSubmit={e => { e.preventDefault(); save.mutate(); }} className="space-y-4">
+    <label className="block">Name<input className="block border rounded p-3 w-full mt-1" value={name} required maxLength={100} onChange={e => setName(e.target.value)} /></label>
+    <div>
+      <span className="block mb-1">Email</span>
+      <p className="p-3 bg-gray-50 border rounded text-gray-500">{user.email}</p>
+    </div>
+    <div className="block">
+      <span className="block mb-2">Avatar</span>
+      <div className="flex items-center gap-4">
+        {(previewUrl || user.avatar) ? (
+          <img src={previewUrl || user.avatar} alt="Avatar preview" className="w-20 h-20 rounded-full object-cover border border-gray-200" />
+        ) : (
+          <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200">
+            <span className="text-gray-400 text-xs">No image</span>
+          </div>
+        )}
+        <input className="block" type="file" accept="image/png,image/jpeg,image/webp" onChange={e => {
+          const selectedFile = e.target.files?.[0] ?? null;
+          setFile(selectedFile);
+          if (selectedFile) {
+            setPreviewUrl(URL.createObjectURL(selectedFile));
+          } else {
+            setPreviewUrl(null);
+          }
+        }} />
+      </div>
+    </div>
+    <button disabled={save.isPending} className="bg-blue-600 text-white px-5 py-3 rounded mt-2">{save.isPending ? 'Saving…' : 'Save profile'}</button>
+    {save.isSuccess && <p role="status" className="text-green-600">Profile saved.</p>}
+    {save.isError && <p role="alert" className="text-red-600">Unable to save profile. Check the name and image size (maximum 5 MB).</p>}
+    <Link className="block text-blue-600 mt-4" href="/profile/following">Following shops</Link>
+  </form>;
 }
 export function FollowButton({ shopId }: { shopId: string }) {
   const { user } = useUser();
