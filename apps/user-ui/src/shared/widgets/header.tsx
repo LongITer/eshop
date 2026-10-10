@@ -39,9 +39,9 @@ const Header = () => {
               <>
                 <Link
                   href={"/profile"}
-                  className="border-2 w-[50px] h-[50px] flex items-center justify-center rounded-full border-[#010f1c1a]"
+                  className="border-2 w-[50px] h-[50px] flex items-center justify-center rounded-full border-[#010f1c1a] overflow-hidden"
                 >
-                  <User />
+                  {user?.avatar ? <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" /> : <User />}
                 </Link>
                 <Link href={"/profile"}>
                   <span className="block font-medium">Hello</span>
@@ -89,7 +89,7 @@ const Header = () => {
         </div>
       </div>
       <div className="border-b border-b-slate-200" />
-      <MobileNav links={[{ label: 'Home', href: '/' }, { label: 'Products', href: '/products' }, { label: 'Shops', href: '/shop' }, { label: 'Offers', href: '/offers' }, { label: 'Wishlist', href: '/wishlist' }, { label: 'Cart', href: '/cart' }, { label: 'Messages', href: '/inbox' }, { label: 'Profile', href: '/profile' }]} />
+      <MobileNav links={[{ label: 'Home', href: '/' }, { label: 'Products', href: '/products' }, { label: 'PC Builder', href: '/pc-builder' }, { label: 'Shops', href: '/shop' }, { label: 'Offers', href: '/offers' }, { label: 'Wishlist', href: '/wishlist' }, { label: 'Cart', href: '/cart' }, { label: 'Messages', href: '/inbox' }, { label: 'Profile', href: '/profile' }]} />
       <div className="hidden md:block"><HeaderBottom /></div>
     </div>
   );
