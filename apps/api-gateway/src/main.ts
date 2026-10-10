@@ -51,6 +51,7 @@ app.use(
       "Content-Type",
       "Authorization",
       "X-Requested-With",
+      "X-Session-Role",
       "Accept",
       "Origin",
       "Cookie",
