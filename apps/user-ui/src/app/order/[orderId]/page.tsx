@@ -151,12 +151,16 @@ export default function OrderDetailPage({
           <OrderActions order={order} />
           <div className={`relative mb-8 ${['Cancelled', 'Returned', 'Refunded'].includes(order.status ?? '') ? 'hidden' : ''}`}>
             {/* Background line */}
-            <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200 z-0" />
+            <div
+              className="absolute top-4 h-0.5 bg-gray-200 z-0"
+              style={{ left: `${50 / STATUS_STEPS.length}%`, right: `${50 / STATUS_STEPS.length}%` }}
+            />
             {/* Filled line */}
             <div
-              className="absolute top-4 left-0 h-0.5 bg-green-500 z-0 transition-all duration-500"
+              className="absolute top-4 h-0.5 bg-green-500 z-0 transition-all duration-500"
               style={{
-                width: `${(currentStep / (STATUS_STEPS.length - 1)) * 100}%`,
+                left: `${50 / STATUS_STEPS.length}%`,
+                width: `${(currentStep / STATUS_STEPS.length) * 100}%`,
               }}
             />
             <div className="relative z-10 flex justify-between">
