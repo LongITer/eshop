@@ -11,10 +11,11 @@ import { Loader2 } from "lucide-react";
 import axiosInstance from "@/utils/axioInstance";
 import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { cartLineKey } from '@packages/utils/cart';
 
 const CartPage = () => {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, isLoading: userLoading } = useUser();
   const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
 
@@ -80,7 +81,11 @@ const CartPage = () => {
   };
 
   const createPaymentSession = async () => {
-    if (addresses?.length === 0) {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    if (!selectedAddressId) {
       toast.error("Please set your delivery address to create an order!");
       return;
     }
@@ -100,7 +105,7 @@ const CartPage = () => {
       const sessionId = res.data.sessionId;
       router.push(`/checkout?sessionId=${sessionId}`);
     } catch (error: any) {
-      toast.error("Something went wrong. Please try again!");
+      toast.error(error.response?.data?.message || "Something went wrong. Please try again!");
       console.log(error);
     } finally {
       setLoading(false);
@@ -110,7 +115,7 @@ const CartPage = () => {
   const decreaseQuantity = (id: string) => {
     useStore.setState((state: any) => ({
       cart: state.cart.map((item: any) =>
-        item.id === id && item.quantity > 1
+        cartLineKey(item) === id && item.quantity > 1
           ? { ...item, quantity: item.quantity - 1 }
           : item,
       ),
@@ -120,7 +125,7 @@ const CartPage = () => {
   const increaseQuantity = (id: string) => {
     useStore.setState((state: any) => ({
       cart: state.cart.map((item: any) =>
-        item.id === id ? { ...item, quantity: (item.quantity ?? 1) + 1 } : item,
+        cartLineKey(item) === id ? { ...item, quantity: (item.quantity ?? 1) + 1 } : item,
       ),
     }));
   };
@@ -143,11 +148,13 @@ const CartPage = () => {
   useEffect(() => {
     if (addresses.length > 0 && !selectedAddressId) {
       const defaultAddr = addresses.find((addr) => addr.isDefault);
-      if (defaultAddr) {
-        setSelectedAddressId(defaultAddr.id);
-      }
+      setSelectedAddressId((defaultAddr || addresses[0]).id);
     }
   }, [addresses, selectedAddressId]);
+
+  useEffect(() => {
+    setStoredCouponCode(''); setDiscountAmount(0); setDiscountPercent(0); setDiscountedProductId('');
+  }, [cart]);
 
   const removeItem = (id: string) => {
     removeFromCart(id, user, location, deviceInfo);
@@ -184,7 +191,7 @@ const CartPage = () => {
               </thead>
               <tbody>
                 {cart.map((item: any) => (
-                  <tr key={item.id} className="border-b border-b-[#0000000e]">
+                  <tr key={cartLineKey(item)} className="border-b border-b-[#0000000e]">
                     <td className="flex items-center gap-4 p-4">
                       <Image
                         src={getCartItemImage(item)}
@@ -222,39 +229,20 @@ const CartPage = () => {
                       </div>
                     </td>
                     <td className="px-6 text-lg text-center">
-                      {item?.id === discountedProductId ? (
-                        <div className="flex flex-col items-center">
-                          <span className="line-through text-gray-500 text-sm">
-                            ${getCartItemPrice(item).toFixed(2)}
-                          </span>{" "}
-                          <span className="text-green-600 font-semibold">
-                            $
-                            {(
-                              (getCartItemPrice(item) *
-                                (100 - item?.discountPercent)) /
-                              100
-                            ).toFixed(2)}
-                          </span>
-                          <span className="text-xs text-green-700 bg-white">
-                            Discount Applied
-                          </span>
-                        </div>
-                      ) : (
-                        <span>${getCartItemPrice(item).toFixed(2)}</span>
-                      )}
+                      <span>${getCartItemPrice(item).toFixed(2)}</span>
                     </td>
                     <td>
                       <div className="flex justify-center border border-gray-200 rounded-[20px] w-[90px] p-[2px]">
                         <button
                           className="text-black cursor-pointer text-xl"
-                          onClick={() => decreaseQuantity(item.id)}
+                          onClick={() => decreaseQuantity(cartLineKey(item))}
                         >
                           -
                         </button>
                         <span className="px-4">{item?.quantity}</span>
                         <button
                           className="text-black cursor-pointer text-xl"
-                          onClick={() => increaseQuantity(item.id)}
+                          onClick={() => increaseQuantity(cartLineKey(item))}
                         >
                           +
                         </button>
@@ -262,7 +250,7 @@ const CartPage = () => {
                     </td>
                     <td className="text-center">
                       <button
-                        onClick={() => removeItem(item.id)}
+                        onClick={() => removeItem(cartLineKey(item))}
                         title="Remove item"
                         className="
                           group inline-flex items-center justify-center
@@ -301,95 +289,34 @@ const CartPage = () => {
             </table>
 
             <div className="p-6 shadow-md w-full lg:w-[30%] bg-[#f9f9f9] rounded-lg">
-              {discountAmount > 0 && (
-                <div className="flex justify-center text-[#010f1c] text-base font-medium pb-1">
-                  <span className="font-jost">
-                    Discount ({discountPercent}%)
-                  </span>
-                  <span className="text-green-600">
-                    - ${discountAmount.toFixed(2)}
-                  </span>
-                </div>
-              )}
-
-              <div className="flex justify-between text-[#010f1c] text-[20px] font-[550] pb-3">
-                <span className="font-jost">Subtotal</span>
-                <span>${(subtotal - discountAmount).toFixed(2)}</span>
-              </div>
+              <h3 className="text-lg font-semibold text-slate-900">Order summary</h3>
               <hr className="my-4 text-slate-200" />
-
               <div className="mb-4">
-                <h4 className="mb-[7px] font-[500] text-[15px]">
-                  Have a Coupon?
-                </h4>
+                <h4 className="mb-[7px] font-[500] text-[15px]">Have a Coupon?</h4>
                 <div className="flex">
-                  <input
-                    type="text"
-                    value={couponCode}
-                    onChange={(e: any) => setCouponCode(e.target.value)}
-                    placeholder="Enter coupon code"
-                    className="w-full p-2 border border-gray-200 rounded-l-md focus:outline-none focus:border-blue-500 focus:ring-0"
-                  />
-                  <button
-                    className="bg-blue-500 cursor-pointer text-white px-4 rounded-r-md hover:bg-blue-600 hover:text-white transition-colors"
-                    onClick={() => couponCodeApplyHandler()}
-                  >
-                    Apply
-                  </button>
+                  <input type="text" value={couponCode} onChange={e => setCouponCode(e.target.value)} placeholder="Enter coupon code" className="w-full p-2 border border-gray-200 rounded-l-md focus:outline-none focus:border-blue-500 focus:ring-0" />
+                  <button className="bg-blue-500 cursor-pointer text-white px-4 rounded-r-md hover:bg-blue-600 hover:text-white transition-colors" onClick={() => couponCodeApplyHandler()}>Apply</button>
                 </div>
                 {error && <p className="text-red-500 text-sm">{error}</p>}
                 <hr className="my-4 text-slate-200" />
-
                 <div className="mb-4">
-                  <h4 className="mb-[7px] font-medium text-[15px]">
-                    Select Shipping Address
-                  </h4>
-                  {addresses?.length !== 0 && (
-                    <select
-                      className="w-full p-2 border border-gray-200 rounded-md focus:outline-none"
-                      value={selectedAddressId}
-                      onChange={(e) => setSelectedAddressId(e.target.value)}
-                    >
-                      {addresses?.map((address: any) => (
-                        <option key={address.id} value={address.id}>
-                          {address.label} - {address.city}, {address.country}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  {addresses?.length === 0 && (
-                    <p className="text-sm text-slate-800">
-                      Please add an address from profile to create an order!
-                    </p>
-                  )}
+                  <h4 className="mb-[7px] font-medium text-[15px]">Select Shipping Address</h4>
+                  {addresses?.length !== 0 && <select className="w-full p-2 border border-gray-200 rounded-md focus:outline-none" value={selectedAddressId} onChange={e => setSelectedAddressId(e.target.value)}>{addresses?.map((address: any) => <option key={address.id} value={address.id}>{address.label} - {address.city}, {address.country}</option>)}</select>}
+                  {addresses?.length === 0 && <p className="text-sm text-slate-800">Please add an address from profile to create an order!</p>}
                 </div>
                 <hr className="my-4 text-slate-200" />
-
                 <div className="mb-4">
-                  <h4 className="mb-[7px] font-[500] text-[15px]">
-                    Select Payment Method
-                  </h4>
-                  <select className="w-full p-2 border border-gray-200 rounded-md focus:outline">
-                    <option value="credit_card">Online Payment</option>
-                    <option value="cash_on_delivery">Cash on Delivery</option>
-                  </select>
+                  <h4 className="mb-[7px] font-[500] text-[15px]">Select Payment Method</h4>
+                  <select className="w-full p-2 border border-gray-200 rounded-md focus:outline"><option value="credit_card">Online Payment</option></select>
                 </div>
                 <hr className="my-4 text-slate-200" />
-
-                <div className="flex justify-between items-center text-[#010f1c] text-[20px] font-[550] pb-3">
-                  <span className="font-jost">Total</span>
-                  <span>${(subtotal - discountAmount).toFixed(2)}</span>
+                <div className="mb-4 space-y-3 text-sm">
+                  <div className="flex items-center justify-between gap-4 text-slate-600"><span>Subtotal</span><span className="shrink-0 font-medium tabular-nums text-slate-900">${subtotal.toFixed(2)}</span></div>
+                  {discountAmount > 0 && <div className="flex items-start justify-between gap-4 py-2.5 text-emerald-700"><div className="min-w-0"><span className="font-medium">Discount</span><span className="mt-0.5 block break-all text-xs text-emerald-600">{storedCouponCode}</span></div><span className="shrink-0 font-semibold tabular-nums">−${discountAmount.toFixed(2)}</span></div>}
                 </div>
-
-                <button
-                  onClick={createPaymentSession}
-                  disabled={loading}
-                  className="w-full flex cursor-pointer items-center justify-center gap-2 mt-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-[15px] font-medium rounded-full shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
-                >
-                  {loading && <Loader2 className="animate-spin w-5 h-5" />}
-                  {loading ? "Redirecting ..." : "Proceed to Checkout"}
-                </button>
+                <div className="flex justify-between items-center border-t border-slate-200 pt-4 text-[#010f1c] text-[20px] font-[550] pb-3"><span className="font-jost">Total</span><span>${(subtotal - discountAmount).toFixed(2)}</span></div>
+                <p className="text-sm text-gray-600">Final prices and shipping are confirmed on the checkout page before payment.</p>
+                <button onClick={createPaymentSession} disabled={loading || userLoading} className="w-full flex cursor-pointer items-center justify-center gap-2 mt-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-[15px] font-medium rounded-full shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100">{loading && <Loader2 className="animate-spin w-5 h-5" />}{userLoading ? 'Loading ...' : loading ? 'Redirecting ...' : user ? 'Proceed to Checkout' : 'Login to Checkout'}</button>
               </div>
             </div>
           </div>
