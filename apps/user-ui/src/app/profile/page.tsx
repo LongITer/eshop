@@ -1,5 +1,5 @@
 "use client";
-import useUser from "@/hooks/useUser";
+import useRequireAuth from "@/hooks/useRequireAuth";
 import StatCard from "@/shared/cards/stat.card";
 import {
   BadgeCheck,
@@ -32,12 +32,11 @@ import Notifications from "@/shared/cards/notifications";
 import { ProfileEditor } from "@/shared/components/account-tools";
 import ChangePassword from "@/shared/cards/change-password";
 import toast from "react-hot-toast";
-import { isAxiosError } from "axios";
 
 const profileTabs = ["Profile", "My Orders", "Inbox", "Notifications", "Shipping Address", "Change Password"];
 
 const ProfilePage = () => {
-  const { user, isLoading, isError, error, isFetching, refetch } = useUser();
+  const { user, isLoading, isError } = useRequireAuth();
   const [loggingOut, setLoggingOut] = useState(false);
   const { data: orders, isError: ordersError } = useQuery({
     queryKey: ["user-orders"],
@@ -84,20 +83,7 @@ const ProfilePage = () => {
 
   if (isLoading) return <p className="p-6" role="status">Loading profile…</p>;
   if (isError || !user) {
-    const status = isAxiosError(error) ? error.response?.status : undefined;
-    const message = status === 429
-      ? "Too many requests. Please wait a few minutes and retry."
-      : status === 401 || (!isError && !user)
-        ? "Your session has expired. Please sign in again."
-        : "Unable to connect to the profile service. Please retry.";
-    return <div className="p-6 space-y-4" role="alert">
-      <p>{message}</p>
-      {status && <p className="text-sm text-gray-500">Error {status}</p>}
-      <div className="flex flex-wrap gap-4">
-        <button disabled={isFetching} className="rounded border px-4 py-2 text-blue-600 disabled:opacity-50" onClick={() => refetch()}>{isFetching ? "Retrying…" : "Retry"}</button>
-        <button className="rounded bg-blue-600 px-4 py-2 text-white" onClick={() => router.replace("/login")}>Sign in</button>
-      </div>
-    </div>;
+    return null; // useRequireAuth will redirect
   }
 
   return (
