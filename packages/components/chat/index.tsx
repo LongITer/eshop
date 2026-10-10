@@ -49,7 +49,7 @@ export function useChatConnection({ actorId, api, socketRef, onEvent }: { actorI
     const connect = async () => {
       try {
         const { data } = await api.post('/chatting/api/socket-ticket'); if (stopped) return;
-        const base = process.env.NEXT_PUBLIC_CHAT_WS_URL || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.hostname}:6006`;
+        const base = process.env.NEXT_PUBLIC_CHAT_WS_URL || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/chatting-ws`;
         ws = new WebSocket(`${base}?ticket=${encodeURIComponent(data.ticket)}`); socketRef.current = ws;
         ws.onmessage = event => { try { const parsed = JSON.parse(event.data); if (parsed.type === 'READY') setReady(true); callback.current(parsed); } catch { /* Ignore malformed frames. */ } };
         ws.onclose = () => { setReady(false); if (!stopped) timer = setTimeout(connect, 3000); };
