@@ -11,7 +11,6 @@ const Wishlist = () => {
   const { user } = useUser();
   const location = useLocationTracking();
   const deviceInfo = useDeviceTracking();
-  const addToCart = useStore((state: any) => state.addToCart);
   const removeFromWishlist = useStore((state: any) => state.removeFromWishlist);
   const wishlist = useStore((state: any) => state.wishlist);
 
@@ -103,14 +102,12 @@ const Wishlist = () => {
                       </div>
                     </td>
                     <td>
-                      <button
+                      <Link
                         className="bg-[#2295FF] cursor-pointer text-white px-5 py-2 rounded-md hover:bg-[#007bff] transition-all duration-200"
-                        onClick={() =>
-                          addToCart(item, user, location, deviceInfo)
-                        }
+                        href={`/product/${item.slug}`}
                       >
-                        Add to Cart
-                      </button>
+                        Choose options
+                      </Link>
                     </td>
                     <td>
                       <button
