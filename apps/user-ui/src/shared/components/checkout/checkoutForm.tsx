@@ -11,11 +11,15 @@ const CheckoutForm = ({
   cartItems,
   coupon,
   sessionId,
+  totalAmount,
+  shippingFee,
 }: {
   clientSecret: string;
   cartItems: any[];
   coupon: any;
   sessionId: string | null;
+  totalAmount: number;
+  shippingFee: number;
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -59,11 +63,6 @@ const CheckoutForm = ({
     }
   };
 
-  const total = cartItems.reduce(
-    (sum, item) => sum + item.sale_price * item.quantity,
-    0,
-  );
-
   if (!clientSecret) {
     return null;
   }
@@ -101,8 +100,11 @@ const CheckoutForm = ({
           </div>
 
           <div className="flex justify-between font-semibold mt-2">
+            <span>Shipping (USD)</span><span>${shippingFee.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between font-semibold mt-2">
             <span>Total</span>
-            <span>${(total - Number(coupon?.discountAmount ?? 0)).toFixed(2)}</span>
+            <span>${totalAmount.toFixed(2)} USD</span>
           </div>
         </div>
 
