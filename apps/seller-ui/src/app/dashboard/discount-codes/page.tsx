@@ -1,7 +1,8 @@
 "use client";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import axiosInstance from "apps/seller-ui/src/utils/axioInstance";
-import { ChevronRight, Plus, Trash, X } from "lucide-react";
+import { ChevronRight, Plus, Trash, X, Pencil } from "lucide-react";
+import EditDiscountProducts from '../../../shared/components/modals/edit-discount-products';
 import Link from "next/link";
 import React, { useState } from "react";
 import toast from "react-hot-toast";
@@ -14,7 +15,17 @@ const Page = () => {
   const [showModel, setShowModel] = useState(false);
   const [showDeleteModel, setShowDeleteModel] = useState(false);
   const [selectedDiscount, setSelectedDiscount] = useState<any>(null);
+  const [editingDiscount, setEditingDiscount] = useState<any>(null);
   const queryClient = useQueryClient();
+  const [productSearch, setProductSearch] = useState('');
+  const { data: products = [], isLoading: productsLoading, isError: productsError, refetch: reloadProducts } = useQuery({
+    queryKey: ['discount-product-options'],
+    enabled: showModel,
+    queryFn: async () => {
+      const response = await axiosInstance.get('/product/api/get-shop-products');
+      return (response.data.products || []).filter((product: any) => !product.isDeleted);
+    },
+  });
 
   const { data: discountCodes = [], isLoading } = useQuery({
     queryKey: ["shop-discounts"],
@@ -29,6 +40,8 @@ const Page = () => {
     handleSubmit,
     control,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -36,16 +49,19 @@ const Page = () => {
       discountType: "percentage",
       discountValue: "",
       discountCode: "",
+      productIds: [] as string[],
     },
   });
 
   const createDiscountCodeMutation = useMutation({
-    mutationFn: async (data) => {
+    mutationFn: async (data: any) => {
       await axiosInstance.post("/product/api/create-discount-code", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shop-discounts"] });
       reset();
+      setProductSearch('');
+      queryClient.invalidateQueries({ queryKey: ['discount-product-options'] });
       setShowModel(false);
       toast.success("Discount code created successfully!");
     },
@@ -145,6 +161,7 @@ const Page = () => {
                   </td>
                   <td className="p-3">{discount?.discountCode}</td>
                   <td className="p-3">
+                    <button aria-label={`Edit products for ${discount.discountCode}`} title="Edit applicable products" onClick={() => setEditingDiscount(discount)} className="mr-4 inline-flex items-center gap-1.5 text-blue-400 hover:text-blue-300"><Pencil size={16} /><span className="text-sm">Edit</span></button>
                     <button
                       onClick={() => handleDeleteClick(discount)}
                       className="text-red-500 hover:text-red-400 transition"
@@ -167,7 +184,7 @@ const Page = () => {
       {/* Create discount model */}
       {showModel && (
         <div className="fixed top-0 left-0 w-full h-full bg-black/50 flex items-center justify-center">
-          <div className="bg-black p-6 border border-gray-700 rounded-lg w-[450px] shadow-lg">
+          <div role="dialog" aria-label="Create Discount Code" className="bg-black p-6 border border-gray-700 rounded-lg w-[450px] max-w-[95vw] max-h-[90vh] overflow-y-auto shadow-lg">
             {/* Header */}
             <div className="flex justify-between items-center border-b border-gray-700 pb-3">
               <h3 className="text-xl text-white">Create Discount Code</h3>
@@ -210,7 +227,7 @@ const Page = () => {
                       >
                         Percentage (%)
                       </option>
-                      <option value="flat" className="bg-gray-800 text-white">
+                      <option value="fixed" className="bg-gray-800 text-white">
                         Flat Rate ($)
                       </option>
                     </select>
@@ -240,6 +257,27 @@ const Page = () => {
                 />
               </div>
 
+              <fieldset className="mt-4 text-gray-200">
+                <legend className="font-semibold">Applicable products</legend>
+                <p className="text-sm text-gray-400 my-2">Select products for this code. Leave empty to assign it later when editing products.</p>
+                <input aria-label="Search applicable products" value={productSearch} onChange={event => setProductSearch(event.target.value)} placeholder="Search products..." className="w-full p-2 bg-gray-900 border border-gray-700 rounded" />
+                <p className="text-sm my-2">{watch('productIds').length} selected</p>
+                {productsLoading ? <p>Loading products...</p> : productsError ? <p role="alert">Could not load products. <button type="button" onClick={() => reloadProducts()} className="underline">Retry</button></p> : (
+                  <div className="max-h-48 overflow-y-auto space-y-2">
+                    {products.filter((product: any) => product.title.toLowerCase().includes(productSearch.toLowerCase())).map((product: any) => (
+                      <label key={product.id} className="flex items-center gap-2 p-2 bg-gray-900 rounded">
+                        <input type="checkbox" checked={watch('productIds').includes(product.id)} onChange={event => {
+                          const selected = watch('productIds');
+                          setValue('productIds', event.target.checked ? [...selected, product.id] : selected.filter(id => id !== product.id));
+                        }} />
+                        <span>{product.title} <span className="text-gray-400">(${Number(product.sale_price).toFixed(2)})</span></span>
+                      </label>
+                    ))}
+                    {!products.length && <p>No products yet. You can assign this code later.</p>}
+                    {products.length > 0 && !products.some((product: any) => product.title.toLowerCase().includes(productSearch.toLowerCase())) && <p>No matching products.</p>}
+                  </div>
+                )}
+              </fieldset>
               <button
                 type="submit"
                 disabled={createDiscountCodeMutation.isPending}
@@ -265,6 +303,7 @@ const Page = () => {
       )}
 
       {/* Delete Model */}
+      {editingDiscount && <EditDiscountProducts key={editingDiscount.id} discount={editingDiscount} onClose={() => setEditingDiscount(null)} />}
       {showDeleteModel && selectedDiscount && (
         <DeleteDiscountCodeModal
           discount={selectedDiscount}
