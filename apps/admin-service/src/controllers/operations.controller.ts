@@ -31,13 +31,13 @@ export const dashboard = handle(async (req, res) => {
     prisma.users.count({ where: { role: 'user' } }), prisma.sellers.count(), prisma.products.count({ where: { isDeleted: false } }),
     prisma.orderItems.groupBy({ by: ['productId'], where: { order: { createdAt, paymentStatus: 'Paid', status: { notIn: ['Cancelled', 'Returned', 'Refunded'] } } }, _sum: { quantity: true, totalPrice: true }, orderBy: { _sum: { quantity: 'desc' } }, take: 10 }),
   ]);
-  const timeline: Record<string, { date: string; revenue: number; users: number; sellers: number; orders: number }> = {};
-  for (let day = new Date(createdAt.gte); day <= createdAt.lte; day.setUTCDate(day.getUTCDate() + 1)) { const date = bucket(day, 'day'); timeline[date] = { date, revenue: 0, users: 0, sellers: 0, orders: 0 }; }
-  for (const order of orders) { const row = timeline[bucket(order.createdAt, 'day')]; if (row) { row.orders++; if (order.paymentStatus === 'Paid' && !['Cancelled', 'Returned', 'Refunded'].includes(order.status)) row.revenue += order.totalAmount; } }
+  const timeline: Record<string, { date: string; revenue: number; earnings: number; users: number; sellers: number; orders: number }> = {};
+  for (let day = new Date(createdAt.gte); day <= createdAt.lte; day.setUTCDate(day.getUTCDate() + 1)) { const date = bucket(day, 'day'); timeline[date] = { date, revenue: 0, earnings: 0, users: 0, sellers: 0, orders: 0 }; }
+  for (const order of orders) { const row = timeline[bucket(order.createdAt, 'day')]; if (row) { row.orders++; if (order.paymentStatus === 'Paid' && !['Cancelled', 'Returned', 'Refunded'].includes(order.status)) { row.revenue += order.totalAmount; row.earnings += Math.floor(order.totalAmount * 0.1); } } }
   users.forEach(user => { const row = timeline[bucket(user.createdAt, 'day')]; if (row) row.users++; });
   sellers.forEach(seller => { const row = timeline[bucket(seller.createdAt, 'day')]; if (row) row.sellers++; });
   const products = await prisma.products.findMany({ where: { id: { in: top.map(p => p.productId) } }, select: { id: true, title: true } });
-  res.json({ stats: { totalUsers, totalSellers, totalProducts, totalOrders: orders.length, revenue: Object.values(timeline).reduce((sum, r) => sum + r.revenue, 0) }, timeline: Object.values(timeline), topProducts: top.map(p => ({ ...p._sum, id: p.productId, title: products.find(product => product.id === p.productId)?.title ?? 'Deleted product' })) });
+  res.json({ stats: { totalUsers, totalSellers, totalProducts, totalOrders: orders.length, revenue: Object.values(timeline).reduce((sum, r) => sum + r.revenue, 0), earnings: Object.values(timeline).reduce((sum, r) => sum + r.earnings, 0) }, timeline: Object.values(timeline), topProducts: top.map(p => ({ ...p._sum, id: p.productId, title: products.find(product => product.id === p.productId)?.title ?? 'Deleted product' })) });
 });
 export const notifications = handle(async (req, res) => {
   const where: Prisma.notificationsWhereInput = { OR: [{ userId: req.user.id }, { AND: [{ OR: [{ userId: null }, { userId: { isSet: false } }] }, { OR: [{ sellerId: null }, { sellerId: { isSet: false } }] }] }] };
