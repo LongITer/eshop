@@ -48,6 +48,5 @@ export const googleCallback = handle(async (req, res) => {
   });
   setCookie(res, 'access_token', jwt.sign({ id: user.id, role: 'user' }, process.env.ACCESS_TOKEN_JWT_SECRET!, { expiresIn: '15m' }));
   setCookie(res, 'refresh_token', jwt.sign({ id: user.id, role: 'user' }, process.env.REFRESH_TOKEN_JWT_SECRET!, { expiresIn: '7d' }));
-  res.clearCookie('seller_access_token'); res.clearCookie('seller_refresh_token');
   res.redirect(`${process.env.USER_UI_URL || 'http://localhost:3000'}/profile`);
 });
