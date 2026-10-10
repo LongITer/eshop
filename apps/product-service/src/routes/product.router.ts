@@ -30,10 +30,17 @@ import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isSeller, isUser } from "@packages/middleware/authorizeRoles";
 import * as management from '../controllers/product-management.controller';
 import { revenueReport } from '../controllers/reports.controller';
+import { updateDiscountProducts } from '../controllers/discount-products.controller';
 import prisma from '@packages/libs/prisma';
 import { handle } from '@packages/utils/api';
 
 const router: Router = express.Router();
+import { listVariants, saveVariant } from '../controllers/variants.controller';
+import { buildCatalog, quoteBuild } from '../controllers/pc-builder.controller';
+router.get('/pc-builder/catalog', buildCatalog);
+router.post('/pc-builder/quote', quoteBuild);
+router.get('/variants/:id', listVariants);
+router.put('/variants/:id', isAuthenticated, isSeller, saveVariant);
 router.get('/sitemap-data', handle(async (req, res) => {
   const skip = Math.max(0, Math.floor(Number(req.query.page) || 0)) * 500;
   const [products, shops] = await Promise.all([
@@ -53,6 +60,7 @@ router.get("/get-categories", getCategories);
 router.get("/get-seller-stats", isAuthenticated, isSeller, getSellerStats);
 // Discount
 router.get("/get-discount-code", isAuthenticated, isSeller, getDiscountCodes);
+router.patch('/discount-code/:id/products', isAuthenticated, isSeller, updateDiscountProducts);
 router.get(
   "/get-seller-notifications",
   isAuthenticated,
