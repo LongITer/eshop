@@ -5,7 +5,7 @@ import { handle, objectId, pageArgs, textField } from '@packages/utils/api';
 import { NotFoundError, ValidationError, ForbiddenError } from '@packages/error-handler';
 
 export const getEditableProduct = handle(async (req: any, res) => {
-  const product = await prisma.products.findFirst({ where: { id: objectId(req.params.id), shopId: req.seller.shop?.id, isDeleted: false }, include: { images: true } });
+  const product = await prisma.products.findFirst({ where: { id: objectId(req.params.id), shopId: req.seller.shop?.id, isDeleted: false }, include: { images: true, variants: true } });
   if (!product || !req.seller.shop) throw new NotFoundError();
   res.json({ product });
 });
@@ -60,6 +60,13 @@ export const updateProduct = handle(async (req: any, res) => {
   const product = await transaction(async tx => {
     const current = await tx.products.findFirst({ where: { id, shopId, isDeleted: false } });
     if (!current) throw new NotFoundError();
+    const variantCount = await tx.productVariant.count({ where: { productId: id } });
+    if (variantCount) {
+      for (const key of ['stock', 'sale_price', 'colors', 'sizes'] as const) {
+        if (req.body[key] !== undefined && JSON.stringify(req.body[key]) !== JSON.stringify(current[key])) throw new ValidationError('Update stock, price and options in the SKU editor');
+        delete data[key];
+      }
+    }
     if ((req.body.sale_price ?? current.sale_price) > (req.body.regular_price ?? current.regular_price)) throw new ValidationError('Sale price cannot exceed regular price');
     const updated = await tx.products.update({ where: { id, shopId }, data, include: { images: true } });
     if (updated.stock !== current.stock) {
