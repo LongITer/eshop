@@ -6,6 +6,7 @@ import redis from '@packages/libs/redis';
 import { handle } from '@packages/utils/api';
 import { AuthError, AppError } from '@packages/error-handler';
 import { setCookie } from '../utils/cookies/setCookies';
+import { isSuspended } from '@packages/utils/admin-access';
 
 function oauthClient() {
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.GOOGLE_REDIRECT_URI) throw new AppError('Google sign-in is not configured', 503);
@@ -37,8 +38,13 @@ export const googleCallback = handle(async (req, res) => {
   const email = String(identity.email).toLowerCase();
   const user = await prisma.$transaction(async tx => {
     const linked = await tx.oauthIdentity.findUnique({ where: { subject: identity.sub } });
-    if (linked) return tx.users.findUniqueOrThrow({ where: { id: linked.userId } });
+    if (linked) {
+      const account = await tx.users.findUniqueOrThrow({ where: { id: linked.userId } });
+      if (isSuspended(account)) throw new AuthError('Account suspended. Contact support.');
+      return account;
+    }
     let account = await tx.users.findUnique({ where: { email } });
+    if (account && isSuspended(account)) throw new AuthError('Account suspended. Contact support.');
     // Google must be authoritative for an existing account's email before automatic linking.
     if (account && !email.endsWith('@gmail.com') && !identity.hd) throw new AuthError('Sign in with your existing password to use this account');
     if (account?.role === 'admin') throw new AuthError('Use the administrator sign-in page');

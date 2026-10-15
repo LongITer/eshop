@@ -14,13 +14,13 @@ export const requestReturn = handle(async (req, res) => {
     try { return new URL(url).protocol !== 'https:'; } catch { return true; }
   })) throw new ValidationError('Provide up to five HTTPS evidence links');
   const result = await transaction(async tx => {
-    const order = await tx.orders.findFirst({ where: { id: orderId, userId: req.user.id, status: 'Delivered', paymentStatus: 'Paid' } });
+    const order = await tx.orders.findFirst({ where: { id: orderId, userId: req.user!.id, status: 'Delivered', paymentStatus: 'Paid' } });
     if (!order) throw new NotFoundError('Only your delivered, paid orders can be returned');
     const existing = await tx.returnRequest.findUnique({ where: { orderId } });
     if (existing) return existing;
     // Serialize with seller status updates and concurrent requests.
     await tx.orders.update({ where: { id: orderId, status: 'Delivered' }, data: { updatedAt: new Date() } });
-    const result = await tx.returnRequest.create({ data: { orderId, userId: req.user.id, shopId: order.shopId, reason, evidence } });
+    const result = await tx.returnRequest.create({ data: { orderId, userId: req.user!.id, shopId: order.shopId, reason, evidence } });
     const shop = await tx.shops.findUniqueOrThrow({ where: { id: order.shopId } });
     await tx.notifications.create({ data: { sellerId: shop.sellerId, orderId, type: 'System', title: 'Return requested', message: `${order.orderNumber}: ${reason}`, redirectUrl: `/dashboard/orders/${orderId}` } });
     return result;
@@ -30,7 +30,7 @@ export const requestReturn = handle(async (req, res) => {
 
 export const orderAftercare = handle(async (req: any, res) => {
   const orderId = objectId(req.params.orderId);
-  const scope = req.role === 'seller' ? { shopId: req.seller?.shop?.id || '000000000000000000000000' } : { userId: req.user.id };
+  const scope = req.role === 'seller' ? { shopId: req.seller?.shop?.id || '000000000000000000000000' } : { userId: req.user!.id };
   if (!await prisma.orders.findFirst({ where: { id: orderId, ...scope } })) throw new NotFoundError();
   const [request, events] = await Promise.all([
     prisma.returnRequest.findUnique({ where: { orderId } }),
@@ -67,21 +67,21 @@ export const paymentResult = handle(async (req, res) => {
   const sessionId = req.query.sessionId;
   if (typeof sessionId !== 'string' || sessionId.length > 100) throw new ValidationError('Invalid session');
   const session = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
-  if (!session || session.userId !== req.user.id) throw new NotFoundError();
+  if (!session || session.userId !== req.user!.id) throw new NotFoundError();
   res.setHeader('Cache-Control', 'no-store');
-  let receipt = await prisma.paymentReceipt.findFirst({ where: { sessionId, userId: req.user.id } });
+  let receipt = await prisma.paymentReceipt.findFirst({ where: { sessionId, userId: req.user!.id } });
   const payload = session.payload as any;
   let status = 'pending';
   const paymentId = payload.paymentIntentId || req.query.paymentIntentId;
   if (!receipt && paymentId) {
     if (typeof paymentId !== 'string' || !/^pi_[A-Za-z0-9]+$/.test(paymentId)) throw new ValidationError('Invalid payment');
     const payment = await new Stripe(process.env.STRIPE_SECRET_KEY!, { timeout: 10000, maxNetworkRetries: 1 }).paymentIntents.retrieve(paymentId);
-    if (payment.metadata.sessionId !== sessionId || payment.metadata.userId !== req.user.id) throw new ForbiddenError();
+    if (payment.metadata.sessionId !== sessionId || payment.metadata.userId !== req.user!.id) throw new ForbiddenError();
     status = payment.status;
     if (payment.status === 'succeeded') {
       try { await fulfillPayment(payment, false); }
       catch { status = 'needs_review'; }
-      receipt = await prisma.paymentReceipt.findFirst({ where: { sessionId, userId: req.user.id } });
+      receipt = await prisma.paymentReceipt.findFirst({ where: { sessionId, userId: req.user!.id } });
     }
   } else if (!receipt && session.expiresAt && new Date(session.expiresAt).getTime() < Date.now()) status = 'expired';
   res.json({ complete: !!receipt?.orderIds.length, status: receipt?.orderIds.length ? 'complete' : status, orderIds: receipt?.orderIds || [], cart: receipt ? payload.cart : [] });

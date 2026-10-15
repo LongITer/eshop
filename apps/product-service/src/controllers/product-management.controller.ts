@@ -60,6 +60,7 @@ export const updateProduct = handle(async (req: any, res) => {
   const product = await transaction(async tx => {
     const current = await tx.products.findFirst({ where: { id, shopId, isDeleted: false } });
     if (!current) throw new NotFoundError();
+    if (current.status === 'Suspended' && data.status !== undefined) throw new ValidationError('Administrator review is required before republishing this product');
     const variantCount = await tx.productVariant.count({ where: { productId: id } });
     if (variantCount) {
       for (const key of ['stock', 'sale_price', 'colors', 'sizes'] as const) {
@@ -89,7 +90,7 @@ export const getInventory = handle(async (req: any, res) => {
 });
 export const createReview = handle(async (req, res) => {
   const productId = objectId(req.body.productId);
-  const userId = req.user.id;
+  const userId = req.user!.id;
   const rating = req.body.rating;
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new ValidationError('Rating must be 1–5');
   const comment = textField(req.body.comment, 'comment', 3000);

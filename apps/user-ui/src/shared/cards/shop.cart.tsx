@@ -1,3 +1,5 @@
+'use client';
+import { useStorefrontText } from '@packages/components/storefront-language';
 import { ArrowUpRight, MapPin, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -18,6 +20,7 @@ interface ShopCardProps {
 }
 
 const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
+  const { t } = useStorefrontText();
   return (
     <div className="w-full rounded-sm cursor-pointer bg-white border border-gray-200 shadow-sm transition">
       {/* Cover */}
@@ -52,8 +55,7 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
       <div className="px-4 pb-4 pt-2 text-center">
         <h3 className="text-base font-semibold text-gray-800">{shop.name}</h3>
         <p className="text-xs text-gray-500 mt-0.5">
-          {shop?.followers?.length ?? 0} Followers
-        </p>
+          {shop?.followers?.length ?? 0} {t(" Followers")}</p>
 
         {/* Address + Ratings */}
         <div className="flex items-center justify-center text-xs text-gray-500 mt-2 gap-4 flex-wrap">
@@ -85,8 +87,7 @@ const ShopCard: React.FC<ShopCardProps> = ({ shop }) => {
             href={`/shop/${shop.id}`}
             className="inline-flex items-center text-sm text-blue-600 font-medium hover:underline"
           >
-            Visit Shop
-            <ArrowUpRight className="w-4 h-4 ml-1" />
+            {t("Visit Shop")}<ArrowUpRight className="w-4 h-4 ml-1" />
           </Link>
         </div>
       </div>

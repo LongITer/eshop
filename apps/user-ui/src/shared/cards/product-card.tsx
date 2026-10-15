@@ -1,3 +1,5 @@
+'use client';
+import { useStorefrontText } from '@packages/components/storefront-language';
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import Ratings from "../ratings";
@@ -24,7 +26,7 @@ const getProductImageUrl = (product: any) => {
   if (product?.image) return product.image;
   if (product?.thumbnail) return product.thumbnail;
 
-  return "/default-image.jpg";
+  return "/product-placeholder.svg";
 };
 
 const ProductCard = ({
@@ -34,6 +36,7 @@ const ProductCard = ({
   product: any;
   isEvent?: boolean;
 }) => {
+  const { t } = useStorefrontText();
   const [timeLeft, setTimeLeft] = useState("");
   const [open, setOpen] = useState(false);
   const { user } = useUser();
@@ -81,27 +84,25 @@ const ProductCard = ({
     <div className="w-full min-h-[350px] h-max bg-white rounded-lg relative">
       {isEvent && (
         <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-semibold px-2 py-1 rounded-sm shadow-md">
-          OFFER
-        </div>
+          {t("OFFER")}</div>
       )}
 
       {product?.stock <= 5 && (
         <div className="absolute top-2 right-2 bg-yellow-400 text-slate-700 text-[10px] font-semibold px-2 py-1 rounded-sm shadow-md">
-          Limited Stock
-        </div>
+          {t("Limited Stock")}</div>
       )}
 
       <Link href={`/product/${product?.slug}`}>
         <img
           src={productImage}
-          alt={product?.title || "Product image"}
+          alt={product?.title || t("Product image")}
           width={300}
           height={300}
           className="w-full h-[200px] object-contain mx-auto rounded-t-md"
           onError={(e) => {
             const target = e.currentTarget;
-            if (target.src !== window.location.origin + "/default-image.jpg") {
-              target.src = "/default-image.jpg";
+            if (target.src !== window.location.origin + "/product-placeholder.svg") {
+              target.src = "/product-placeholder.svg";
             }
           }}
         />
@@ -127,7 +128,7 @@ const ProductCard = ({
       )}
 
       <div className="mt-2 px-2">
-        <Ratings rating={product?.ratings} />
+        <Ratings rating={product?.rating ?? product?.ratings ?? 0} />
       </div>
 
       <div className="mt-3 flex  justify-between items-center px-2">
@@ -142,8 +143,7 @@ const ProductCard = ({
         </div>
 
         <span className="text-green-500 text-sm font-medium">
-          {product.totalSales} sold
-        </span>
+          {product.totalSales ?? 0} {t(" sold")}</span>
       </div>
 
       {isEvent && timeLeft && (
@@ -153,12 +153,7 @@ const ProductCard = ({
       )}
 
       <div className="absolute z-10 flex flex-col gap-3  right-3  top-10">
-        <div className="bg-white rounded-full p-[6px] shadow-md cursor-pointer hover:text-red-500">
-          <Heart
-            className="cursor-pointer hover:scale-110 transition"
-            size={22}
-            fill={isWishlisted ? "red" : "none"}
-            onClick={() =>
+        <button type="button" aria-label={t(isWishlisted ? 'Remove from wishlist' : 'Add to wishlist')} aria-pressed={isWishlisted} className="bg-white rounded-full p-[6px] shadow-md cursor-pointer hover:text-red-500" onClick={() =>
               isWishlisted
                 ? removeFromWishlist(product.id, user, location, deviceInfo)
                 : addtoWishlist(
@@ -167,28 +162,30 @@ const ProductCard = ({
                     location,
                     deviceInfo,
                   )
-            }
+            }>
+          <Heart
+            className="cursor-pointer hover:scale-110 transition"
+            size={22}
+            fill={isWishlisted ? "red" : "none"}
             stroke={isWishlisted ? "red" : "#4b5563"}
           />
-        </div>
+        </button>
 
-        <div className="bg-white rounded-full p-[6px] shadow-md">
+        <button type="button" aria-label={t('Quick view')} className="bg-white rounded-full p-[6px] shadow-md" onClick={() => setOpen(!open)}>
           <Eye
             className="cursor-pointer text-[#4b5563] hover:scale-110 transition"
             size={22}
-            onClick={() => setOpen(!open)}
           />
-        </div>
+        </button>
 
-        <div className="bg-white rounded-full p-[6px] shadow-md">
+        <button type="button" aria-label={t('View options')} className="bg-white rounded-full p-[6px] shadow-md" onClick={() => setOpen(true)}>
           <ShoppingBag
             size={22}
             className="cursor-pointer hover:scale-110 transition"
             fill={isInCart ? "#4b5563" : "none"}
             stroke={isInCart ? "#4b5563" : "#4b5563"}
-            onClick={() => setOpen(true)}
           />
-        </div>
+        </button>
       </div>
 
       {open && <ProductDetailsCard data={product} setOpen={setOpen} />}

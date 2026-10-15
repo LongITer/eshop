@@ -4,7 +4,7 @@ import { ValidationError } from '@packages/error-handler';
 import { PC_SLOTS, PcSlot, COMPONENT_TERMS, componentMatches, checkCompatibility } from '@packages/utils/pc-build';
 import { usdCents } from '@packages/utils/money';
 
-const select = { id: true, title: true, slug: true, category: true, subCategory: true, tags: true, colors: true, sizes: true, sale_price: true, stock: true, custom_specification: true, images: { select: { url: true }, take: 1 }, variants: { where: { active: true }, select: { id: true, sku: true, color: true, size: true, price: true, stock: true } } };
+const select = { id: true, title: true, slug: true, category: true, subCategory: true, tags: true, colors: true, sizes: true, sale_price: true, stock: true, custom_specification: true, warranty: true, images: { select: { url: true }, take: 1 }, variants: { where: { active: true }, select: { id: true, sku: true, color: true, size: true, price: true, stock: true } } };
 export const buildCatalog = handle(async (req, res) => {
   const slot = req.query.slot as PcSlot;
   if (!PC_SLOTS.includes(slot)) throw new ValidationError('Invalid component type');

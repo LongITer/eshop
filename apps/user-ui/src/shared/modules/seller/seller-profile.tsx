@@ -1,4 +1,6 @@
 "use client";
+import { useStorefrontText } from '@packages/components/storefront-language';
+
 
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -54,6 +56,7 @@ const socialIcons: Record<string, { icon: React.FC; color: string; hoverColor: s
 };
 
 const SellerProfile = ({ sellerData }: { sellerData: any }) => {
+  const { t, locale } = useStorefrontText();
   const shop = sellerData?.shop;
   const [activeTab, setActiveTab] = useState<"products" | "offers" | "reviews">(
     "products",
@@ -75,7 +78,7 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
   });
 
   const joinedDate = shop?.createdAt
-    ? new Date(shop.createdAt).toLocaleDateString("en-US", {
+    ? new Date(shop.createdAt).toLocaleDateString(locale, {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -121,16 +124,14 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
           <div className="relative flex items-center justify-between px-4 md:px-6 py-4 md:py-5">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white shadow-sm backdrop-blur-sm">
               <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400/90 text-[10px] text-white">✓</span>
-              Verified Premier Partner
-            </div>
+              {t("Verified Premier Partner")}</div>
 
             <button className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-[#1f2937]/30 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition hover:bg-[#1f2937]/40">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
                 <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z"/>
                 <path d="M8 9h8M8 13h5"/>
               </svg>
-              Store Cover
-            </button>
+              {t("Store Cover")}</button>
           </div>
 
           <div className="relative px-4 pb-4 md:px-6 md:pb-5" />
@@ -161,7 +162,7 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2 md:gap-3">
                   <h1 className="text-2xl font-semibold tracking-[-0.05em] text-slate-900 md:text-[2.1rem]">
-                    {shop?.name || "Shop Name"}
+                    {shop?.name || t("Shop Name")}
                   </h1>
                   {tags.slice(0, 1).map((tag: string, idx: number) => (
                     <span
@@ -174,20 +175,20 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
                 </div>
 
                 <p className="mt-2 max-w-[620px] text-sm leading-6 text-slate-600 md:text-[15px]">
-                  {shop?.bio || "Welcome to our shop! Browse our amazing collection of products."}
+                  {shop?.bio || t("Welcome to our shop! Browse our amazing collection of products.")}
                 </p>
 
                 <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-600">
                   <span className="inline-flex items-center gap-1.5">
                     <Star size={14} className="fill-amber-400 text-amber-400" />
                     <span className="font-semibold text-slate-800">{shop?.ratings?.toFixed(1) || "0.0"}</span>
-                    <span className="text-slate-500">({shop?.reviews?.length ?? 0} reviews)</span>
+                    <span className="text-slate-500">({shop?.reviews?.length ?? 0} {t(" reviews)")}</span>
                   </span>
 
                   <span className="inline-flex items-center gap-1.5">
                     <Users size={14} className="text-blue-500" />
                     <span className="font-semibold text-slate-800">{shop?.followerCount ?? 0}</span>
-                    <span>Followers</span>
+                    <span>{t("Followers")}</span>
                   </span>
 
                   {shop?.opening_hours && (
@@ -207,7 +208,7 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
 
                 <div className="mt-2 flex w-full items-center gap-1.5 text-sm text-slate-500">
                   <Calendar size={14} className="text-slate-400" />
-                  <span>Joined at {joinedDate}</span>
+                  <span>{t("Joined at ")}{joinedDate}</span>
                 </div>
               </div>
             </div>
@@ -217,12 +218,11 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
                 <FollowButton shopId={shop.id} />
 
                 <button className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50">
-                  Message
-                </button>
+                  {t("Message")}</button>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="mr-1 text-xs font-medium text-slate-500">Follow us</span>
+                <span className="mr-1 text-xs font-medium text-slate-500">{t("Follow us")}</span>
                 {Object.entries(socialLinksToDisplay).slice(0, 4).map(([platform, url]) => {
                   if (!url) return null;
                   const config = socialIcons[platform.toLowerCase()];
@@ -259,7 +259,7 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
                 }`}
               >
-                {tab.label}
+                {t(tab.label)}
               </button>
             ))}
           </div>
@@ -275,8 +275,7 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
                   </div>
                 ) : (
                   <p className="text-center text-gray-500 py-12">
-                    No products available yet.
-                  </p>
+                    {t("No products available yet.")}</p>
                 )}
               </div>
             )}
@@ -308,15 +307,14 @@ const SellerProfile = ({ sellerData }: { sellerData: any }) => {
 
                 {!offersLoading && (!shopOffers || shopOffers?.length === 0) && (
                   <p className="text-center text-gray-500 py-12">
-                    No offers available yet.
-                  </p>
+                    {t("No offers available yet.")}</p>
                 )}
               </div>
             )}
 
             {activeTab === "reviews" && (
               <div className="text-center py-12">
-                <p className="text-gray-500">No reviews available yet.</p>
+                <p className="text-gray-500">{t("No reviews available yet.")}</p>
               </div>
             )}
           </div>

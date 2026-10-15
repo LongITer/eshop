@@ -46,23 +46,31 @@ test('shipment persists tracking and ETA and notifies buyer', async () => {
   expect(db.orders.update.mock.calls[0][0].data).toEqual(expect.objectContaining({ trackingNumber: 'TRACK123', estimatedDelivery: new Date('2026-10-15') }));
   expect(db.notifications.create.mock.calls[0][0].data.userId).toBe(userId);
 });
+
+test('request payload cannot forge an administrator audit event', async () => {
+  db.orders.findFirst.mockResolvedValue(order); db.orders.update.mockResolvedValue({ ...order, status: 'Confirmed' });
+  await transitionOrder(otherId, 'Confirmed', { shopId }, userId, { adminAction: true, reason: 'Spoofed' });
+  expect(db.adminAudit.create).not.toHaveBeenCalled();
+  await transitionOrder(otherId, 'Confirmed', {}, userId, { reason: 'Admin review' }, true);
+  expect(db.adminAudit.create.mock.calls[0][0].data.action).toBe('order.status');
+});
 test('refund validates that payment belongs to selected order', async () => {
   db.orders.findUnique.mockResolvedValue(order);
-  expect((await request(appFor('post', '/:paymentId', refund, 'admin')).post('/pi_other').send({ orderId: otherId })).status).toBe(404);
+  expect((await request(appFor('post', '/:paymentId', refund, 'admin')).post('/pi_other').send({ orderId: otherId, reason: 'Approved return' })).status).toBe(404);
   expect(stripe.refunds.create).not.toHaveBeenCalled();
 });
 test('refund requires a cancelled or returned paid order', async () => {
   db.orders.findUnique.mockResolvedValue(order);
-  expect((await request(appFor('post', '/:paymentId', refund, 'admin')).post('/pi_1').send({ orderId: otherId })).status).toBe(400);
+  expect((await request(appFor('post', '/:paymentId', refund, 'admin')).post('/pi_1').send({ orderId: otherId, reason: 'Approved return' })).status).toBe(400);
 });
 test('refund is order-sized and idempotent, not the full shared payment', async () => {
   db.orders.findUnique.mockResolvedValue({ ...order, status: 'Cancelled' }); stripe.paymentIntents.retrieve.mockResolvedValue({ transfer_data: null }); stripe.refunds.create.mockResolvedValue({ id: 're_1', status: 'succeeded' }); db.orders.updateMany.mockResolvedValue({ count: 1 });
-  expect((await request(appFor('post', '/:paymentId', refund, 'admin')).post('/pi_1').send({ orderId: otherId })).status).toBe(200);
+  expect((await request(appFor('post', '/:paymentId', refund, 'admin')).post('/pi_1').send({ orderId: otherId, reason: 'Approved return' })).status).toBe(200);
   expect(stripe.refunds.create).toHaveBeenCalledWith(expect.objectContaining({ amount: 2550, payment_intent: 'pi_1', metadata: { orderId: otherId } }), { idempotencyKey: `order-refund-${otherId}` });
   expect(db.orders.updateMany.mock.calls[0][0].data.paymentStatus).toBe('Refunded');
 });
 test('pending Stripe refunds are not reported as completed', async () => {
   db.orders.findUnique.mockResolvedValue({ ...order, status: 'Returned', stripeRefundId: 're_pending' }); stripe.paymentIntents.retrieve.mockResolvedValue({}); stripe.refunds.retrieve.mockResolvedValue({ id: 're_pending', status: 'pending' }); db.orders.updateMany.mockResolvedValue({ count: 1 });
-  await request(appFor('post', '/:paymentId', refund, 'admin')).post('/pi_1').send({ orderId: otherId });
+  await request(appFor('post', '/:paymentId', refund, 'admin')).post('/pi_1').send({ orderId: otherId, reason: 'Approved return' });
   expect(stripe.refunds.create).not.toHaveBeenCalled(); expect(db.orders.updateMany.mock.calls[0][0].data.paymentStatus).toBeUndefined();
 });

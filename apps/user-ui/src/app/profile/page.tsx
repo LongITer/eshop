@@ -1,12 +1,12 @@
 "use client";
+import { useStorefrontText } from '@packages/components/storefront-language';
+
 import useRequireAuth from "@/hooks/useRequireAuth";
 import StatCard from "@/shared/cards/stat.card";
 import {
-  BadgeCheck,
   Bell,
   CheckCircle,
   Clock,
-  Gift,
   Inbox,
   Loader2,
   Lock,
@@ -35,17 +35,12 @@ import toast from "react-hot-toast";
 
 const profileTabs = ["Profile", "My Orders", "Inbox", "Notifications", "Shipping Address", "Change Password"];
 
+const tabLabels:Record<string,string>={'Profile':'Hồ sơ','My Orders':'Đơn hàng','Inbox':'Tin nhắn','Notifications':'Thông báo','Shipping Address':'Địa chỉ giao hàng','Change Password':'Đổi mật khẩu','Logout':'Đăng xuất'};
 const ProfilePage = () => {
+  const { t } = useStorefrontText();
   const { user, isLoading, isError } = useRequireAuth();
   const [loggingOut, setLoggingOut] = useState(false);
-  const { data: orders, isError: ordersError } = useQuery({
-    queryKey: ["user-orders"],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data } = await axiosInstance.get("/order/get-user-orders");
-      return (Array.isArray(data) ? data : data.orders ?? []) as { status: string }[];
-    },
-  });
+  const { data: stats, isError: ordersError } = useQuery({ queryKey: ['user-order-stats'], enabled: !!user, queryFn: async () => (await axiosInstance.get('/order/api/my-order-stats')).data });
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -75,13 +70,13 @@ const ProfilePage = () => {
       queryClient.removeQueries({ predicate: query => query.queryKey[0] !== "user" });
       router.replace("/login");
     } catch {
-      toast.error("Unable to log out. Please try again.");
+      toast.error(t("Không đăng xuất được. Vui lòng thử lại."));
     } finally {
       setLoggingOut(false);
     }
   };
 
-  if (isLoading) return <p className="p-6" role="status">Loading profile…</p>;
+  if (isLoading) return <p className="p-6" role="status">{t("Đang tải hồ sơ…")}</p>;
   if (isError || !user) {
     return null; // useRequireAuth will redirect
   }
@@ -92,7 +87,7 @@ const ProfilePage = () => {
         {/* Greeting */}
         <div className="text-center mb-10 ">
           <h1 className="text-3xl font-bold text-gray-800">
-            Welcome back,{" "}
+            {t("Xin chào,")}{" "}
             <span className="text-blue-500">
               {isLoading ? (
                 <Loader2 className="inline animate-spin w-5 h-5" />
@@ -105,11 +100,11 @@ const ProfilePage = () => {
 
         {/* Profile Overview*/}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          <StatCard title="Total Orders" count={orders?.length ?? "—"} Icon={Clock} />
-          <StatCard title="Processing Orders" count={orders?.filter(order => ['Pending', 'Confirmed', 'Processing', 'Shipped'].includes(order.status)).length ?? "—"} Icon={Truck} />
-          <StatCard title="Completed Orders" count={orders?.filter(order => order.status === 'Delivered').length ?? "—"} Icon={CheckCircle} />
+          <StatCard title={t("Tổng đơn hàng")} count={stats?.total ?? "—"} Icon={Clock} />
+          <StatCard title={t("Đơn đang xử lý")} count={stats?.processing ?? "—"} Icon={Truck} />
+          <StatCard title={t("Đơn đã giao")} count={stats?.completed ?? "—"} Icon={CheckCircle} />
         </div>
-        {ordersError && <p role="alert">Unable to load order totals.</p>}
+        {ordersError && <p role="alert">{t("Không tải được thống kê đơn hàng.")}</p>}
 
         {/* Sidebar and content layout */}
         <div className="mt-10 flex flex-col md:flex-row gap-6">
@@ -117,37 +112,37 @@ const ProfilePage = () => {
           <div className="bg-white p-4 rounded-md shadow-sm border border-gray-100 w-full md:w-1/5">
             <nav className="space-y-2">
               <NavItem
-                label="Profile"
+                label={t("Profile")}
                 Icon={User}
                 active={activeTab === "Profile"}
                 onClick={() => setActiveTab("Profile")}
               />
               <NavItem
-                label="My Orders"
+                label={t("My Orders")}
                 Icon={ShoppingBag}
                 active={activeTab === "My Orders"}
                 onClick={() => setActiveTab("My Orders")}
               />
               <NavItem
-                label="Inbox"
+                label={t("Inbox")}
                 Icon={Inbox}
                 active={activeTab === "Inbox"}
                 onClick={() => router.push("/inbox")}
               />
               <NavItem
-                label="Notifications"
+                label={t("Notifications")}
                 Icon={Bell}
                 active={activeTab === "Notifications"}
                 onClick={() => setActiveTab("Notifications")}
               />
               <NavItem
-                label="Shipping Address"
+                label={t("Shipping Address")}
                 Icon={MapPin}
                 active={activeTab === "Shipping Address"}
                 onClick={() => setActiveTab("Shipping Address")}
               />
               <NavItem
-                label="Change Password"
+                label={t("Change Password")}
                 Icon={Lock}
                 active={activeTab === "Change Password"}
                 onClick={() => setActiveTab("Change Password")}
@@ -164,7 +159,7 @@ const ProfilePage = () => {
           {/* Main content*/}
           <div className="bg-white p-6 rounded-md shadow-sm border border-gray-100 w-full md:w-[55%]">
             <h2 className="text-xl font-semibold text-gray-600 mb-4">
-              {activeTab}
+              {t(tabLabels[activeTab])}
             </h2>
             {activeTab === "Profile" && !isLoading && user ? (
               <ProfileEditor key={user.id} user={user} />
@@ -175,7 +170,7 @@ const ProfilePage = () => {
             ) : activeTab === "Inbox" ? (
               <div className="flex items-center justify-center py-10 gap-2 text-blue-500">
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span className="text-sm">Redirecting to Inbox…</span>
+                <span className="text-sm">{t("Đang mở tin nhắn…")}</span>
               </div>
             ) : activeTab === "Notifications" ? (
               <Notifications />
@@ -186,31 +181,9 @@ const ProfilePage = () => {
 
           {/* Right Quick Panel */}
           <div className="w-full md:w-1/4 space-y-4">
-            <QuickActionCard
-              Icon={Gift}
-              title="Refferal Program"
-              description="Invite friends and earn rewards."
-            />
-            <QuickActionCard
-              Icon={BadgeCheck}
-              title="Your Badges"
-              description="View your earned achievements."
-            />
-            <QuickActionCard
-              Icon={Settings}
-              title="Account Settings"
-              description="Manage preferences and security."
-            />
-            <QuickActionCard
-              Icon={Receipt}
-              title="Billing History"
-              description="Check your recent payments."
-            />
-            <QuickActionCard
-              Icon={PhoneCall}
-              title="Support Center"
-              description="Need help? Contact support."
-            />
+            <QuickActionCard Icon={Receipt} title={t("Đơn hàng")} description={t("Theo dõi giao hàng và thanh toán.")} href="/profile?active=My+Orders" />
+            <QuickActionCard Icon={Settings} title={t("Địa chỉ giao hàng")} description={t("Quản lý địa chỉ nhận hàng.")} href="/profile?active=Shipping+Address" />
+            <QuickActionCard Icon={PhoneCall} title={t("Trợ giúp")} description={t("Hướng dẫn mua hàng, trả hàng và liên hệ.")} href="/help" />
           </div>
         </div>
       </div>
@@ -220,7 +193,9 @@ const ProfilePage = () => {
 
 export default ProfilePage;
 
-const NavItem = ({ label, Icon, active, danger, disabled, onClick }: any) => (
+const NavItem = ({ label, Icon, active, danger, disabled, onClick }: any) => {
+  const { t } = useStorefrontText();
+  return (
   <button
     type="button"
     disabled={disabled}
@@ -234,8 +209,9 @@ const NavItem = ({ label, Icon, active, danger, disabled, onClick }: any) => (
     }`}
   >
     <Icon className="w-4 h-4" />
-    {label}
+    {t(tabLabels[label] || label)}
   </button>
 );
+};
 
 

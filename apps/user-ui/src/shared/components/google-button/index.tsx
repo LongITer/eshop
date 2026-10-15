@@ -1,7 +1,11 @@
+'use client';
+import { useStorefrontText } from '@packages/components/storefront-language';
 
 import Link from "next/link";
 import * as React from "react";
-const GoogleButton = (props: React.SVGProps<SVGSVGElement>) => (
+const GoogleButton = (props: React.SVGProps<SVGSVGElement>) => {
+  const { t } = useStorefrontText();
+  return (
     <div className="w-full flex justify-center">
         <Link href={"/api/auth/google"} prefetch={false}>
             <div className="flex justify-center items-center gap-2">
@@ -30,10 +34,11 @@ const GoogleButton = (props: React.SVGProps<SVGSVGElement>) => (
                         d="M8.14 3.77a3.837 3.837 0 012.7 1.05l2.01-1.999a6.786 6.786 0 00-4.71-1.82 7.042 7.042 0 00-6.29 3.858L4.186 6.66c.556-1.658 2.116-2.89 3.952-2.89z"
                     />
                 </svg>
-                <span>Sign in with google</span>
+                <span>{t("Sign in with google")}</span>
             </div>
         </Link>
 
     </div>
 );
+};
 export default GoogleButton;

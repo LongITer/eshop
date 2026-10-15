@@ -6,23 +6,36 @@ export type EshopLanguage = 'en' | 'vi';
 export const LANGUAGE_STORAGE_KEY = 'eshop-language';
 const LANGUAGE_EVENT = 'eshop-language-change';
 
-export function useLanguage() {
-  const [language, setLanguageState] = useState<EshopLanguage>('en');
+export function useLanguage(defaultLanguage: EshopLanguage = 'en') {
+  const [language, setLanguageState] = useState<EshopLanguage>(defaultLanguage);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if (stored === 'vi' || stored === 'en') setLanguageState(stored);
+    const apply = (value: unknown) => {
+      if (value === 'vi' || value === 'en') {
+        setLanguageState(value);
+        document.documentElement.lang = value;
+      }
+    };
+    try { apply(window.localStorage.getItem(LANGUAGE_STORAGE_KEY) || defaultLanguage); }
+    catch { apply(defaultLanguage); }
     const onChange = (event: Event) => {
       const value = (event as CustomEvent<EshopLanguage>).detail;
-      if (value === 'vi' || value === 'en') setLanguageState(value);
+      apply(value);
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === LANGUAGE_STORAGE_KEY || event.key === null) apply(event.newValue || defaultLanguage);
     };
     window.addEventListener(LANGUAGE_EVENT, onChange);
-    return () => window.removeEventListener(LANGUAGE_EVENT, onChange);
-  }, []);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(LANGUAGE_EVENT, onChange);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [defaultLanguage]);
 
   const setLanguage = (value: EshopLanguage) => {
     setLanguageState(value);
-    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, value);
+    try { window.localStorage.setItem(LANGUAGE_STORAGE_KEY, value); } catch { /* Switching still works when storage is disabled. */ }
     window.dispatchEvent(new CustomEvent(LANGUAGE_EVENT, { detail: value }));
     document.documentElement.lang = value;
   };

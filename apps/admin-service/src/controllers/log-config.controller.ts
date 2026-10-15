@@ -1,3 +1,5 @@
+import { transaction } from '@packages/utils/transaction';
+import { audit } from '@packages/utils/admin-audit';
 import { NextFunction, Request, Response } from "express";
 import prisma from "@packages/libs/prisma";
 import { invalidateLogConfigCache } from "@packages/utils/logs/behavior-log";
@@ -79,16 +81,12 @@ export const updateLogConfig = async (
       });
     }
 
-    let config = await prisma.log_config.findFirst();
-
-    if (!config) {
-      config = await prisma.log_config.create({ data: updateData });
-    } else {
-      config = await prisma.log_config.update({
-        where: { id: config.id },
-        data: updateData,
-      });
-    }
+    const config = await transaction(async tx => {
+      const before = await tx.log_config.findFirst();
+      const after = before ? await tx.log_config.update({ where: { id: before.id }, data: updateData }) : await tx.log_config.create({ data: updateData });
+      await audit(tx, req.user!.id, 'settings.logs', after.id, 'Updated logging settings', before, after);
+      return after;
+    });
 
     // Invalidate the shared cache so all services pick up changes.
     await invalidateLogConfigCache();

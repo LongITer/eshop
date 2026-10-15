@@ -38,6 +38,7 @@ type Location = {
 } | null;
 
 type Store = {
+  ownerId: string | null;
   cart: CartItem[];
   wishlist: WishlistItem[];
 
@@ -73,6 +74,7 @@ type Store = {
 export const useStore = create<Store>()(
   persist(
     (set, get) => ({
+      ownerId: null,
       cart: [],
       wishlist: [],
 

@@ -1,3 +1,4 @@
+import { pageArgs } from '@packages/utils/api';
 import { trustedCartItems, trustedDiscount, shippingQuote } from './checkout-quote';
 import { STORE_CURRENCY, usdCents } from '@packages/utils/money';
 import { NotFoundError, ValidationError } from "@packages/error-handler";
@@ -31,7 +32,7 @@ export const createPaymentIntent = async (
     }
 
     const session = JSON.parse(sessionData);
-    if (session.userId !== req.user.id) {
+    if (session.userId !== req.user!.id) {
       return next(
         new ValidationError("Payment session does not belong to you."),
       );
@@ -49,7 +50,7 @@ export const createPaymentIntent = async (
       payment_method_types: ["card"],
       metadata: {
         sessionId,
-        userId: req.user.id,
+        userId: req.user!.id,
       },
     };
 
@@ -67,14 +68,14 @@ export const createPaymentIntent = async (
 
     const paymentIntent = await stripe.paymentIntents.create(intentData, { idempotencyKey: `checkout-${sessionId}` });
     const savedSession = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
-    if (!savedSession || savedSession.userId !== req.user.id) throw new ValidationError('Payment session unavailable');
+    if (!savedSession || savedSession.userId !== req.user!.id) throw new ValidationError('Payment session unavailable');
     await prisma.paymentSession.update({ where: { id: sessionId }, data: { payload: { ...(savedSession.payload as any), paymentIntentId: paymentIntent.id } } });
     await sendBehaviorLog("paymentAttempt", {
       type: "info",
       source: "order-service",
       message: "Payment attempt created",
       metadata: {
-        userId: req.user.id,
+        userId: req.user!.id,
         paymentIntentId: paymentIntent.id,
         amount: customerAmount / 100,
       },
@@ -95,7 +96,7 @@ export const createPaymentSession = async (
 ) => {
   try {
     const { cart, selectedAddressId, coupon } = req.body;
-    const userId = req.user.id;
+    const userId = req.user!.id;
 
     const trustedCart = await trustedCartItems(cart);
 
@@ -195,7 +196,7 @@ export const verifyPaymentSession = async (
     }
 
     const session = JSON.parse(sessionData);
-    if (session.userId !== req.user.id) return res.status(403).json({ message: "Session does not belong to you" });
+    if (session.userId !== req.user!.id) return res.status(403).json({ message: "Session does not belong to you" });
 
     return res.status(200).json({
       success: true,
@@ -217,7 +218,7 @@ export const getSellerOrders = async (
   try {
     const shop = await prisma.shops.findUnique({
       where: {
-        sellerId: req.seller.id,
+        sellerId: req.seller!.id,
       },
     });
 
@@ -256,7 +257,7 @@ export const getUserOrders = async (
 ) => {
   try {
     const orders = await prisma.orders.findMany({
-      where: { userId: req.user.id },
+      where: { userId: req.user!.id },
       include: {
         shop: {
           select: { id: true, name: true },
@@ -286,7 +287,7 @@ export const getOrderById = async (
     }
 
     const order = await prisma.orders.findFirst({
-      where: { id: orderId, userId: req.user.id },
+      where: { id: orderId, userId: req.user!.id },
       include: {
         shop: { select: { id: true, name: true } },
         items: {
@@ -338,9 +339,11 @@ export const getAdminOrders = async (
 ) => {
   try {
     const orders = await prisma.orders.findMany({
+      ...pageArgs(req.query),
       include: {
-        user: true,
-        shop: true,
+        user: { select: { id: true, name: true, email: true } },
+        shop: { select: { id: true, name: true } },
+        items: true,
       },
       orderBy: {
         createdAt: "desc",

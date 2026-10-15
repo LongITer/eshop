@@ -1,4 +1,6 @@
 "use client";
+import { useStorefrontText } from '@packages/components/storefront-language';
+
 import React from "react";
 import Hero from "../shared/modules/hero";
 import SectionTitle from "../shared/section/section-title";
@@ -9,6 +11,7 @@ import ShopCard from "@/shared/cards/shop.cart";
 import Recommendations from '@/shared/components/recommendations';
 
 const Page = () => {
+  const { t } = useStorefrontText();
   const {
     data: products,
     isLoading,
@@ -62,10 +65,10 @@ const Page = () => {
       <div className="md:w-[80%] w-[90%] my-10 m-auto">
         <div className="mb-8">
           <SectionTitle
-            title="Suggested Products"
-            eyebrow="JUST FOR YOU"
+            title={t("Suggested Products")}
+            eyebrow={t("JUST FOR YOU")}
             suffix="Today’s Picks"
-            description="Based on your browsing history, interests, and this week’s popular shopping trends."
+            description={t("Based on your browsing history, interests, and this week’s popular shopping trends.")}
           />
         </div>
         {isLoading && (
@@ -91,8 +94,7 @@ const Page = () => {
 
         {products?.length === 0 && (
           <p className="text-center text-lg text-slate-500">
-            No Products available.
-          </p>
+            {t("No Products available.")}</p>
         )}
 
         {isLoading && (
@@ -107,10 +109,10 @@ const Page = () => {
         )}
         <div className="my-8 block">
           <SectionTitle
-            title="Latest Products"
-            eyebrow="FRESH ARRIVALS"
+            title={t("Latest Products")}
+            eyebrow={t("FRESH ARRIVALS")}
             suffix="Just Added"
-            description="Discover the newest products recently added to our marketplace."
+            description={t("Discover the newest products recently added to our marketplace.")}
           />
         </div>
 
@@ -124,24 +126,22 @@ const Page = () => {
 
             {latestProducts?.length === 0 && (
               <p className="text-center text-lg text-slate-500">
-                No Products available.
-              </p>
+                {t("No Products available.")}</p>
             )}
           </div>
         )}
 
         {latestProducts?.length === 0 && (
           <p className="text-center text-lg text-slate-500">
-            No Products available yet!.
-          </p>
+            {t("No Products available yet!.")}</p>
         )}
 
         <div className="my-8 block">
           <SectionTitle
-            title="Top Shops"
-            eyebrow="SELLER SPOTLIGHT"
+            title={t("Top Shops")}
+            eyebrow={t("SELLER SPOTLIGHT")}
             suffix="Featured Stores"
-            description="Explore popular stores and find brands worth coming back to."
+            description={t("Explore popular stores and find brands worth coming back to.")}
           />
         </div>
 
@@ -155,16 +155,15 @@ const Page = () => {
 
         {shops?.length === 0 && (
           <p className="text-center text-lg text-slate-500">
-            No Shops available yet!.
-          </p>
+            {t("No Shops available yet!.")}</p>
         )}
 
         <div className="my-8 block">
           <SectionTitle
-            title="Top Offers"
-            eyebrow="LIMITED-TIME DEALS"
+            title={t("Top Offers")}
+            eyebrow={t("LIMITED-TIME DEALS")}
             suffix="Save More Today"
-            description="Browse standout deals while these special prices are available."
+            description={t("Browse standout deals while these special prices are available.")}
           />
         </div>
 

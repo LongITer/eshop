@@ -1,4 +1,6 @@
 "use client";
+import { useStorefrontText } from '@packages/components/storefront-language';
+
 import {
   AlignLeft,
   ChevronDown,
@@ -11,10 +13,14 @@ import React, { useEffect, useState } from "react";
 import { navItems } from "../../config/constants";
 import useUser from "../../hooks/useUser";
 import { useStore } from "../../store";
+import { useQuery } from '@tanstack/react-query';
+import axios from '@/utils/axioInstance';
 
 const HeaderBottom = () => {
+  const { t } = useStorefrontText();
   const [show, setShow] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
+  const categories = useQuery({ queryKey: ['categories'], queryFn: async () => (await axios.get('/product/api/get-categories')).data });
   const { user, isLoading } = useUser();
   const wishList = useStore((state: any) => state.wishlist);
   const cart = useStore((state: any) => state.cart);
@@ -40,22 +46,22 @@ const HeaderBottom = () => {
         className={`w-[80%] relative m-auto flex items-center justify-between ${isSticky ? "pt-3" : "py-0"}`}
       >
         {/* All Dropdown */}
-        <div
+        <button type="button" aria-expanded={show} aria-controls="header-categories"
           className={`w-[260px] ${isSticky && "-mb-2"} cursor-pointer flex items-center justify-between px-5 h-[50px] bg-[#3489FF]`}
           onClick={() => setShow(!show)}
         >
           <div className="flex items-center gap-2">
             <AlignLeft color="white" />
-            <span className="text-white font-medium">All Departments</span>
+            <span className="text-white font-medium">{t("Tất cả danh mục")}</span>
           </div>
           <ChevronDown color="white" />
-        </div>
+        </button>
 
         {/* Dropdown menu */}
         {show && (
           <div
-            className={`absolute left-0 ${isSticky ? "top-[70px]" : "top-[50px]"} w-[260px] h-[400px] bg-[#f5f5f5]`}
-          ></div>
+            id="header-categories" className={`absolute z-50 left-0 ${isSticky ? "top-[70px]" : "top-[50px]"} w-[260px] max-h-96 overflow-y-auto border bg-white shadow-lg`}
+          >{categories.isLoading ? <p className="p-3">{t("Đang tải…")}</p> : categories.isError ? <button className="p-3" onClick={()=>categories.refetch()}>{t("Tải lại danh mục")}</button> : categories.data?.categories?.map((category:string)=><Link className="block p-3 hover:bg-blue-50" key={category} href={`/products?categories=${encodeURIComponent(category)}`} onClick={()=>setShow(false)}>{category}</Link>)}<Link href="/products" className="block p-3 text-blue-600" onClick={()=>setShow(false)}>{t("Xem tất cả sản phẩm")}</Link></div>
         )}
 
         {/* Navigation Links*/}
@@ -66,7 +72,7 @@ const HeaderBottom = () => {
               href={i.href}
               key={index}
             >
-              {i.title}
+              {t(i.title)}
             </Link>
           ))}
         </div>
@@ -84,7 +90,7 @@ const HeaderBottom = () => {
                       <User />
                     </Link>
                     <Link href={"/profile"}>
-                      <span className="block font-medium">Hello</span>
+                      <span className="block font-medium">{t("Xin chào")}</span>
                       <span className="block font-medium">
                         {user?.name?.split(" ")[0]}
                       </span>
@@ -99,9 +105,9 @@ const HeaderBottom = () => {
                       <User />
                     </Link>
                     <Link href={"/login"}>
-                      <span className="block font-medium">Hello</span>
+                      <span className="block font-medium">{t("Xin chào")}</span>
                       <span className="block font-medium">
-                        {isLoading ? "..." : "Sign in"}
+                        {isLoading ? "..." : t("Đăng nhập")}
                       </span>
                     </Link>
                   </>

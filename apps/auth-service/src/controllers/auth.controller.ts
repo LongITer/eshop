@@ -1,3 +1,4 @@
+import { isSuspended } from '@packages/utils/admin-access';
 import { NextFunction, Request, Response } from "express";
 import {
   checkOtpRestrictions,
@@ -110,6 +111,7 @@ export const loginUser = async (
     const user = await prisma.users.findUnique({ where: { email } });
 
     if (!user) return next(new AuthError("Invalid email or password!"));
+    if (isSuspended(user)) return res.status(403).json({ message: 'Account suspended. Contact support.' });
 
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password!);
@@ -191,6 +193,9 @@ export const refreshUserToken = async (
       return next(new AuthError("Forbidden! User not found!"));
     }
 
+    if (isSuspended(account)) return res.status(403).json({ message: 'Account suspended. Contact support.' });
+    if (decoded.role === 'admin' && (account as any).role !== 'admin') return next(new AuthError('Administrator access was revoked'));
+
     const newAccessToken = jwt.sign(
       { id: decoded.id, role: decoded.role },
       process.env.ACCESS_TOKEN_JWT_SECRET as string,
@@ -248,6 +253,8 @@ export const refreshSellerToken = async (
       return next(new AuthError("Forbidden! Seller not found!"));
     }
 
+    if (isSuspended(account)) return res.status(403).json({ message: 'Account suspended. Contact support.' });
+
     const newAccessToken = jwt.sign(
       { id: decoded.id, role: "seller" },
       process.env.ACCESS_TOKEN_JWT_SECRET as string,
@@ -272,7 +279,7 @@ export const getUser = async (
   next: NextFunction,
 ) => {
   try {
-    const user = await prisma.users.findUnique({ where: { id: req.user.id }, select: { id: true, name: true, email: true, role: true, createdAt: true, following: true, avatar: true } });
+    const user = await prisma.users.findUnique({ where: { id: req.user!.id }, select: { id: true, name: true, email: true, role: true, adminRole: true, createdAt: true, following: true, avatar: true } });
     if (!user) {
       return next(new ValidationError("User not found"));
     }
@@ -304,6 +311,8 @@ export const getAdmin = async (
         id: admin.id,
         email: admin.email,
         name: admin.name,
+        role: admin.role,
+        adminRole: admin.adminRole ?? 'owner',
       },
     });
   } catch (error) {
@@ -628,6 +637,7 @@ export const loginSeller = async (
     const seller = await prisma.sellers.findUnique({ where: { email } });
 
     if (!seller) return next(new AuthError("Invalid email or password!"));
+    if (isSuspended(seller)) return res.status(403).json({ message: 'Account suspended. Contact support.' });
     if (!seller.password) {
       return next(new AuthError("Invalid email or password!"));
     }
@@ -704,7 +714,7 @@ export const addUserAddress = async (
   next: NextFunction,
 ) => {
   try {
-    const userId = req?.user?.id;
+    const userId = req.user!.id;
     const { label, name, street, city, zip, country, isDefault } = req.body;
 
     if (!label || !name || !street || !city || !zip || !country) {
@@ -826,6 +836,7 @@ export const loginAdmin = async (
     const user = await prisma.users.findUnique({ where: { email } });
 
     if (!user) return next(new AuthError("Invalide email or password!"));
+    if (isSuspended(user)) return res.status(403).json({ message: 'Account suspended. Contact support.' });
 
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password!);

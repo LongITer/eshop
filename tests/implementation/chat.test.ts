@@ -25,7 +25,7 @@ beforeAll(async () => {
   server = createServer(); wss = await createWebSockerServer(server);
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve)); port = (server.address() as any).port;
 });
-beforeEach(() => { resetDb(); jest.clearAllMocks(); db.conversationGroup.findMany.mockResolvedValue([]); (redis.del as jest.Mock).mockResolvedValue(1); });
+beforeEach(() => { resetDb(); jest.clearAllMocks(); db.users.findUnique.mockResolvedValue({ suspendedAt: null }); db.sellers.findUnique.mockResolvedValue({ suspendedAt: null }); db.conversationGroup.findMany.mockResolvedValue([]); (redis.del as jest.Mock).mockResolvedValue(1); });
 afterEach(async () => { await Promise.all(clients.splice(0).map(ws => new Promise<void>(resolve => { if (ws.readyState === WebSocket.CLOSED) return resolve(); ws.once('close', () => resolve()); ws.close(); }))); });
 afterAll(async () => { await new Promise<void>(resolve => wss.close(() => resolve())); await new Promise<void>(resolve => server.close(() => resolve())); });
 
@@ -42,6 +42,14 @@ test('conversation membership is required before publishing messages', async () 
   const ws = await connect(userId); db.conversationGroup.findFirst.mockResolvedValue(null);
   const frame = nextFrame(ws); ws.send(JSON.stringify({ conversationId: shopId, messageBody: 'Unauthorized' }));
   expect((await frame).type).toBe('ERROR'); expect(producer.send).not.toHaveBeenCalled();
+});
+
+test('suspension stops messages from an already connected socket', async () => {
+  const ws = await connect(userId);
+  db.users.findUnique.mockResolvedValue({ suspendedAt: new Date(), suspendedUntil: null });
+  const closed = new Promise<number>(resolve => ws.once('close', resolve));
+  ws.send(JSON.stringify({ conversationId: shopId, messageBody: 'Blocked message' }));
+  expect(await closed).toBe(1008); expect(producer.send).not.toHaveBeenCalled();
 });
 test('message identity comes from ticket, never from spoofed payload', async () => {
   const ws = await connect(userId); db.conversationGroup.findFirst.mockResolvedValue({ id: shopId, participantIds: [userId, otherId] });

@@ -1,3 +1,4 @@
+import { isSuspended } from '@packages/utils/admin-access';
 import prisma from '@packages/libs/prisma';
 import { ValidationError } from '@packages/error-handler';
 import { cartLineKey } from '@packages/utils/cart';
@@ -12,13 +13,13 @@ export async function trustedCartItems(cart: any) {
     if (item.variantId != null && (typeof item.variantId !== 'string' || !/^[a-f\d]{24}$/i.test(item.variantId))) throw new ValidationError('Invalid variant ID');
     return { id: item.id, quantity: item.quantity, variantId: item.variantId || null, selectedOptions: { color: options.color || '', size: options.size || '' } };
   });
-  const products = await prisma.products.findMany({ where: { id: { in: [...new Set(requested.map(item => item.id))] }, isDeleted: false, status: 'Active' }, include: { images: true, variants: true } });
+  const products = await prisma.products.findMany({ where: { id: { in: [...new Set(requested.map(item => item.id))] }, isDeleted: false, status: 'Active' }, include: { images: true, variants: true, shop: { select: { sellers: { select: { suspendedAt: true, suspendedUntil: true } } } } } });
   const productById = new Map(products.map(product => [product.id, product]));
   const totals = new Map<string, number>();
   const keys = new Set<string>();
   return requested.map(item => {
     const product = productById.get(item.id);
-    if (!product) throw new ValidationError('A product is unavailable');
+    if (!product || (product.shop?.sellers && isSuspended(product.shop.sellers))) throw new ValidationError('A product or seller is unavailable');
     const variants = product.variants || [];
     const variant = variants.find(v => item.variantId ? v.id === item.variantId : v.color === item.selectedOptions.color && v.size === item.selectedOptions.size);
     if (variants.length && (!variant || !variant.active)) throw new ValidationError(`Choose an available variant for ${product.title}`);

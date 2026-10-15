@@ -14,7 +14,7 @@ export const newConversation = async (
 ) => {
   try {
     const { sellerId } = req.body;
-    const userId = req.user.id;
+    const userId = req.user!.id;
 
     if (!sellerId) {
       return next(new ValidationError("Seller Id is required!"));
@@ -74,7 +74,7 @@ export const getUserConversations = async (
   next: NextFunction,
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user!.id;
 
     // Find all consersationGroups where the user is a participant
     const conversations = await prisma.conversationGroup.findMany({
@@ -247,7 +247,7 @@ export const fetchMessages = async (
   next: NextFunction,
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const { conversationId } = req.params;
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = 10;

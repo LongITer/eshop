@@ -8,6 +8,8 @@ import type { Prisma } from "@prisma/client";
 import prisma from "@packages/libs/prisma";
 import { ChatLanguage, getAIResponse } from "../services/ai.service";
 import crypto from "crypto";
+import { transaction } from '@packages/utils/transaction';
+import { audit } from '@packages/utils/admin-audit';
 
 const ownsConversation = (
   conversation: { sessionId: string; userId: string | null },
@@ -380,7 +382,8 @@ export const createTemplate = async (
       });
     }
 
-    const template = await prisma.pcBuildTemplate.create({
+    const template = await transaction(async tx => {
+      const result = await tx.pcBuildTemplate.create({
       data: {
         name,
         purpose,
@@ -390,6 +393,9 @@ export const createTemplate = async (
         productIds: productIds || [],
         description: description || null,
       },
+      });
+      await audit(tx, req.user!.id, 'template.save', result.id, 'Created PC template', null, result);
+      return result;
     });
 
     return res.status(201).json({ template });
@@ -455,9 +461,11 @@ export const updateTemplate = async (
       return res.status(400).json({ message: "Invalid template data" });
     }
 
-    const template = await prisma.pcBuildTemplate.update({
-      where: { id },
-      data: updateData,
+    const template = await transaction(async tx => {
+      const before = await tx.pcBuildTemplate.findUniqueOrThrow({ where: { id } });
+      const result = await tx.pcBuildTemplate.update({ where: { id }, data: updateData });
+      await audit(tx, req.user!.id, 'template.save', id, 'Updated PC template', before, result);
+      return result;
     });
 
     return res.status(200).json({ template });

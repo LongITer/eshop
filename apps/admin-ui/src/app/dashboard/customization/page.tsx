@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { useRef, useState } from "react";
+import Link from 'next/link';
 import Breadcrumbs from "../../shared/component/breadcrumbs";
 
 type SiteConfig = {
@@ -69,7 +70,7 @@ const CustomizationPage = () => {
         <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-600/15 text-blue-400">
           <PencilRuler size={18} />
         </div>
-        <h2 className="text-2xl text-white font-semibold">Customization</h2>
+        <h2 className="text-2xl text-white font-semibold">Customization</h2><Link className="ml-auto text-sm text-blue-400" href="/dashboard/log-settings">Advanced: log settings →</Link>
       </div>
 
       <Breadcrumbs
@@ -113,6 +114,7 @@ const CustomizationPage = () => {
           )}
           {activeTab === "logo" && (
             <ImageTab
+              key="logo"
               label="Logo"
               fieldKey="logo"
               hint="Recommended: transparent PNG, min 200x60 px"
@@ -123,6 +125,7 @@ const CustomizationPage = () => {
           )}
           {activeTab === "banner" && (
             <ImageTab
+              key="banner"
               label="Banner"
               fieldKey="banner"
               hint="Recommended: 1440x480 px, JPG or PNG"
@@ -354,15 +357,19 @@ const ImageTab = ({
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (file: File | null) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      setPreview(result);
-      setUrl(result);
-    };
-    reader.readAsDataURL(file);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const handleFileChange = async (file: File | null) => {
+    if (!file || uploading) return;
+    setUploadError('');
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) { setUploadError('Choose PNG, JPG or WebP, maximum 5 MB.'); return; }
+    setUploading(true);
+    try {
+      const encoded = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsDataURL(file); });
+      const { data } = await axiosInstance.post('/admin/site-image', { file: encoded });
+      setPreview(data.url); setUrl(data.url);
+    } catch { setUploadError('Image upload failed. Please retry or paste an HTTPS URL.'); }
+    finally { setUploading(false); }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -431,7 +438,7 @@ const ImageTab = ({
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept="image/png,image/jpeg,image/webp"
           className="hidden"
           onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
         />
@@ -451,13 +458,13 @@ const ImageTab = ({
           />
         </div>
       </section>
-      <div className="flex justify-end">
+      {uploadError && <p role="alert" className="text-red-400">{uploadError}</p>}<div className="flex justify-end">
         <button
           onClick={() => onSave({ [fieldKey]: url })}
-          disabled={isSaving}
+          disabled={isSaving || uploading}
           className="flex items-center justify-center gap-1.5 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition"
         >
-          {isSaving ? (
+          {isSaving || uploading ? (
             "Saving..."
           ) : (
             <span className="flex items-center gap-1.5">

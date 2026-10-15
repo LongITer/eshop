@@ -1,4 +1,6 @@
 "use client";
+import { useStorefrontText } from '@packages/components/storefront-language';
+
 import ProductCard from "@/shared/cards/product-card";
 import axiosInstance from "@/utils/axioInstance";
 import { useQuery } from "@tanstack/react-query";
@@ -11,6 +13,7 @@ const MIN = 0;
 const MAX = 1199;
 
 const ProductListingPage = () => {
+  const { t } = useStorefrontText();
   const router = useRouter();
   const [isProductLoading, setIsProductLoading] = useState(false);
   const [priceRange, setPriceRange] = useState([0, 1199]);
@@ -115,19 +118,17 @@ const ProductListingPage = () => {
       <div className="w-[90%] lg:w-[80%] m-auto">
         <div className="pb-[50px]">
           <h1 className="md:pt-[40px] font-medium text-[44px] leading-1 mb-[14px] font-jost">
-            All Products
-          </h1>
+            {t("All Products")}</h1>
           <Link href={"/"} className="text-[#55585b] hover:underline">
-            Home
-          </Link>
+            {t("Home")}</Link>
           <span className="inline-block p-[1.5px] mx-1 bg-[#a8acb0] rounded-full"></span>
-          <span className="text-[#55585b]">All Products</span>
+          <span className="text-[#55585b]">{t("All Products")}</span>
         </div>
 
         <div className="w-full flex flex-cols lg:flex-row gap-8">
           {/* Sidebar */}
           <aside className="w-full lg:w-[270px] !rounded bg-white p-4 space-y-6 shadow-md">
-            <h3 className="text-xl font-Poppins font-medium">Price Filter</h3>
+            <h3 className="text-xl font-Poppins font-medium">{t("Price Filter")}</h3>
             <div className="ml-2">
               <Range
                 step={100}
@@ -178,18 +179,16 @@ const ProductListingPage = () => {
                   }}
                   className="text-sm px-4 py-1 bg-gray-200 hover:bg-blue-600 hover:text-white transition !rounded"
                 >
-                  Apply
-                </button>
+                  {t("Apply")}</button>
               </div>
             </div>
 
             {/* Categories */}
             <h3 className="text-xl font-Poppins font-medium border-b border-b-slate-300 pb-1">
-              Categories
-            </h3>
+              {t("Categories")}</h3>
             <ul className="space-y-2 !mt-3">
               {isLoading ? (
-                <p>Loading ...</p>
+                <p>{t("Loading…")}</p>
               ) : (
                 data?.categories?.map((category: any) => (
                   <li
@@ -212,11 +211,10 @@ const ProductListingPage = () => {
 
             {/* Colors */}
             <h3 className="text-xl font-Poppins font-medium border-b border-b-slate-300 pb-1">
-              Colors
-            </h3>
+              {t("Colors")}</h3>
             <ul className="space-y-2 !mt-3">
               {isLoading ? (
-                <p>Loading ...</p>
+                <p>{t("Loading…")}</p>
               ) : (
                 colors?.map((color: any) => (
                   <li key={color} className="flex items-center justify-between">
@@ -240,11 +238,10 @@ const ProductListingPage = () => {
 
             {/* Sizes */}
             <h3 className="text-xl font-Poppins font-medium border-b border-b-slate-300 pb-1">
-              Sizes
-            </h3>
+              {t("Sizes")}</h3>
             <ul className="space-y-2 !mt-3">
               {isLoading ? (
-                <p>Loading ...</p>
+                <p>{t("Loading…")}</p>
               ) : (
                 sizes?.map((size: any) => (
                   <li key={size} className="flex items-center justify-between">
@@ -281,7 +278,7 @@ const ProductListingPage = () => {
                 ))}
               </div>
             ) : (
-              <p>No Offers found!</p>
+              <p>{t("No Offers found!")}</p>
             )}
 
             {totalPages > 1 && (

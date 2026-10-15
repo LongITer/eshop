@@ -1,4 +1,6 @@
 'use client'
+import { useStorefrontText } from '@packages/components/storefront-language';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react'
@@ -15,6 +17,7 @@ type FormData = {
 
 }
 const Login = () => {
+  const { t } = useStorefrontText();
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
     const [rememberMe, setRememberMe] = useState(false)
@@ -38,8 +41,10 @@ const Login = () => {
             queryClient.setQueryData(['user'], data.user);
             await queryClient.invalidateQueries({ queryKey: ['user'] });
             setServerError(null);
-            toast.success("Login successful!");
-            router.push('/');
+            toast.success(t("Login successful!"));
+            const next = new URLSearchParams(window.location.search).get('next') || '/';
+            const target = new URL(next, window.location.origin);
+            router.push(target.origin === window.location.origin ? target.pathname + target.search : '/');
         },
         onError: (error: AxiosError) => {
             const errorMessage =
@@ -56,26 +61,22 @@ const Login = () => {
     return (
         <div className='w-full py-10 min-h-[85vh] bg-[#f1f1f1]'>
             <h1 className='text-4xl font-Poppins font-semibold text-black text-center'>
-                Login
-            </h1>
+                {t("Login")}</h1>
             <p className='text-center text-lg font-medium py-3 text-[#00000099]'>
-                Home . Login
-            </p>
+                {t("Home . Login")}</p>
             <div className='w-full flex justify-center'>
                 <div className='md:w-[480px] p-8 bg-white shadow rounded-lg'>
                     <h3 className='text-2xl font-semibold text-center mb-2'>
-                        Login to Eshop
-                    </h3>
+                        {t("Login to Eshop")}</h3>
                     <p className='text-center text-gray-500 mb-4'>
-                        Don't have an account? {" "}
+                        {t("Don't have an account? ")}{" "}
                         <Link href={'/signup'} className='text-blue-500'>
-                            Sign up
-                        </Link>
+                            {t("Sign up")}</Link>
                     </p>
                     <GoogleButton />
                     <div className='flex items-center my-5 text-gray-500 text-sm'>
                         <div className='flex-1 border-t border-gray-300' />
-                        <span className='px-3'>or Sign in with Email</span>
+                        <span className='px-3'>{t("or Sign in with Email")}</span>
                         <div className='flex-1 border-t border-gray-300' />
 
                     </div>
@@ -85,31 +86,31 @@ const Login = () => {
                         <input type="email" placeholder='name@gmail.com'
                             className='w-full p-2 border border-gray-300 outline-0 rounded mb-1'
                             {...register("email", {
-                                required: "Email is required",
+                                required: t("Email is required"),
                                 pattern: {
                                     value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
-                                    message: "Please enter a valid email address"
+                                    message: t("Please enter a valid email address")
                                 }
                             })}
                         />
 
                         {errors.email && (
                             <p className='text-red-500 text-sm'>
-                                {String(errors.email?.message)}
+                                {t(String(errors.email?.message || ""))}
                             </p>
 
                         )}
-                        <label className='block text-gray-700 mb-1'>Password</label>
+                        <label className='block text-gray-700 mb-1'>{t("Password")}</label>
                         <div className="relative">
                             <input
                                 type={passwordVisible ? "text" : "password"}
-                                placeholder='Min 6 characters'
+                                placeholder={t('Min 6 characters')}
                                 className='w-full p-2 border border-gray-300 outline-0 rounded mb-1'
                                 {...register("password", {
-                                    required: "Password is required",
+                                    required: t("Password is required"),
                                     minLength: {
                                         value: 6,
-                                        message: "Password must be at least 6 characters"
+                                        message: t("Password must be at least 6 characters")
                                     }
                                 })}
                             />
@@ -124,7 +125,7 @@ const Login = () => {
                         </div>
                         {errors.password && (
                             <p className='text-red-500 text-sm'>
-                                {String(errors.password?.message)}
+                                {t(String(errors.password?.message || ""))}
                             </p>
 
                         )}
@@ -136,22 +137,20 @@ const Login = () => {
                                     checked={rememberMe}
                                     onChange={() => setRememberMe(!rememberMe)}
                                 />
-                                Remember me
-                            </label>
+                                {t("Remember me")}</label>
                             <Link href={'/forgot-password'} className='text-blue-500 hover:underline'>
-                                Forgot password?
-                            </Link>
+                                {t("Forgot password?")}</Link>
                         </div>
                         <button
                             type="submit"
                             disabled={loginMutation.isPending}
                             className='w-full py-2 text-white bg-blue-500 rounded hover:bg-blue-600'>
-                            {loginMutation.isPending ? <Loader2 className='animate-spin inline' /> : "Login"}
+                            {loginMutation.isPending ? <Loader2 className='animate-spin inline' /> : t("Login")}
                         </button>
 
                         {serverError && (
                             <p className='text-red-500 text-sm mt-4'>
-                                {serverError}
+                                {t(serverError || "")}
                             </p>
                         )}
                     </form>

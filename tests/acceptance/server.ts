@@ -1,3 +1,4 @@
+import { startNotificationWorker } from '../../apps/admin-service/src/lib/notification-jobs';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
@@ -35,6 +36,8 @@ export async function start() {
   for (const [i, status] of ['Pending', 'Delivered', 'Shipped', 'Cancelled'].entries()) {
     orders.push(await prisma.orders.create({ data: { orderNumber: `ACCEPTANCE-${i + 1}`, userId: buyer.id, shopId: shop.id, status: status as any, paymentStatus: 'Paid', stripePaymentId: 'pi_acceptance', subTotal: 80, totalAmount: 80, shippingAddress: { name: buyer.name, street: address.street, city: address.city, country: address.country }, trackingNumber: status === 'Shipped' ? 'TRACK12345' : null, estimatedDelivery: status === 'Shipped' ? new Date(Date.now() + 2 * 86400000) : null, createdAt: new Date(Date.now() - i * 86400000), items: { create: { productId: cpu.id, title: cpu.title, quantity: 1, unitPrice: 80, totalPrice: 80 } } } }));
   }
+  await prisma.returnRequest.create({ data: { orderId: orders[1].id, userId: buyer.id, shopId: shop.id, reason: 'Damaged packaging; please inspect', evidence: [] } });
+  startNotificationWorker();
   await prisma.notifications.createMany({ data: [{ userId: buyer.id, type: 'OrderShipped', title: 'Your order is on the way', message: 'Track your package for the latest updates.', redirectUrl: `/order/${orders[2].id}` }, { sellerId: seller.id, type: 'LowStock', title: 'Low stock', message: 'Ryzen Gaming CPU has 3 units remaining.', redirectUrl: '/dashboard/inventory' }, { type: 'System', title: 'Platform order alert', message: 'New order from Saigon PC Store.' }] });
   await prisma.behaviorLog.createMany({ data: ['productView', 'addToCart', 'paymentSuccess'].map((action, i) => ({ eventId: `acceptance-${i}`, action, userId: buyer.id, source: 'acceptance', type: 'info', message: `Example ${action}`, metadata: { productId: cpu.id } })) });
   await prisma.productAnalytics.create({ data: { productId: cpu.id, shopId: shop.id, views: 20, cartAdds: 4, purchases: 3, lastViewedAt: new Date() } });

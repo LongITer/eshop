@@ -1,6 +1,7 @@
 import prisma from "@packages/libs/prisma";
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { isSuspended } from '@packages/utils/admin-access';
 
 
 const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
@@ -47,6 +48,10 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
 
         if (!account) {
             return res.status(401).json({ message: "Unauthorized! Account not found." })
+        }
+
+        if (isSuspended(account)) {
+            return res.status(403).json({ message: 'Account suspended. Contact support.' });
         }
 
         // Customer sessions carry only customer permissions, even when the

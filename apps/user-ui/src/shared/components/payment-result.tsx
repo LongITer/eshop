@@ -1,4 +1,6 @@
 'use client';
+import { useStorefrontText } from '@packages/components/storefront-language';
+
 import { useStore } from '@/store';
 import { cartLineKey } from '@packages/utils/cart';
 import { useSearchParams } from 'next/navigation';
@@ -10,6 +12,7 @@ import confetti from 'canvas-confetti';
 import { CheckCircle, Truck, Loader2, Clock3, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function PaymentResult() {
+  const { t } = useStorefrontText();
   const params = useSearchParams();
   const sessionId = params.get('sessionId');
   const paymentIntentId = params.get('payment_intent');
@@ -60,10 +63,10 @@ export default function PaymentResult() {
   if (result.data?.complete) return <div className="min-h-[80vh] flex items-center justify-center px-4">
     <div className="bg-white shadow-sm border border-gray-200 rounded-lg max-w-md w-full text-center p-8">
       <div className="text-green-500 mb-4"><CheckCircle className="w-16 h-16 mx-auto" /></div>
-      <h2 className="text-2xl font-semibold text-gray-800 mb-2">Payment Successful 🎉</h2>
-      <p className="text-sm text-gray-600 mb-6">Thank you for your purchase. Your order has been placed successfully!</p>
-      <Link href="/profile?active=My+Orders" className="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700"><Truck className="w-4 h-4" />Track Order</Link>
-      <div className="mt-8 text-xs text-gray-400">Payment Session ID: <span className="break-all font-mono">{sessionId}</span></div>
+      <h2 className="text-2xl font-semibold text-gray-800 mb-2">{t("Payment Successful 🎉")}</h2>
+      <p className="text-sm text-gray-600 mb-6">{t("Thank you for your purchase. Your order has been placed successfully!")}</p>
+      <Link href="/profile?active=My+Orders" className="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700"><Truck className="w-4 h-4" />{t("Track Order")}</Link>
+      <div className="mt-8 text-xs text-gray-400">{t("Payment Session ID: ")}<span className="break-all font-mono">{sessionId}</span></div>
     </div>
   </div>;
 
@@ -77,16 +80,16 @@ export default function PaymentResult() {
     <section aria-live="polite" className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80">
       <div className="px-6 pb-6 pt-8 text-center sm:px-8">
         <div className={`mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl ${waiting ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'}`}>{waiting ? <Loader2 size={30} className="animate-spin motion-reduce:animate-none" /> : timedOut ? <Clock3 size={30} /> : <AlertCircle size={30} />}</div>
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-slate-400">Order confirmation</p>
-        <h1 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{title}</h1>
-        <p className="mt-3 text-sm leading-6 text-slate-500">{description}</p>
-        {sessionId && !notPaid && <div className="mt-5 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">Your cart stays saved. If you have already paid, please do not pay again.</div>}
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-slate-400">{t("Order confirmation")}</p>
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">{t(title)}</h1>
+        <p className="mt-3 text-sm leading-6 text-slate-500">{t(description)}</p>
+        {sessionId && !notPaid && <div className="mt-5 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">{t("Your cart stays saved. If you have already paid, please do not pay again.")}</div>}
         <div className="mt-6 flex flex-col gap-3">
-          {sessionId && !waiting && <button disabled={result.isFetching} onClick={() => result.refetch()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">{result.isFetching && <Loader2 size={15} className="animate-spin" />}{result.isFetching ? 'Checking…' : 'Check again'}</button>}
-          <Link href="/profile?active=My+Orders" className="inline-flex items-center justify-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700">View my orders<ArrowRight size={15} /></Link>
+          {sessionId && !waiting && <button disabled={result.isFetching} onClick={() => result.refetch()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">{result.isFetching && <Loader2 size={15} className="animate-spin" />}{result.isFetching ? t('Checking…') : t('Check again')}</button>}
+          <Link href="/profile?active=My+Orders" className="inline-flex items-center justify-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700">{t("View my orders")}<ArrowRight size={15} /></Link>
         </div>
       </div>
-      {sessionId && <div className="border-t border-slate-100 bg-slate-50/70 px-6 py-4 text-center"><p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-slate-400">Checkout reference</p><p className="break-all font-mono text-xs text-slate-500">{sessionId}</p></div>}
+      {sessionId && <div className="border-t border-slate-100 bg-slate-50/70 px-6 py-4 text-center"><p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-slate-400">{t("Checkout reference")}</p><p className="break-all font-mono text-xs text-slate-500">{sessionId}</p></div>}
     </section>
   </main>;
 }

@@ -1,3 +1,4 @@
+import { isSuspended } from '@packages/utils/admin-access';
 import redis from '@packages/libs/redis';
 import prisma from '@packages/libs/prisma';
 import { kafka } from '@packages/utils/kafka';
@@ -19,6 +20,12 @@ export async function createWebSockerServer(server: HttpServer) {
       const stored = await redis.getdel(`chat-ticket:${ticket}`);
       if (!stored) { ws.close(1008, 'Ticket expired'); return; }
       const identity: { id: string; type: "user" | "seller" } = JSON.parse(stored);
+      const accountAllowed = async () => {
+        const args = { where: { id: identity.id }, select: { suspendedAt: true, suspendedUntil: true } };
+        const account = identity.type === 'seller' ? await prisma.sellers.findUnique(args) : await prisma.users.findUnique(args);
+        return account && !isSuspended(account);
+      };
+      if (!await accountAllowed()) { ws.close(1008, 'Account unavailable'); return; }
       const key = `${identity.type}_${identity.id}`;
       const peers = sockets.get(key) ?? new Set<WebSocket>(); peers.add(ws); sockets.set(key, peers);
       const presenceKey = `online:${identity.type}:${identity.id}`;
@@ -36,6 +43,7 @@ export async function createWebSockerServer(server: HttpServer) {
         try {
           if (Date.now() - windowStart > 10000) { windowStart = Date.now(); count = 0; }
           if (++count > 60) throw new Error('Too many messages');
+          if (!await accountAllowed()) { ws.close(1008, 'Account unavailable'); return; }
           const text = raw.toString(); if (!text.startsWith('{')) return;
           const data = JSON.parse(text);
           if (!/^[a-f\d]{24}$/i.test(data.conversationId ?? '')) throw new Error('Invalid conversation');

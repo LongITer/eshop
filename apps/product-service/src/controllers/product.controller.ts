@@ -471,6 +471,7 @@ export const getAllProducts = async (
     const type = req.query.type;
 
     const baseFilter = {
+      status: 'Active' as const, isDeleted: false,
       OR: [
         { starting_date: null },
         { starting_date: { isSet: false } },
@@ -526,7 +527,7 @@ export const getProductDetails = async (
 ) => {
   try {
     const product = await prisma.products.findUnique({
-      where: { slug: req.params.slug },
+      where: { slug: req.params.slug, status: 'Active', isDeleted: false },
       include: {
         images: true,
         shop: true,
@@ -552,125 +553,7 @@ export const getProductDetails = async (
 };
 
 // Get filtered products
-export const getFilteredProducts = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const {
-      priceRange = [0, 10000],
-      categories = [],
-      subCategories = [],
-      colors = [],
-      sizes = [],
-      excludeId = "",
-      page = 1,
-      limit = 12,
-    } = req.query;
-
-    const parsedPriceRange =
-      typeof priceRange === "string"
-        ? priceRange.split(",").map(Number)
-        : [0, 10000];
-
-    const parsedPage = Number(page);
-    const parsedLimit = Number(limit);
-
-    const skip = (parsedPage - 1) * parsedLimit;
-
-    const filters: Record<string, any> = {
-      sale_price: {
-        gte: parsedPriceRange[0],
-        lte: parsedPriceRange[1],
-      },
-      OR: [{ starting_date: null }, { starting_date: { isSet: false } }],
-    };
-
-    // Exclude current product from recommendations
-    if (excludeId && typeof excludeId === "string") {
-      filters.id = {
-        not: excludeId,
-      };
-    }
-
-    if (categories && (categories as string[]).length > 0) {
-      filters.category = {
-        in: Array.isArray(categories)
-          ? categories
-          : String(categories).split(","),
-      };
-    }
-
-    if (subCategories && (subCategories as string[]).length > 0) {
-      filters.subCategory = {
-        in: Array.isArray(subCategories)
-          ? subCategories
-          : String(subCategories).split(","),
-      };
-    }
-
-    if (colors && (colors as string[]).length > 0) {
-      filters.colors = {
-        hasSome: Array.isArray(colors) ? colors : [colors],
-      };
-    }
-
-    if (sizes && (sizes as string[]).length > 0) {
-      filters.sizes = {
-        hasSome: Array.isArray(sizes) ? sizes : [sizes],
-      };
-    }
-
-    const [products, total] = await Promise.all([
-      prisma.products.findMany({
-        where: filters,
-        skip,
-        take: parsedLimit,
-        include: {
-          images: true,
-          shop: true,
-        },
-      }),
-      prisma.products.count({ where: filters }),
-    ]);
-
-    const activeFilterKeys = [
-      "priceRange",
-      "categories",
-      "subCategories",
-      "colors",
-      "sizes",
-    ]
-      .filter((key) => req.query[key] !== undefined)
-      .filter((key) => {
-        const value = req.query[key];
-        return Array.isArray(value) ? value.length > 0 : Boolean(value);
-      });
-
-    if (activeFilterKeys.length > 0) {
-      await sendBehaviorLog("productFilter", {
-        type: "info",
-        source: "product-service",
-        message: "Product filters applied",
-        metadata: { filterKeys: activeFilterKeys, resultCount: total },
-      });
-    }
-
-    const totalPages = Math.ceil(total / parsedLimit);
-
-    return res.json({
-      products,
-      pagination: {
-        total,
-        page: parsedPage,
-        totalPages,
-      },
-    });
-  } catch (error) {
-    return next(error);
-  }
-};
+export { filteredCatalog as getFilteredProducts } from './catalog-query';
 // Get filtered events
 export const getFilteredEvents = async (
   req: Request,
@@ -698,6 +581,7 @@ export const getFilteredEvents = async (
     const skip = (parsedPage - 1) * parsedLimit;
 
     const filters: Record<string, any> = {
+      status: 'Active', isDeleted: false,
       sale_price: {
         gte: parsedPriceRange[0],
         lte: parsedPriceRange[1],
@@ -776,7 +660,7 @@ export const getShopById = async (
           },
         },
         products: {
-          where: { isDeleted: false },
+          where: { isDeleted: false, status: 'Active' },
           take: 20,
           orderBy: { createdAt: "desc" },
           include: {
@@ -817,7 +701,8 @@ export const getFilteredShops = async (
     const parsedLimit = Number(limit);
     const skip = (parsedPage - 1) * parsedLimit;
 
-    const filters: Record<string, any> = {};
+    const filters: Record<string, any> = {
+      status: 'Active', isDeleted: false,};
 
     if (categories && String(categories).length > 0) {
       filters.category = {
@@ -885,6 +770,7 @@ export const searchProducts = async (
 
     const products = await prisma.products.findMany({
       where: {
+        status: 'Active', isDeleted: false,
         OR: [
           {
             title: {
@@ -1020,6 +906,7 @@ export const getAllEvents = async (
     const skip = (page - 1) * limit;
 
     const baseFilter = {
+      status: 'Active' as const, isDeleted: false,
       AND: [{ starting_date: { not: null } }, { ending_date: { not: null } }],
     };
 

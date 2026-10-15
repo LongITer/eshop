@@ -1,20 +1,23 @@
 'use client';
+import { AdminPermission, canAdmin } from '@packages/utils/admin-access';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Activity, Bell, ChevronRight, CreditCard, LayoutDashboard, LogOut, Menu, Package, Palette, Settings2, ShieldCheck, ShoppingBag, Store, Tag, Users, UsersRound, X } from 'lucide-react';
+import { Activity, Bell, ChevronRight, CreditCard, LayoutDashboard, LogOut, Menu, Package, Palette, ShieldCheck, ShoppingBag, Store, Users, UsersRound, X } from 'lucide-react';
 import useAdmin from '../app/hooks/useAdmin';
 import { useRouter } from 'next/navigation';
 import axios from '../utils/axioInstance';
 import { LanguageSwitcher, useLanguage } from '@packages/components/language-switcher';
 
+const permissionByPath: Record<string, AdminPermission> = { '': 'overview', '/orders': 'orders', '/payments': 'payments', '/products': 'catalog', '/events': 'catalog', '/templates': 'catalog', '/returns': 'returns', '/users': 'accounts', '/sellers': 'accounts', '/notifications': 'notifications', '/notification-jobs': 'notifications', '/loggers': 'logs', '/audit': 'team', '/log-settings': 'settings', '/management': 'team', '/customization': 'settings' };
 const groups = [
   { title: 'Workspace', links: [
     { label: 'Overview', path: '', icon: LayoutDashboard },
     { label: 'Orders', path: '/orders', icon: ShoppingBag },
     { label: 'Payments', path: '/payments', icon: CreditCard },
     { label: 'Products', path: '/products', icon: Package },
-    { label: 'Events', path: '/events', icon: Tag },
+    { label: 'Returns', path: '/returns', icon: Package },
+    { label: 'PC templates', path: '/templates', icon: Package },
   ] },
   { title: 'Community', links: [
     { label: 'Users', path: '/users', icon: Users },
@@ -23,7 +26,7 @@ const groups = [
   ] },
   { title: 'Administration', links: [
     { label: 'Activity logs', path: '/loggers', icon: Activity },
-    { label: 'Log settings', path: '/log-settings', icon: Settings2 },
+    { label: 'Audit trail', path: '/audit', icon: ShieldCheck },
     { label: 'Team management', path: '/management', icon: UsersRound },
     { label: 'Customization', path: '/customization', icon: Palette },
   ] },
@@ -33,10 +36,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const { admin } = useAdmin();
+  const { admin, isLoading } = useAdmin();
+  const visibleGroups = groups.map(group => ({ ...group, links: group.links.filter(link => canAdmin(admin, permissionByPath[link.path])) })).filter(group => group.links.length);
+  const path = pathname.startsWith('/order/') ? '/orders' : pathname.replace('/dashboard', '');
+  const accessible = canAdmin(admin, permissionByPath[path] ?? 'overview');
+  useEffect(() => { if (admin && !accessible && pathname === '/dashboard') router.replace(`/dashboard${visibleGroups[0]?.links[0]?.path ?? '/orders'}`); }, [admin, accessible, pathname, router]);
   const { language } = useLanguage();
   const vi = language === 'vi';
-  const translate: Record<string, string> = { Workspace: 'Không gian làm việc', Community: 'Cộng đồng', Administration: 'Quản trị', Overview: 'Tổng quan', Orders: 'Đơn hàng', Payments: 'Thanh toán', Products: 'Sản phẩm', Events: 'Sự kiện', Users: 'Người dùng', Sellers: 'Người bán', Notifications: 'Thông báo', 'Activity logs': 'Nhật ký hoạt động', 'Log settings': 'Cài đặt nhật ký', 'Team management': 'Quản lý đội ngũ', Customization: 'Tùy chỉnh' };
+  const translate: Record<string, string> = { Returns: 'Trả hàng & khiếu nại', 'PC templates': 'Mẫu cấu hình PC', 'Audit trail': 'Nhật ký quản trị', Workspace: 'Không gian làm việc', Community: 'Cộng đồng', Administration: 'Quản trị', Overview: 'Tổng quan', Orders: 'Đơn hàng', Payments: 'Thanh toán', Products: 'Sản phẩm', Events: 'Sự kiện', Users: 'Người dùng', Sellers: 'Người bán', Notifications: 'Thông báo', 'Activity logs': 'Nhật ký hoạt động', 'Log settings': 'Cài đặt nhật ký', 'Team management': 'Quản lý đội ngũ', Customization: 'Tùy chỉnh' };
   const label = (value: string) => vi ? translate[value] ?? value : value;
   const current = label(groups.flatMap(group => group.links).find(link => `/dashboard${link.path}` === pathname)?.label ?? 'Administration');
   const logout = async () => {
@@ -51,7 +58,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     window.addEventListener('keydown', close);
     return () => window.removeEventListener('keydown', close);
   }, []);
-  const navigation = <>{groups.map(group => <div key={group.title}><p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{label(group.title)}</p><div className="space-y-1">{group.links.map(({ label: itemLabel, path, icon: Icon }) => <Link key={path} onClick={() => setOpen(false)} href={`/dashboard${path}`} aria-current={pathname === `/dashboard${path}` ? 'page' : undefined} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm ${pathname === `/dashboard${path}` ? 'bg-blue-500/15 font-medium text-blue-400 ring-1 ring-inset ring-blue-500/20' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'}`}><Icon size={18} strokeWidth={1.7} />{label(itemLabel)}{pathname === `/dashboard${path}` && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-400" />}</Link>)}</div></div>)}</>;
+  const navigation = <>{visibleGroups.map(group => <div key={group.title}><p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{label(group.title)}</p><div className="space-y-1">{group.links.map(({ label: itemLabel, path, icon: Icon }) => <Link key={path} onClick={() => setOpen(false)} href={`/dashboard${path}`} aria-current={pathname === `/dashboard${path}` ? 'page' : undefined} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm ${pathname === `/dashboard${path}` ? 'bg-blue-500/15 font-medium text-blue-400 ring-1 ring-inset ring-blue-500/20' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'}`}><Icon size={18} strokeWidth={1.7} />{label(itemLabel)}{pathname === `/dashboard${path}` && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-blue-400" />}</Link>)}</div></div>)}</>;
   return <div className="min-h-screen bg-[#080b12]">
     <a href="#admin-main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:bg-blue-600 focus:p-3">Skip to content</a>
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-gray-800 bg-[#0b0f18] lg:flex">
@@ -60,12 +67,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <div className="mx-4 mb-4 rounded-xl border border-gray-800 bg-gray-900 p-4"><div className="mb-2 flex items-center gap-2 text-sm font-medium text-white"><ShieldCheck size={17} className="text-blue-400" /> {vi ? 'Không gian admin' : 'Admin workspace'}</div><p className="text-xs leading-5 text-slate-500">{vi ? 'Quản lý sàn, người dùng và vận hành.' : 'Your marketplace, people and operations in one place.'}</p></div>
     </aside>
     <div className="lg:pl-[248px]">
-      <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between gap-4 border-b border-gray-800 bg-[#0b0f18]/95 px-4 backdrop-blur sm:px-8">
-        <div className="flex items-center gap-3"><button className="admin-button !p-2 lg:hidden" aria-label={open ? 'Close navigation' : 'Open navigation'} aria-expanded={open} aria-controls="mobile-admin-nav" onClick={() => setOpen(!open)}>{open ? <X size={20} /> : <Menu size={20} />}</button><span className="hidden text-sm text-slate-500 sm:inline">Workspace</span><ChevronRight size={14} className="hidden text-slate-600 sm:block" /><span className="text-sm font-medium text-slate-200">{current}</span></div>
-        <div className="flex items-center gap-3"><LanguageSwitcher className="hidden sm:inline-flex" /><Link href="/dashboard/notifications" aria-label={label('Notifications')} className="rounded-lg border border-gray-800 p-2.5 text-slate-400 hover:bg-gray-800 hover:text-white"><Bell size={18} /></Link><button type="button" onClick={logout} disabled={loggingOut} aria-label={vi ? 'Đăng xuất' : 'Log out'} className="rounded-lg border border-gray-800 p-2.5 text-slate-400 hover:bg-red-500/10 hover:text-red-300"><LogOut size={18} /></button><span className="h-8 border-l border-gray-800" /><div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-full border border-blue-400/20 bg-blue-500/15 text-sm font-semibold text-blue-300">{admin?.name?.slice(0, 2).toUpperCase() || 'AD'}</span><div className="hidden sm:block"><p className="max-w-40 truncate text-sm font-medium text-white">{admin?.name || (vi ? 'Quản trị viên' : 'Administrator')}</p><p className="text-[11px] text-slate-500">{vi ? 'Quản trị sàn' : 'Marketplace admin'}</p></div></div></div>
+      <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between gap-2 border-b border-gray-800 bg-[#0b0f18]/95 px-4 backdrop-blur sm:gap-4 sm:px-8">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3"><button className="admin-button shrink-0 !p-2 lg:hidden" aria-label={open ? 'Close navigation' : 'Open navigation'} aria-expanded={open} aria-controls="mobile-admin-nav" onClick={() => setOpen(!open)}>{open ? <X size={20} /> : <Menu size={20} />}</button><span className="hidden text-sm text-slate-500 sm:inline">{vi ? 'Quản trị' : 'Workspace'}</span><ChevronRight size={14} className="hidden text-slate-600 sm:block" /><span className="truncate text-sm font-medium text-slate-200">{current}</span></div>
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3"><LanguageSwitcher className="inline-flex" />{canAdmin(admin, 'notifications') && <Link href="/dashboard/notifications" aria-label={label('Notifications')} className="rounded-lg border border-gray-800 p-2 text-slate-400 hover:bg-gray-800 hover:text-white sm:p-2.5"><Bell size={18} /></Link>}<button type="button" onClick={logout} disabled={loggingOut} aria-label={vi ? 'Đăng xuất' : 'Log out'} className="rounded-lg border border-gray-800 p-2 text-slate-400 hover:bg-red-500/10 hover:text-red-300 sm:p-2.5"><LogOut size={18} /></button><span className="hidden h-8 border-l border-gray-800 sm:block" /><div className="hidden items-center gap-3 sm:flex"><span className="flex h-9 w-9 items-center justify-center rounded-full border border-blue-400/20 bg-blue-500/15 text-sm font-semibold text-blue-300">{admin?.name?.slice(0, 2).toUpperCase() || 'AD'}</span><div><p className="max-w-40 truncate text-sm font-medium text-white">{admin?.name || (vi ? 'Quản trị viên' : 'Administrator')}</p><p className="text-[11px] text-slate-500">{vi ? 'Quản trị sàn' : 'Marketplace admin'}</p></div></div></div>
       </header>
       {open && <nav id="mobile-admin-nav" aria-label="Mobile navigation" className="fixed inset-x-0 bottom-0 top-[72px] z-30 space-y-6 overflow-auto bg-[#0b0f18] p-5 lg:hidden">{navigation}</nav>}
-      <main id="admin-main" className="admin-content min-w-0"><div>{children}</div></main>
+      <main id="admin-main" className="admin-content min-w-0"><div>{isLoading ? <p className="p-8 text-slate-400">Loading…</p> : accessible ? children : <p className="p-8 text-amber-300">{vi ? 'Bạn không có quyền truy cập mục này.' : 'You do not have access to this section.'}</p>}</div></main>
     </div>
   </div>;
 }
