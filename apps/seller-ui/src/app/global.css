@@ -390,4 +390,16 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
-  
+
+@layer components {
+  .seller-shell { color: #e2e8f0; background: #080d1a; }
+  .seller-shell input, .seller-shell select, .seller-shell textarea { color-scheme: dark; }
+  .seller-page { @apply mx-auto w-full max-w-[1600px] space-y-6 p-4 text-slate-100 sm:p-6 xl:p-8; }
+  .seller-panel { @apply rounded-2xl border border-slate-800 bg-slate-900/60 shadow-sm; }
+  .seller-button { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50; }
+  .seller-input { @apply min-h-11 w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15; }
+  .seller-sidebar-scroll { scrollbar-width: thin; scrollbar-color: #334155 transparent; }
+  .seller-shell ::-webkit-scrollbar { width: 6px; height: 6px; }
+  .seller-shell ::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
+  .seller-shell ::-webkit-scrollbar-track { background: transparent; }
+}

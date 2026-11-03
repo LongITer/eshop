@@ -49,7 +49,7 @@ export const reviewReturn = handle(async (req: any, res) => {
     const request = await tx.returnRequest.findUnique({ where: { orderId } });
     if (!order || !request) throw new NotFoundError();
     if (request.status === status) return request;
-    if (!(request.status === 'Requested' && ['Approved', 'Rejected'].includes(status)) && !(request.status === 'Approved' && status === 'Received')) throw new ValidationError('Invalid return transition');
+    if (!(request.status === 'Requested' && ['Approved', 'Rejected'].includes(status)) && !(request.status === 'Escalated' && status === 'Approved') && !(request.status === 'Approved' && status === 'Received')) throw new ValidationError('Invalid return transition');
     if (order.status !== 'Delivered') throw new ValidationError('Order is no longer eligible for this return action');
     if (status === 'Received') {
       // Returned goods are not automatically sellable; stock is adjusted after inspection.

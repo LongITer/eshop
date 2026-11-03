@@ -1,4 +1,6 @@
 "use client";
+import ProductReport from '../../components/product-report';
+
 import { useStorefrontText } from '@packages/components/storefront-language';
 
 
@@ -330,6 +332,7 @@ const ProductDetails = ({ productDetails: rawProduct }: { productDetails: any })
           <h1 className="text-2xl font-semibold text-gray-900 leading-tight">
             {productDetails.title}
           </h1>
+            <ProductReport productId={productDetails.id} />
 
           {/* Ratings and Reviews */}
           <div className="w-full flex items-center justify-between mt-3">

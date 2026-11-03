@@ -3,6 +3,8 @@ import WebSocket from "ws";
 import { consumeKafkaMessages } from "./logger-consumer";
 import { clients, recentLogs } from "./logger-state";
 import http from "http";
+import 'dotenv/config';
+import { mayReadInternalLogs } from '@packages/utils/internal-logger-access';
 
 const app = express();
 
@@ -26,6 +28,9 @@ wsServer.on("connection", (ws) => {
 
 const server = http.createServer(app);
 server.on("upgrade", (request: any, socket: any, head: any) => {
+  if (!mayReadInternalLogs(request.headers.authorization)) {
+    socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n'); socket.destroy(); return;
+  }
   wsServer.handleUpgrade(request, socket, head, (ws: WebSocket) => {
     wsServer.emit("connection", ws, request);
   });

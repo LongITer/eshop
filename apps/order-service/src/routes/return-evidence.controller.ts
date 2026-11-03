@@ -29,6 +29,8 @@ export const escalateReturn = handle(async(req,res)=>{
     await tx.orders.update({where:{id:orderId,status:'Delivered'},data:{updatedAt:new Date()}});
     const request=await tx.returnRequest.update({where:{id:current.id,status:'Rejected'},data:{status:'Escalated',escalatedAt:new Date(),escalationReason:reason}});
     await tx.orderEvent.create({data:{orderId,actorId:req.user!.id,from:'Return:Rejected',to:'Return:Escalated',reason}});
+    const shop = await tx.shops.findUniqueOrThrow({ where: { id: order.shopId } });
+    await tx.notifications.create({ data: { sellerId: shop.sellerId, orderId, type: 'System', title: 'Buyer requests return reconsideration', message: reason, redirectUrl: `/dashboard/orders/${orderId}` } });
     return request;
   });
   res.json({request:result});

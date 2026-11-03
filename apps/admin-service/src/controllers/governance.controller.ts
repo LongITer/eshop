@@ -28,13 +28,14 @@ export const suspendAccount = handle(async (req, res) => {
 export const moderateProduct = handle(async (req, res) => {
   const id = objectId(req.params.id); const reason = textField(req.body.reason, 'reason', 1000);
   if (typeof req.body.hidden !== 'boolean') throw new ValidationError('Choose hide or restore');
+  if (req.body.hidden) throw new ValidationError('Report and review this product through the violations workflow');
   const product = await transaction(async tx => {
     const current = await tx.products.findUnique({ where: { id }, include: { shop: { select: { sellerId: true } } } });
     if (!current) throw new NotFoundError();
     if (!req.body.hidden && current.status !== 'Suspended') throw new ValidationError('Product is not suspended');
     // Restoring returns a product to Inactive; its seller decides when to publish again.
     const status = req.body.hidden ? 'Suspended' : 'Inactive';
-    const updated = await tx.products.update({ where: { id, status: current.status }, data: { status, moderationReason: reason } });
+    const updated = await tx.products.update({ where: { id, status: current.status }, data: { status, moderationReason: reason, isDeleted: false, deleteAt: null } });
     await audit(tx, req.user!.id, 'product.moderation', id, reason, { status: current.status }, { status });
     await tx.notifications.create({ data: { sellerId: current.shop.sellerId, type: 'System', title: req.body.hidden ? 'Product hidden by administrator' : 'Product restored for editing', message: `${current.title}: ${reason}`, redirectUrl: '/dashboard/all-products' } });
     return updated;
@@ -42,7 +43,7 @@ export const moderateProduct = handle(async (req, res) => {
   res.json({ product });
 });
 export const auditLog = handle(async (req, res) => {
-  const where: Prisma.adminAuditWhereInput = { createdAt: adminDateRange(req.query, 90), ...(req.query.targetId ? { targetId: String(req.query.targetId) } : {}), ...(req.query.action ? { action: String(req.query.action) } : {}) };
+  const where: Prisma.adminAuditWhereInput = { createdAt: adminDateRange(req.query, 90), AND: [{ OR: ['product.', 'violation.', 'report.', 'sellers.', 'users.', 'admin.', 'notification.', 'template.', 'site.'].map(prefix => ({ action: { startsWith: prefix } })) }], ...(req.query.targetId ? { targetId: String(req.query.targetId) } : {}), ...(req.query.action ? { action: String(req.query.action) } : {}) };
   const [rows, total] = await Promise.all([prisma.adminAudit.findMany({ where, ...pageArgs(req.query), orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] }), prisma.adminAudit.count({ where })]);
   const actors = await prisma.users.findMany({ where: { id: { in: [...new Set(rows.map(r => r.actorId))] } }, select: { id: true, name: true, email: true } });
   res.json({ rows: rows.map(row => ({ ...row, actor: actors.find(a => a.id === row.actorId) })), total });
@@ -86,8 +87,12 @@ export const lookup = handle(async (req, res) => {
   const search = typeof req.query.search === 'string' ? req.query.search.slice(0, 100).trim() : '';
   const contains = { contains: search, mode: 'insensitive' as const };
   const kind = String(req.query.kind);
-  if (kind === 'shops') {
-    if (!['orders', 'payments', 'catalog'].some(p => canAdmin(req.user, p as any))) throw new ForbiddenError();
+  if (kind === 'products') {
+    if (!canAdmin(req.user, 'catalog')) throw new ForbiddenError();
+    const rows = await prisma.products.findMany({ where: req.query.id ? { id: objectId(req.query.id) } : { title: contains }, take: 20, select: { id: true, title: true, shop: { select: { name: true } } } });
+    res.json({ rows: rows.map(row => ({ id: row.id, name: `${row.title} · ${row.shop.name}` })) });
+  } else if (kind === 'shops') {
+    if (!['overview', 'catalog'].some(p => canAdmin(req.user, p as any))) throw new ForbiddenError();
     res.json({ rows: await prisma.shops.findMany({ where: { name: contains }, take: 20, select: { id: true, name: true } }) });
   } else {
     if (!canAdmin(req.user, 'notifications')) throw new ForbiddenError();

@@ -9,6 +9,10 @@ export async function transitionOrder(id: string, status: string, scope: Prisma.
   return transaction(async tx => {
     const order = await tx.orders.findFirst({ where: { ...scope, id }, include: { items: true } });
     if (!order) throw new NotFoundError();
+    if (['Confirmed', 'Processing', 'Shipped'].includes(status)) {
+      const blocked = order.moderationHold || await tx.products.count({ where: { id: { in: order.items.map(item => item.productId) }, status: 'Suspended' } });
+      if (blocked) throw new ValidationError('This order requires product violation review; fulfillment is blocked');
+    }
     if (order.status === status) return order;
     if (!transitions[order.status]?.includes(status)) throw new ValidationError(`Cannot change ${order.status} to ${status}`);
     const data: Prisma.ordersUpdateInput = { status: status as orderStatus };

@@ -30,11 +30,17 @@ import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isSeller, isUser } from "@packages/middleware/authorizeRoles";
 import * as management from '../controllers/product-management.controller';
 import { revenueReport } from '../controllers/reports.controller';
+import { sellerStatistics } from '../controllers/statistics.controller';
+import * as moderation from '../controllers/product-reports.controller';
 import { updateDiscountProducts } from '../controllers/discount-products.controller';
 import prisma from '@packages/libs/prisma';
 import { handle } from '@packages/utils/api';
 
 const router: Router = express.Router();
+router.post('/products/:id/report', isAuthenticated, isUser, moderation.reportProduct);
+router.get('/seller-violations', isAuthenticated, isSeller, moderation.sellerViolations);
+router.get('/seller-moderation-tasks', isAuthenticated, isSeller, moderation.sellerModerationTasks);
+router.patch('/seller-moderation-tasks/:id', isAuthenticated, isSeller, moderation.resolveModerationTask);
 import { listVariants, saveVariant } from '../controllers/variants.controller';
 import { buildCatalog, quoteBuild } from '../controllers/pc-builder.controller';
 router.get('/pc-builder/catalog', buildCatalog);
@@ -50,6 +56,7 @@ router.get('/sitemap-data', handle(async (req, res) => {
   res.json({ entries: [...products.map(p => ({ path: `/product/${encodeURIComponent(p.slug)}`, updatedAt: p.updatedAt })), ...shops.map(s => ({ path: `/shop/${s.id}`, updatedAt: s.updatedAt }))], hasMore: products.length === 500 || shops.length === 500 });
 }));
 router.get('/seller-reports', isAuthenticated, isSeller, revenueReport);
+router.get('/seller-statistics', isAuthenticated, isSeller, sellerStatistics);
 router.get('/seller-product/:id', isAuthenticated, isSeller, management.getEditableProduct);
 router.put('/update-product/:id', isAuthenticated, isSeller, management.updateProduct);
 router.get('/inventory', isAuthenticated, isSeller, management.getInventory);

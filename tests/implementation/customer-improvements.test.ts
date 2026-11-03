@@ -54,8 +54,9 @@ test('evidence ownership and actual image signature are checked before upload',a
   expect(imageKit.upload).not.toHaveBeenCalled();
 });
 test('rejected return can be escalated once by its owner',async()=>{
-  db.orders.findFirst.mockResolvedValue({id:otherId});db.returnRequest.findUnique.mockResolvedValue({id:productId,status:'Rejected'});db.returnRequest.update.mockResolvedValue({status:'Escalated'});
+  db.orders.findFirst.mockResolvedValue({id:otherId,shopId});db.shops.findUniqueOrThrow.mockResolvedValue({sellerId:userId});db.returnRequest.findUnique.mockResolvedValue({id:productId,status:'Rejected'});db.returnRequest.update.mockResolvedValue({status:'Escalated'});
   const app=appFor('post','/:orderId',escalateReturn);expect((await request(app).post('/'+otherId).send({reason:'Please review the evidence'})).status).toBe(200);
   expect(db.returnRequest.update.mock.calls[0][0].data).toMatchObject({status:'Escalated',escalationReason:'Please review the evidence'});
+  expect(db.notifications.create.mock.calls[0][0].data).toMatchObject({sellerId:userId,orderId:otherId});
   db.returnRequest.findUnique.mockResolvedValue({id:productId,status:'Rejected',escalatedAt:new Date()});expect((await request(app).post('/'+otherId).send({reason:'Again'})).status).toBe(400);
 });

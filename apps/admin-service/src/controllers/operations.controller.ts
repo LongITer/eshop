@@ -44,7 +44,7 @@ export const dashboard = handle(async (req, res) => {
   res.json({ stats: { totalUsers, totalSellers, totalProducts, totalOrders: totals.reduce((n, r) => n + r.orders, 0), revenue: totals.reduce((n, r) => n + Math.round(r.revenue * 100), 0) / 100, earnings: totals.reduce((n, r) => n + Math.round(r.earnings * 100), 0) / 100, estimatedOrders: totals.reduce((n, r) => n + r.estimatedOrders, 0) }, timeline: Object.values(timeline), topProducts: top.map(p => ({ ...p._sum, id: p.productId, title: products.find(product => product.id === p.productId)?.title ?? 'Deleted product' })) });
 });
 export const notifications = handle(async (req, res) => {
-  const where: Prisma.notificationsWhereInput = { OR: [{ userId: req.user!.id }, { AND: [{ OR: [{ userId: null }, { userId: { isSet: false } }] }, { OR: [{ sellerId: null }, { sellerId: { isSet: false } }] }] }] };
+  const where: Prisma.notificationsWhereInput = { type: { in: ['System', 'Promotion'] }, NOT: { title: 'New platform order' }, AND: [{ OR: [{ orderId: null }, { orderId: { isSet: false } }] }], OR: [{ userId: req.user!.id }, { AND: [{ OR: [{ userId: null }, { userId: { isSet: false } }] }, { OR: [{ sellerId: null }, { sellerId: { isSet: false } }] }] }] };
   const [notifications, total] = await Promise.all([prisma.notifications.findMany({ where, ...pageArgs(req.query), orderBy: { createdAt: 'desc' } }), prisma.notifications.count({ where })]);
   res.json({ notifications, total });
 });

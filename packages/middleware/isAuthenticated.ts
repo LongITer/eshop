@@ -2,6 +2,7 @@ import prisma from "@packages/libs/prisma";
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { isSuspended } from '@packages/utils/admin-access';
+import { sellerRemediationRequest } from '@packages/utils/seller-remediation-access';
 
 
 const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
@@ -50,7 +51,7 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
             return res.status(401).json({ message: "Unauthorized! Account not found." })
         }
 
-        if (isSuspended(account)) {
+        if (isSuspended(account) && !(decoded.role === 'seller' && sellerRemediationRequest(req.path, req.method))) {
             return res.status(403).json({ message: 'Account suspended. Contact support.' });
         }
 

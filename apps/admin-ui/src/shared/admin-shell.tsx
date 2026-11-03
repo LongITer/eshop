@@ -3,20 +3,19 @@ import { AdminPermission, canAdmin } from '@packages/utils/admin-access';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Activity, Bell, ChevronRight, CreditCard, LayoutDashboard, LogOut, Menu, Package, Palette, ShieldCheck, ShoppingBag, Store, Users, UsersRound, X } from 'lucide-react';
+import { Activity, Bell, ChevronRight, LayoutDashboard, LogOut, Menu, Package, Palette, ShieldCheck, ShoppingBag, Store, Users, UsersRound, X } from 'lucide-react';
 import useAdmin from '../app/hooks/useAdmin';
 import { useRouter } from 'next/navigation';
 import axios from '../utils/axioInstance';
 import { LanguageSwitcher, useLanguage } from '@packages/components/language-switcher';
 
-const permissionByPath: Record<string, AdminPermission> = { '': 'overview', '/orders': 'orders', '/payments': 'payments', '/products': 'catalog', '/events': 'catalog', '/templates': 'catalog', '/returns': 'returns', '/users': 'accounts', '/sellers': 'accounts', '/notifications': 'notifications', '/notification-jobs': 'notifications', '/loggers': 'logs', '/audit': 'team', '/log-settings': 'settings', '/management': 'team', '/customization': 'settings' };
+const permissionByPath: Record<string, AdminPermission> = { '': 'overview', '/orders': 'orders', '/statistics': 'overview', '/payments': 'payments', '/products': 'catalog', '/events': 'catalog', '/templates': 'catalog', '/returns': 'returns', '/users': 'accounts', '/sellers': 'accounts', '/violations': 'catalog', '/notifications': 'notifications', '/notification-jobs': 'notifications', '/loggers': 'logs', '/audit': 'team', '/log-settings': 'settings', '/management': 'team', '/customization': 'settings' };
 const groups = [
   { title: 'Workspace', links: [
     { label: 'Overview', path: '', icon: LayoutDashboard },
-    { label: 'Orders', path: '/orders', icon: ShoppingBag },
-    { label: 'Payments', path: '/payments', icon: CreditCard },
+    { label: 'Statistics', path: '/statistics', icon: Activity },
     { label: 'Products', path: '/products', icon: Package },
-    { label: 'Returns', path: '/returns', icon: Package },
+    { label: 'Violations', path: '/violations', icon: ShieldCheck },
     { label: 'PC templates', path: '/templates', icon: Package },
   ] },
   { title: 'Community', links: [
@@ -43,7 +42,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   useEffect(() => { if (admin && !accessible && pathname === '/dashboard') router.replace(`/dashboard${visibleGroups[0]?.links[0]?.path ?? '/orders'}`); }, [admin, accessible, pathname, router]);
   const { language } = useLanguage();
   const vi = language === 'vi';
-  const translate: Record<string, string> = { Returns: 'Trả hàng & khiếu nại', 'PC templates': 'Mẫu cấu hình PC', 'Audit trail': 'Nhật ký quản trị', Workspace: 'Không gian làm việc', Community: 'Cộng đồng', Administration: 'Quản trị', Overview: 'Tổng quan', Orders: 'Đơn hàng', Payments: 'Thanh toán', Products: 'Sản phẩm', Events: 'Sự kiện', Users: 'Người dùng', Sellers: 'Người bán', Notifications: 'Thông báo', 'Activity logs': 'Nhật ký hoạt động', 'Log settings': 'Cài đặt nhật ký', 'Team management': 'Quản lý đội ngũ', Customization: 'Tùy chỉnh' };
+  const translate: Record<string, string> = { Violations: 'Vi phạm sản phẩm', Statistics: 'Thống kê', Returns: 'Trả hàng & khiếu nại', 'PC templates': 'Mẫu cấu hình PC', 'Audit trail': 'Nhật ký quản trị', Workspace: 'Không gian làm việc', Community: 'Cộng đồng', Administration: 'Quản trị', Overview: 'Tổng quan', Orders: 'Đơn hàng', Payments: 'Thanh toán', Products: 'Sản phẩm', Events: 'Sự kiện', Users: 'Người dùng', Sellers: 'Cửa hàng & người bán', Notifications: 'Thông báo', 'Activity logs': 'Nhật ký hoạt động', 'Log settings': 'Cài đặt nhật ký', 'Team management': 'Quản lý đội ngũ', Customization: 'Tùy chỉnh' };
   const label = (value: string) => vi ? translate[value] ?? value : value;
   const current = label(groups.flatMap(group => group.links).find(link => `/dashboard${link.path}` === pathname)?.label ?? 'Administration');
   const logout = async () => {

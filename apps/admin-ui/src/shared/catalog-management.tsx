@@ -2,6 +2,7 @@
 import { adminDate, useAdminText } from './admin-text';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@packages/components/language-switcher';
 import { isSuspended } from '@packages/utils/admin-access';
@@ -10,9 +11,10 @@ import { EmptyState, ErrorState, LoadingState, money, PageHeading, Panel, Status
 
 type Mode = 'users' | 'sellers' | 'products' | 'events';
 export default function CatalogManagement({ mode }: { mode: Mode }) {
+  const router = useRouter();
   const statusLabel = useAdminText();
   const { language } = useLanguage(); const vi = language === 'vi'; const t = (a: string, b: string) => vi ? a : b;
-  const titles = { users: t('Khách hàng', 'Customers'), sellers: t('Người bán', 'Sellers'), products: t('Sản phẩm', 'Products'), events: t('Khuyến mãi', 'Promotions') };
+  const titles = { users: t('Khách hàng', 'Customers'), sellers: t('Cửa hàng & người bán', 'Shops & sellers'), products: t('Sản phẩm', 'Products'), events: t('Khuyến mãi', 'Promotions') };
   const catalog = mode === 'products' || mode === 'events';
   const [page, setPage] = useState(1), [search, setSearch] = useState(''), [draft, setDraft] = useState(''), [role, setRole] = useState('all'), [status, setStatus] = useState('');
   const [selected, setSelected] = useState<any>(null), [reason, setReason] = useState(''), [until, setUntil] = useState(''), [exporting, setExporting] = useState(false), [error, setError] = useState('');
@@ -27,7 +29,7 @@ export default function CatalogManagement({ mode }: { mode: Mode }) {
     onSuccess: () => { setSelected(null); client.invalidateQueries({ queryKey: ['admin-catalog'] }); client.invalidateQueries({ queryKey: ['admin-work'] }); },
   });
   useEffect(() => { if (selected) dialog.current?.showModal(); else dialog.current?.close(); }, [selected]);
-  const select = (row: any) => { mutation.reset(); setReason(''); setUntil(''); setSelected(row); };
+  const select = (row: any) => { if (catalog && row.status !== 'Suspended') { router.push(`/dashboard/violations?productId=${row.id}`); return; } mutation.reset(); setReason(''); setUntil(''); setSelected(row); };
   const download = async () => {
     setExporting(true); setError('');
     try { const response = await axios.get(`${endpoint}?${params}&format=csv`, { responseType: 'blob' }); const url = URL.createObjectURL(response.data); const a = document.createElement('a'); a.href = url; a.download = `${mode}.csv`; a.click(); URL.revokeObjectURL(url); }
@@ -36,7 +38,7 @@ export default function CatalogManagement({ mode }: { mode: Mode }) {
   };
   return <div className="admin-page">
     <PageHeading title={titles[mode]} description={t('Tìm kiếm, kiểm tra và quản lý dữ liệu trên toàn sàn.', 'Search, review and manage marketplace records.')} action={<button className="admin-button" disabled={exporting || query.isLoading || query.isError} onClick={download}>{exporting ? t('Đang xuất…', 'Exporting…') : t('Xuất toàn bộ kết quả CSV', 'Export all matching results')}</button>} />
-    {catalog && <nav className="flex gap-4 text-sm"><Link className="text-blue-400" href="/dashboard/products">{t('Sản phẩm', 'Products')}</Link><Link className="text-blue-400" href="/dashboard/events">{t('Khuyến mãi', 'Promotions')}</Link></nav>}
+    {catalog && <nav className="flex gap-4 text-sm"><Link className="text-blue-400" href="/dashboard/violations">{t('Báo cáo & vi phạm', 'Reports & violations')}</Link><Link className="text-blue-400" href="/dashboard/products">{t('Sản phẩm', 'Products')}</Link><Link className="text-blue-400" href="/dashboard/events">{t('Khuyến mãi', 'Promotions')}</Link></nav>}
     <form className="admin-panel flex flex-wrap gap-3 p-4" onSubmit={e => { e.preventDefault(); setSearch(draft.trim()); setPage(1); }}>
       <input className="admin-control min-w-0 flex-1 basis-full sm:basis-60" aria-label={t('Tìm kiếm', 'Search')} placeholder={t('Nhập tên hoặc email…', 'Search by name or email…')} value={draft} onChange={e => setDraft(e.target.value)} />
       {mode === 'users' && <select className="admin-control !w-auto" aria-label="Role" value={role} onChange={e => { setRole(e.target.value); setPage(1); }}><option value="all">{t('Mọi vai trò', 'All roles')}</option><option value="user">{t('Khách hàng', 'Customer')}</option><option value="admin">Admin</option></select>}

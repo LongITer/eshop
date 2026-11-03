@@ -14,10 +14,12 @@ import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isAdmin, isSeller, isUser } from "@packages/middleware/authorizeRoles";
 import { cancelOrder, sellerOrderStatus } from './order-management.controller';
 import { getSellerPayments } from './seller-payments.controller';
+import { sellerRefund } from './seller-refund.controller';
 import * as customer from './customer-tools.controller';
 import { uploadEvidence, escalateReturn } from './return-evidence.controller';
 
 const router: Router = express.Router();
+router.post('/seller-refund/:orderId', isAuthenticated, isSeller, sellerRefund);
 router.post('/return-evidence/:orderId', isAuthenticated, isUser, uploadEvidence);
 router.post('/escalate-return/:orderId', isAuthenticated, isUser, escalateReturn);
 router.post('/inspect-cart', customer.inspectCart);

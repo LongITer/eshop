@@ -253,7 +253,7 @@ export const refreshSellerToken = async (
       return next(new AuthError("Forbidden! Seller not found!"));
     }
 
-    if (isSuspended(account)) return res.status(403).json({ message: 'Account suspended. Contact support.' });
+
 
     const newAccessToken = jwt.sign(
       { id: decoded.id, role: "seller" },
@@ -637,7 +637,7 @@ export const loginSeller = async (
     const seller = await prisma.sellers.findUnique({ where: { email } });
 
     if (!seller) return next(new AuthError("Invalid email or password!"));
-    if (isSuspended(seller)) return res.status(403).json({ message: 'Account suspended. Contact support.' });
+    // Suspended sellers may sign in for existing-order remediation; API access remains restricted.
     if (!seller.password) {
       return next(new AuthError("Invalid email or password!"));
     }
@@ -693,7 +693,7 @@ export const getSeller = async (
   next: NextFunction,
 ) => {
   try {
-    const seller = await prisma.sellers.findUnique({ where: { id: req.seller!.id }, select: { id: true, name: true, email: true, phone_number: true, country: true, createdAt: true, stripe_id: true, shop: { include: { avatar: true } } } });
+    const seller = await prisma.sellers.findUnique({ where: { id: req.seller!.id }, select: { id: true, name: true, email: true, phone_number: true, country: true, createdAt: true, stripe_id: true, suspendedAt: true, suspendedUntil: true, suspensionReason: true, shop: { include: { avatar: true } } } });
     if (!seller) {
       return next(new ValidationError("Seller not found"));
     }

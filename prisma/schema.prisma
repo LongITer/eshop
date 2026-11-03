@@ -131,6 +131,7 @@ model sellers {
   suspendedAt   DateTime?
   suspendedUntil DateTime?
   suspensionReason String?
+  moderationRevision Int @default(0)
   shop          shops?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -303,12 +304,73 @@ model orders {
   deliveredAt     DateTime?
   cancelledAt     DateTime?
   cancelReason    String?
+  moderationHold Boolean @default(false)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   @@index([createdAt])
   @@index([status, createdAt])
   @@index([shopId, createdAt])
   @@index([paymentStatus, status, createdAt])
+}
+
+model productReport {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  productId String @db.ObjectId
+  shopId String @db.ObjectId
+  reporterId String @db.ObjectId
+  source String
+  category String
+  reason String
+  snapshot Json
+  dedupeKey String @unique
+  status String @default("Pending")
+  resolutionReason String?
+  resolvedBy String? @db.ObjectId
+  resolvedAt DateTime?
+  violationId String? @db.ObjectId
+  createdAt DateTime @default(now())
+  @@index([status, createdAt])
+  @@index([productId, createdAt])
+}
+
+model productViolation {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  productId String @db.ObjectId
+  shopId String @db.ObjectId
+  sellerId String @db.ObjectId
+  actorId String @db.ObjectId
+  productTitle String
+  category String
+  reason String
+  severity String
+  productAction String
+  sellerAction String
+  suspendedUntil DateTime?
+  occurrence Int
+  reports Json
+  followupStatus String @default("Queued")
+  followupRevision Int @default(0)
+  followupCursor String? @db.ObjectId
+  affectedOrders Int @default(0)
+  createdAt DateTime @default(now())
+  @@index([sellerId, createdAt])
+  @@index([followupStatus, createdAt])
+}
+
+// Private seller/customer order work; admin APIs never return these records.
+model moderationOrderTask {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  violationId String @db.ObjectId
+  orderId String @db.ObjectId
+  shopId String @db.ObjectId
+  productTitle String
+  reason String
+  status String @default("Pending")
+  resolution String?
+  resolvedAt DateTime?
+  createdAt DateTime @default(now())
+  @@unique([violationId, orderId])
+  @@index([shopId, status, createdAt])
 }
 
 model adminAudit {

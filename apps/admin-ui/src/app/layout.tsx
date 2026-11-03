@@ -3,7 +3,7 @@ import Providers from "./provider";
 
 export const metadata = {
   title: "Eshop Admin | Marketplace management",
-  description: "Manage marketplace orders, payments, sellers and customers with Eshop Admin.",
+  description: "Manage marketplace shops, products and violation reports with Eshop Admin.",
 };
 
 export default function RootLayout({
