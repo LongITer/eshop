@@ -4,6 +4,8 @@ import { ValidationError } from "@packages/error-handler";
 import { imageKit } from "@packages/libs/imagekit";
 import { Prisma } from "@prisma/client";
 import { sendBehaviorLog } from "@packages/utils/logs/behavior-log";
+import { scanProductListing } from "@packages/utils/product-moderation-ai";
+import { submitProductReport } from "@packages/utils/product-moderation";
 
 // Get product categories
 export const getCategories = async (
@@ -286,6 +288,11 @@ export const createProduct = async (
       );
     }
 
+    const listing = { title, category, description: `${short_description}\n${String(detailed_description || detail_description)}`.replace(/<[^>]*>/g, ' ').slice(0, 12000) };
+    let moderation: { flagged: boolean; category: string; reason: string } | null = null;
+    let scanUnavailable = false;
+    try { moderation = await scanProductListing(listing); } catch { scanUnavailable = true; }
+    const reviewRequired = scanUnavailable || moderation?.flagged === true;
     const newProduct = await prisma.products.create({
       data: {
         title,
@@ -310,6 +317,8 @@ export const createProduct = async (
         regular_price: parseFloat(regular_price),
         custom_properties: finalCustomProperties,
         custom_specification: finalCustomSpecifications,
+        status: reviewRequired ? 'PendingReview' : 'Active',
+        ...(reviewRequired ? { moderationReason: scanUnavailable ? 'Automatic screening is unavailable; administrator review is required.' : moderation!.reason } : {}),
         images: {
           create: images
             .filter((img: any) => img && img.fileId && img.url) // UI sends img.url
@@ -321,6 +330,10 @@ export const createProduct = async (
       },
     });
 
+    if (moderation?.flagged) {
+      await submitProductReport(newProduct.id, req.seller.id, 'AI', moderation.category, moderation.reason, listing).catch(error => console.error('Could not persist AI moderation report:', error));
+    }
+
     await sendBehaviorLog("productCreated", {
       type: "success",
       source: "product-service",
@@ -330,7 +343,7 @@ export const createProduct = async (
 
     return res.status(201).json({
       success: true,
-      message: "Product created successfully",
+      message: reviewRequired ? "Product submitted for administrator review" : "Product created successfully",
       newProduct,
     });
   } catch (error) {

@@ -7,8 +7,8 @@ import { audit } from './admin-audit';
 export const violationCategories = ['Prohibited', 'Counterfeit', 'Misleading', 'Unsafe', 'Other'] as const;
 export const reportFields = { id: true, productId: true, shopId: true, source: true, category: true, reason: true, snapshot: true, status: true, resolutionReason: true, resolvedAt: true, violationId: true, createdAt: true } as const;
 export const violationFields = { id: true, productId: true, shopId: true, sellerId: true, productTitle: true, category: true, reason: true, severity: true, productAction: true, sellerAction: true, suspendedUntil: true, occurrence: true, followupStatus: true, affectedOrders: true, createdAt: true } as const;
-export function listingSnapshot(product: { title: string; category: string; detailed_description: string }) {
-  return { title: product.title, category: product.category, description: product.detailed_description.replace(/<[^>]*>/g, ' ').slice(0, 12000) };
+export function listingSnapshot(product: { title: string; category: string; detailed_description: string; short_description?: string | null }) {
+  return { title: product.title, category: product.category, description: `${product.short_description || ''}\n${product.detailed_description}`.replace(/<[^>]*>/g, ' ').slice(0, 12000) };
 }
 export async function submitProductReport(productId: string, reporterId: string, source: 'Customer' | 'Admin' | 'AI', category: string, reason: string, expectedSnapshot?: ReturnType<typeof listingSnapshot>) {
   if (!violationCategories.includes(category as any)) throw new ValidationError('Invalid violation category');

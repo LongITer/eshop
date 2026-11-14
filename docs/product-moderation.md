@@ -47,6 +47,12 @@ cleanup cron cannot physically delete them. Only admin restoration returns a lis
 to Inactive. Sellers cannot republish suspended products. Restoration never erases
 confirmed violation history.
 
+## Automatic listing gate
+
+New listings are screened before they become public. The existing Gemini text triage checks the title, category, short description and detailed description for clear signs of prohibited goods, counterfeits, scams or unsafe products. A flagged listing enters `PendingReview`; the AI result creates a pending report and does not decide whether a violation occurred. Admins can approve it to publish, or reject it permanently. Sellers cannot publish a listing while it is pending or after rejection.
+
+If the AI service is unavailable or returns invalid output, the listing stays hidden in the same admin queue for manual review. Edits to an active listing's title, category or descriptions are screened again; a flagged or unscannable edit hides the listing pending review. This is text-only screening and can miss image-only evidence or subtle violations; admins retain the final decision. Product creation and text edits are rate-limited per seller.
+
 ## Related purchases: private remediation
 
 A background worker processes up to 100 related orders per transaction, using a

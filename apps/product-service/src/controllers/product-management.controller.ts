@@ -3,6 +3,8 @@ import { Prisma } from '@prisma/client';
 import prisma from '@packages/libs/prisma';
 import { handle, objectId, pageArgs, textField } from '@packages/utils/api';
 import { NotFoundError, ValidationError, ForbiddenError } from '@packages/error-handler';
+import { scanProductListing } from '@packages/utils/product-moderation-ai';
+import { submitProductReport } from '@packages/utils/product-moderation';
 
 export const getEditableProduct = handle(async (req: any, res) => {
   const product = await prisma.products.findFirst({ where: { id: objectId(req.params.id), shopId: req.seller.shop?.id, isDeleted: false }, include: { images: true, variants: true } });
@@ -49,7 +51,7 @@ export const updateProduct = handle(async (req: any, res) => {
     }
   }
   if (req.body.status !== undefined) {
-    if (!['Active', 'Inactive', 'Draft'].includes(req.body.status)) throw new ValidationError('Invalid status');
+    if (!['Active', 'Inactive', 'Draft', 'Suspended', 'PendingReview', 'Rejected'].includes(req.body.status)) throw new ValidationError('Invalid status');
     data.status = req.body.status;
   }
   if (req.body.images !== undefined) {
@@ -57,10 +59,29 @@ export const updateProduct = handle(async (req: any, res) => {
     if (!Array.isArray(images) || images.length < 1 || images.length > 10 || images.some((img: any) => !img || typeof img.url !== 'string' || !img.url.startsWith('https://') || typeof img.file_id !== 'string' || !img.file_id)) throw new ValidationError('Provide 1–10 uploaded images');
     data.images = { deleteMany: {}, create: images.map((img: any) => ({ file_id: img.file_id, url: img.url })) };
   }
+  const beforeScan = await prisma.products.findFirst({ where: { id, shopId, isDeleted: false } });
+  if (!beforeScan) throw new NotFoundError();
+  if (beforeScan.status === 'PendingReview' && data.status !== undefined && data.status !== 'PendingReview') throw new ValidationError('Administrator approval is required before publishing this product');
+  if (beforeScan.status === 'Rejected' && data.status !== undefined && data.status !== 'Rejected') throw new ValidationError('This listing was rejected by an administrator and cannot be republished');
+  if (beforeScan.status === 'Suspended' && data.status !== undefined && data.status !== 'Suspended') throw new ValidationError('Administrator review is required before republishing this product');
+  const listingChanged = ['title', 'category', 'short_description', 'detailed_description'].some(key => (data as any)[key] !== undefined && (data as any)[key] !== (beforeScan as any)[key]);
+  let moderation: { flagged: boolean; category: string; reason: string } | null = null;
+  let scanUnavailable = false;
+  if (listingChanged) {
+    const candidate = { title: data.title ?? beforeScan.title, category: data.category ?? beforeScan.category, description: `${data.short_description ?? beforeScan.short_description ?? ''}\n${String(data.detailed_description ?? beforeScan.detailed_description)}`.replace(/<[^>]*>/g, ' ').slice(0, 12000) };
+    try { moderation = await scanProductListing(candidate); } catch { scanUnavailable = true; }
+    if (scanUnavailable || moderation?.flagged) {
+      data.status = 'PendingReview';
+      data.moderationReason = scanUnavailable ? 'Automatic screening is unavailable; administrator review is required.' : moderation!.reason;
+    }
+  }
   const product = await transaction(async tx => {
     const current = await tx.products.findFirst({ where: { id, shopId, isDeleted: false } });
     if (!current) throw new NotFoundError();
-    if (current.status === 'Suspended' && data.status !== undefined) throw new ValidationError('Administrator review is required before republishing this product');
+    if (current.updatedAt.getTime() !== beforeScan.updatedAt.getTime()) throw new ValidationError('The listing changed while it was being screened. Please review and save again.');
+    if (current.status === 'Suspended' && data.status !== undefined && data.status !== 'Suspended') throw new ValidationError('Administrator review is required before republishing this product');
+    if (current.status === 'PendingReview' && data.status !== undefined && data.status !== 'PendingReview') throw new ValidationError('Administrator approval is required before publishing this product');
+    if (current.status === 'Rejected' && data.status !== undefined && data.status !== 'Rejected') throw new ValidationError('This listing was rejected by an administrator and cannot be republished');
     const variantCount = await tx.productVariant.count({ where: { productId: id } });
     if (variantCount) {
       for (const key of ['stock', 'sale_price', 'colors', 'sizes'] as const) {
@@ -76,6 +97,7 @@ export const updateProduct = handle(async (req: any, res) => {
     }
     return updated;
   });
+  if (moderation?.flagged) await submitProductReport(product.id, req.seller.id, 'AI', moderation.category, moderation.reason).catch(error => console.error('Could not persist AI moderation report:', error));
   res.json({ success: true, product });
 });
 export const getInventory = handle(async (req: any, res) => {

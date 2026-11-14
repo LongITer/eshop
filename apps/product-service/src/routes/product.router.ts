@@ -35,6 +35,7 @@ import * as moderation from '../controllers/product-reports.controller';
 import { updateDiscountProducts } from '../controllers/discount-products.controller';
 import prisma from '@packages/libs/prisma';
 import { handle } from '@packages/utils/api';
+import rateLimit from 'express-rate-limit';
 
 const router: Router = express.Router();
 router.post('/products/:id/report', isAuthenticated, isUser, moderation.reportProduct);
@@ -58,7 +59,7 @@ router.get('/sitemap-data', handle(async (req, res) => {
 router.get('/seller-reports', isAuthenticated, isSeller, revenueReport);
 router.get('/seller-statistics', isAuthenticated, isSeller, sellerStatistics);
 router.get('/seller-product/:id', isAuthenticated, isSeller, management.getEditableProduct);
-router.put('/update-product/:id', isAuthenticated, isSeller, management.updateProduct);
+router.put('/update-product/:id', isAuthenticated, isSeller, rateLimit({ windowMs: 60000, max: 10, keyGenerator: req => (req as any).seller.id }), management.updateProduct);
 router.get('/inventory', isAuthenticated, isSeller, management.getInventory);
 router.post('/create-review', isAuthenticated, isUser, management.createReview);
 router.get('/product-reviews/:productId', management.getReviews);
@@ -96,7 +97,7 @@ router.delete(
 router.post("/upload-product-image", isAuthenticated, isSeller, uploadProductImages);
 router.delete("/delete-product-image", isAuthenticated, isSeller, deleteProductImages);
 // Products
-router.post("/create-product", isAuthenticated, isSeller, createProduct);
+router.post("/create-product", isAuthenticated, isSeller, rateLimit({ windowMs: 60000, max: 10, keyGenerator: req => (req as any).seller.id }), createProduct);
 router.get("/get-shop-products", isAuthenticated, isSeller, getShopProducts);
 router.post("/delete-product/:id", isAuthenticated, isSeller, deleteProduct);
 router.post("/restore-product/:id", isAuthenticated, isSeller, restoreProduct);

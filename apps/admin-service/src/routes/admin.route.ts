@@ -26,6 +26,8 @@ import rateLimit from 'express-rate-limit';
 
 const router: Router = express.Router();
 router.get('/product-reports', isAuthenticated, isAdmin, adminPermission('catalog'), moderation.reports);
+router.get('/pending-products', isAuthenticated, isAdmin, adminPermission('catalog'), moderation.pendingListings);
+router.patch('/pending-products/:id', isAuthenticated, isAdmin, adminPermission('catalog'), moderation.decidePendingListing);
 router.post('/product-reports', isAuthenticated, isAdmin, adminPermission('catalog'), moderation.adminReport);
 router.patch('/product-reports/:id', isAuthenticated, isAdmin, adminPermission('catalog'), moderation.reviewReport);
 router.get('/violations', isAuthenticated, isAdmin, adminPermission('catalog'), moderation.violations);

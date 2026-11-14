@@ -42,7 +42,7 @@ export default function CatalogManagement({ mode }: { mode: Mode }) {
     <form className="admin-panel flex flex-wrap gap-3 p-4" onSubmit={e => { e.preventDefault(); setSearch(draft.trim()); setPage(1); }}>
       <input className="admin-control min-w-0 flex-1 basis-full sm:basis-60" aria-label={t('Tìm kiếm', 'Search')} placeholder={t('Nhập tên hoặc email…', 'Search by name or email…')} value={draft} onChange={e => setDraft(e.target.value)} />
       {mode === 'users' && <select className="admin-control !w-auto" aria-label="Role" value={role} onChange={e => { setRole(e.target.value); setPage(1); }}><option value="all">{t('Mọi vai trò', 'All roles')}</option><option value="user">{t('Khách hàng', 'Customer')}</option><option value="admin">Admin</option></select>}
-      {catalog && <select className="admin-control !w-auto" aria-label="Status" value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}><option value="">{t('Mọi trạng thái', 'All statuses')}</option>{['Active', 'Inactive', 'Draft', 'Suspended'].map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}</select>}
+      {catalog && <select className="admin-control !w-auto" aria-label="Status" value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}><option value="">{t('Mọi trạng thái', 'All statuses')}</option>{['Active', 'Inactive', 'Draft', 'PendingReview', 'Rejected', 'Suspended'].map(s => <option key={s} value={s}>{statusLabel(s)}</option>)}</select>}
       <button className="admin-primary">{t('Tìm kiếm', 'Search')}</button>
     </form>
     {error && <p role="alert" className="text-red-400">{error}</p>}

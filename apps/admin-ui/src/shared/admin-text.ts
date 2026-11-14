@@ -2,6 +2,8 @@
 import { useLanguage } from '@packages/components/language-switcher';
 
 export const adminVietnamese: Record<string, string> = {
+  'PendingReview': 'Chờ duyệt',
+  'Rejected': 'Đã từ chối',
   'Escalated': 'Chờ admin giải quyết',
   'Stripe is temporarily unavailable. Revenue and the refund queue below remain available. Refresh to retry transactions.': 'Tạm thời không tải được giao dịch Stripe. Doanh thu và danh sách chờ hoàn tiền vẫn hiển thị bên dưới. Bấm Làm mới để thử lại.',
   'orders use an estimated 10% fee': 'đơn dùng phí ước tính 10%', 'orders match your filters': 'đơn phù hợp bộ lọc',

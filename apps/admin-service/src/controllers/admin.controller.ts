@@ -36,7 +36,7 @@ function catalog(events: boolean) {
       ...(search ? { OR: [{ title: { contains: search, mode: 'insensitive' } }, { category: { contains: search, mode: 'insensitive' } }] } : {}),
     };
     if (req.query.status) {
-      if (!['Active', 'Inactive', 'Draft', 'Suspended'].includes(String(req.query.status))) throw new ValidationError('Invalid status');
+      if (!['Active', 'Inactive', 'Draft', 'Suspended', 'PendingReview', 'Rejected'].includes(String(req.query.status))) throw new ValidationError('Invalid status');
       where.status = req.query.status as any;
     }
     const include = { images: true, shop: { select: { id: true, name: true, avatar: true } } };
