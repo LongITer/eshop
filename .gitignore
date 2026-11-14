@@ -39,6 +39,7 @@ testem.log
 Thumbs.db
 
 .nx/cache
+.nx/native-cache
 .nx/workspace-data
 .nx/workspace-data-*
 
@@ -50,8 +51,13 @@ test-output
 
 # Next.js
 .next
+.next-*/
 out
 
 *.tsbuildinfo
 .build/
 .tmp-*
+
+# Local tunnel credentials and runtime logs
+/ngrok.yml
+/.nx/*.log

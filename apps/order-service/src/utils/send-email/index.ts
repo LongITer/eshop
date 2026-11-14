@@ -28,6 +28,8 @@ const renderEmailTemplate = async (templateName: string, data: Record<string, an
 
 // Send an email using Nodemailer
 export const sendEmail = async (to: string, subject: string, templateName: string, data: Record<string, any>) => {
+    // Reserved .invalid recipients are development fixtures, never deliver mail to them.
+    if (/@[^@]+\.invalid$/i.test(to)) return false;
     try {
         const html = await renderEmailTemplate(templateName, data);
         await transporter.sendMail({

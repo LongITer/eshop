@@ -1,367 +1,121 @@
-"use client";
-import ProductCard from "@/shared/cards/product-card";
-import axiosInstance from "@/utils/axioInstance";
-import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
-import { Range } from "react-range";
+'use client';
 
-const MIN = 0;
-const MAX = 1199;
+import { Suspense, useState } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { Range } from 'react-range';
+import { Search, SlidersHorizontal } from 'lucide-react';
+import { useStorefrontText } from '@packages/components/storefront-language';
+import axios from '@/utils/axioInstance';
+import ProductCard from '@/shared/cards/product-card';
 
-const ProductListingPage = () => {
-  const router = useRouter();
-  const [isProductLoading, setIsProductLoading] = useState(false);
-  const [priceRange, setPriceRange] = useState([0, 1199]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedSubCategories, setSelectedSubCategories] = useState<string[]>([]);
-  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [page, setPage] = useState(1);
-  const [products, setProducts] = useState<any[]>([]);
-  const [totalPages, setTotalPages] = useState(1);
-  const [tempPriceRange, setTempPriceRange] = useState([0, 1199]);
+const colors = [
+  { name: 'Black', code: '#000000', aliases: ['Black', '#000', '#000000'] },
+  { name: 'Red', code: '#ff0000', aliases: ['Red', '#f00', '#ff0000'] },
+  { name: 'Green', code: '#00ff00', aliases: ['Green', '#0f0', '#00ff00'] },
+  { name: 'Blue', code: '#0000ff', aliases: ['Blue', '#00f', '#0000ff'] },
+  { name: 'Yellow', code: '#ffff00', aliases: ['Yellow', '#ff0', '#ffff00'] },
+  { name: 'Magenta', code: '#ff00ff', aliases: ['Magenta', '#f0f', '#ff00ff'] },
+  { name: 'Cyan', code: '#00ffff', aliases: ['Cyan', '#0ff', '#00ffff'] },
+];
+const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+const filterHeading = 'text-xl font-Poppins font-medium border-b border-b-slate-300 pb-1';
 
-  const colors = [
-    { name: "Black", code: "#000" },
-    { name: "Red", code: "#ff0000" },
-    { name: "Green", code: "#00ff00" },
-    { name: "Blue", code: "#0000ff" },
-    { name: "Yellow", code: "#ffff00" },
-    { name: "Magenta", code: "#ff00ff" },
-    { name: "Cyan", code: "#00ffff" },
-  ];
+function PriceFilter({ minimum, maximum, bound, onApply }: { minimum: string; maximum: string; bound: number; onApply: (min: string, max: string) => void }) {
+  const { t } = useStorefrontText();
+  const [min, setMin] = useState(minimum), [max, setMax] = useState(maximum);
+  const number = (value: string, fallback: number) => value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : fallback;
+  const ceiling = Math.max(1, Math.ceil(bound), number(min, 0), number(max, 0));
+  const high = Math.min(ceiling, number(max, ceiling));
+  const low = Math.min(high, number(min, 0));
+  return <form onSubmit={event => { event.preventDefault(); onApply(min, max); }}>
+    <h2 className="text-xl font-Poppins font-medium">{t('Price Filter')}</h2>
+    <div className="mx-2 mb-5 mt-6">
+      <Range step={0.01} min={0} max={ceiling} values={[low, high]} onChange={values => { setMin(String(values[0])); setMax(String(values[1])); }}
+        renderTrack={({ props, children }) => <div {...props} className="relative h-[6px] rounded-full bg-blue-200" style={props.style}><div className="absolute h-full rounded-full bg-blue-600" style={{ left: `${low / ceiling * 100}%`, width: `${(high - low) / ceiling * 100}%` }} />{children}</div>}
+        renderThumb={({ props, index }) => { const { key, ...rest } = props; return <div key={key} {...rest} aria-label={t(index ? 'Maximum price (USD)' : 'Minimum price (USD)')} className="h-4 w-4 rounded-full bg-blue-600 shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200" />; }} />
+    </div>
+    <div className="flex items-center gap-2 text-sm text-gray-600">
+      <label className="min-w-0 flex-1"><span className="sr-only">{t('Minimum price (USD)')}</span><input aria-label={t('Minimum price (USD)')} type="number" min="0" max={max || undefined} step="0.01" value={min} placeholder="0" onChange={e => setMin(e.target.value)} className="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 outline-none focus:border-blue-500" /></label><span>–</span>
+      <label className="min-w-0 flex-1"><span className="sr-only">{t('Maximum price (USD)')}</span><input aria-label={t('Maximum price (USD)')} type="number" min={min || '0'} step="0.01" value={max} placeholder={String(ceiling)} onChange={e => setMax(e.target.value)} className="w-full rounded-md border border-gray-200 bg-white px-2 py-1.5 outline-none focus:border-blue-500" /></label><span className="text-xs">USD</span>
+    </div>
+    <button className="mt-3 rounded-full bg-gray-200 px-4 py-1.5 text-sm transition hover:bg-blue-600 hover:text-white">{t('Apply')}</button>
+  </form>;
+}
 
-  const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
-
-  const toggleCategory = (label: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(label)
-        ? prev.filter((cat) => cat !== label)
-        : [...prev, label],
-    );
-    setSelectedSubCategories([]);
-    setPage(1);
-  };
-
-  const toggleSize = (label: string) => {
-    setSelectedSizes((prev) =>
-      prev.includes(label)
-        ? prev.filter((size) => size !== label)
-        : [...prev, label],
-    );
-  };
-
-  const toggleSubCategory = (label: string) => {
-    setSelectedSubCategories((prev) =>
-      prev.includes(label)
-        ? prev.filter((subCategory) => subCategory !== label)
-        : [...prev, label],
-    );
-    setPage(1);
-  };
-
-  const toggleColor = (label: string) => {
-    setSelectedColors((prev) =>
-      prev.includes(label)
-        ? prev.filter((color) => color !== label)
-        : [...prev, label],
-    );
-  };
-
-  const updateURL = () => {
-    const params = new URLSearchParams();
-    params.set("priceRange", priceRange.join(","));
-    if (selectedCategories.length > 0)
-      selectedCategories.forEach((cat) => params.append("categories", cat));
-    if (selectedSubCategories.length > 0)
-      selectedSubCategories.forEach((subCategory) =>
-        params.append("subCategories", subCategory),
-      );
-    if (selectedColors.length > 0)
-      selectedColors.forEach((color) => params.append("colors", color));
-    if (selectedSizes.length > 0)
-      selectedSizes.forEach((size) => params.append("sizes", size));
-    params.set("page", page.toString());
-
-    router.replace(`/products?${decodeURIComponent(params.toString())}`);
-  };
-
-  const fetchFilteredProducts = async () => {
-    setIsProductLoading(true);
-    try {
-      const query = new URLSearchParams();
-      query.set("priceRange", priceRange.join(","));
-      if (selectedCategories.length > 0)
-        query.set("categories", selectedCategories.join(","));
-      if (selectedSubCategories.length > 0)
-        query.set("subCategories", selectedSubCategories.join(","));
-      if (selectedColors.length > 0)
-        query.set("colors", selectedColors.join(","));
-      if (selectedSizes.length > 0) query.set("sizes", selectedSizes.join(","));
-      query.set("page", page.toString());
-      query.set("limit", "12");
-
-      const res = await axiosInstance.get(
-        `/product/api/get-filtered-products?${query.toString()}`,
-      );
-      setProducts(res.data.products);
-      setTotalPages(res.data.pagination.totalPages);
-    } catch (error) {
-      console.error("Failed to fetch filtered products: ", error);
-    } finally {
-      setIsProductLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    updateURL();
-    fetchFilteredProducts();
-  }, [
-    priceRange,
-    selectedCategories,
-    selectedSubCategories,
-    selectedColors,
-    selectedSizes,
-    page,
-  ]);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      const res = await axiosInstance.get("/product/api/get-categories");
-      return res.data;
+function Catalog() {
+  const { t } = useStorefrontText();
+  const router = useRouter(), params = useSearchParams();
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const queryString = params.toString();
+  const query = useQuery({
+    queryKey: ['catalog', queryString],
+    queryFn: async ({ signal }) => {
+      const requestParams = new URLSearchParams(queryString); requestParams.set('limit', '12');
+      return (await axios.get(`/product/api/get-filtered-products?${requestParams}`, { signal })).data;
     },
-    staleTime: 1000 * 60 * 30,
+    placeholderData: keepPreviousData,
   });
-  return (
-    <div className="w-full bg-[#f5f5f5] pb-10">
-      <div className="w-[90%] lg:w-[80%] m-auto">
-        <div className="pb-[50px]">
-          <h1 className="md:pt-[40px] font-medium text-[44px] leading-1 mb-[14px] font-jost">
-            All Products
-          </h1>
-          <Link href={"/"} className="text-[#55585b] hover:underline">
-            Home
-          </Link>
-          <span className="inline-block p-[1.5px] mx-1 bg-[#a8acb0] rounded-full"></span>
-          <span className="text-[#55585b]">All Products</span>
-        </div>
+  const categories = useQuery({ queryKey: ['categories'], queryFn: async () => (await axios.get('/product/api/get-categories')).data });
+  const selected = (key: string) => params.getAll(key).flatMap(value => value.split(',')).filter(Boolean);
+  const change = (key: string, value: string) => {
+    const next = new URLSearchParams(queryString);
+    value ? next.set(key, value) : next.delete(key);
+    if (key !== 'page') next.delete('page');
+    router.push(`/products?${next}`, { scroll: false });
+  };
+  const toggle = (key: string, values: string[]) => {
+    const next = new URLSearchParams(queryString), current = selected(key);
+    const active = values.some(value => current.includes(value));
+    next.delete(key);
+    (active ? current.filter(value => !values.includes(value)) : [...new Set([...current, ...values])]).forEach(value => next.append(key, value));
+    next.delete('page');
+    if (key === 'categories') next.delete('subCategories');
+    router.push(`/products?${next}`, { scroll: false });
+  };
+  const applyPrice = (min: string, max: string) => {
+    const next = new URLSearchParams(queryString); next.delete('priceRange'); next.delete('page');
+    min ? next.set('minPrice', min) : next.delete('minPrice'); max ? next.set('maxPrice', max) : next.delete('maxPrice');
+    router.push(`/products?${next}`, { scroll: false });
+  };
+  const minimum = params.get('minPrice') ?? params.get('priceRange')?.split(',')[0] ?? '';
+  const maximum = params.get('maxPrice') ?? params.get('priceRange')?.split(',')[1] ?? '';
+  const pagination = query.data?.pagination, page = pagination?.page ?? 1, totalPages = pagination?.totalPages ?? 1;
+  const pageNumbers = [...new Set([1, page - 1, page, page + 1, totalPages])].filter(value => value >= 1 && value <= totalPages).sort((a, b) => a - b);
+  const subCategories = [...new Set<string>(Object.entries(categories.data?.subCategories ?? {}).filter(([key]) => !selected('categories').length || selected('categories').includes(key)).flatMap(([, values]) => values as string[]))];
+  const extraColors = selected('colors').filter(value => !colors.some(color => color.aliases.includes(value)));
 
-        <div className="w-full flex flex-cols lg:flex-row gap-8">
-          {/* Sidebar */}
-          <aside className="w-full lg:w-[270px] !rounded bg-white p-4 space-y-6 shadow-md">
-            <h3 className="text-xl font-Poppins font-medium">Price Filter</h3>
-            <div className="ml-2">
-              <Range
-                step={100}
-                min={MIN}
-                max={MAX}
-                values={tempPriceRange}
-                onChange={(e) => setTempPriceRange(e)}
-                renderTrack={({ props, children }) => {
-                  const [min, max] = tempPriceRange;
-                  const percentageLeft = ((min - MIN) / (MAX - MIN)) * 100;
-                  const percentageRight = ((max - MIN) / (MAX - MIN)) * 100;
-                  return (
-                    <div
-                      {...props}
-                      className="h-[6px] bg-blue-200 rounded relative"
-                      style={{ ...props.style }}
-                    >
-                      <div
-                        className="absolute h-full bg-blue-600 rounded"
-                        style={{
-                          left: `${percentageLeft}%`,
-                          width: `${percentageRight - percentageLeft}%`,
-                        }}
-                      />
-                      {children}
-                    </div>
-                  );
-                }}
-                renderThumb={({ props }) => {
-                  const { key, ...rest } = props;
-                  return (
-                    <div
-                      key={key}
-                      {...rest}
-                      className="w-[16px] h-[16px] bg-blue-600 rounded-full shadow"
-                    ></div>
-                  );
-                }}
-              />
-              <div className="flex justify-between items-center mt-5">
-                <div className="text-sm text-gray-600">
-                  ${tempPriceRange[0]} - ${tempPriceRange[1]}
-                </div>
-                <button
-                  onClick={() => {
-                    setPriceRange(tempPriceRange);
-                    setPage(1);
-                  }}
-                  className="text-sm px-4 py-1 bg-gray-200 hover:bg-blue-600 hover:text-white transition !rounded"
-                >
-                  Apply
-                </button>
-              </div>
-            </div>
-
-            {/* Categories */}
-            <h3 className="text-xl font-Poppins font-medium border-b border-b-slate-300 pb-1">
-              Categories
-            </h3>
-            <ul className="space-y-2 !mt-3">
-              {isLoading ? (
-                <p>Loading ...</p>
-              ) : (
-                data?.categories?.map((category: any) => (
-                  <li
-                    key={category}
-                    className="flex items-center justify-between"
-                  >
-                    <label className="flex items-center gap-3 text-sm text-gray-700">
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories.includes(category)}
-                        onChange={() => toggleCategory(category)}
-                        className="accent-blue-600"
-                      />
-                      {category}
-                    </label>
-                  </li>
-                ))
-              )}
-            </ul>
-
-            {/* Subcategories */}
-            <h3 className="text-xl font-Poppins font-medium border-b border-b-slate-300 pb-1">
-              Subcategories
-            </h3>
-            <ul className="space-y-2 !mt-3">
-              {isLoading ? (
-                <p>Loading ...</p>
-              ) : (
-                Object.entries(data?.subCategories ?? {})
-                  .filter(
-                    ([category]) =>
-                      selectedCategories.length === 0 ||
-                      selectedCategories.includes(category),
-                  )
-                  .flatMap(([, subCategories]) => subCategories as string[])
-                  .filter(
-                    (subCategory, index, all) =>
-                      all.indexOf(subCategory) === index,
-                  )
-                  .map((subCategory) => (
-                    <li key={subCategory}>
-                      <label className="flex items-center gap-3 text-sm text-gray-700">
-                        <input
-                          type="checkbox"
-                          checked={selectedSubCategories.includes(subCategory)}
-                          onChange={() => toggleSubCategory(subCategory)}
-                          className="accent-blue-600"
-                        />
-                        {subCategory}
-                      </label>
-                    </li>
-                  ))
-              )}
-            </ul>
-
-            {/* Colors */}
-            <h3 className="text-xl font-Poppins font-medium border-b border-b-slate-300 pb-1">
-              Colors
-            </h3>
-            <ul className="space-y-2 !mt-3">
-              {isLoading ? (
-                <p>Loading ...</p>
-              ) : (
-                colors?.map((color: any) => (
-                  <li key={color} className="flex items-center justify-between">
-                    <label className="flex items-center gap-3 text-sm text-gray-700">
-                      <input
-                        type="checkbox"
-                        checked={selectedColors.includes(color.name)}
-                        onChange={() => toggleColor(color.name)}
-                        className="accent-blue-600"
-                      />
-                      <span
-                        className="w-[16px] h-[16px] rounded-full border border-gray-200"
-                        style={{ backgroundColor: color.code }}
-                      ></span>
-                      {color.name}
-                    </label>
-                  </li>
-                ))
-              )}
-            </ul>
-
-            {/* Sizes */}
-            <h3 className="text-xl font-Poppins font-medium border-b border-b-slate-300 pb-1">
-              Sizes
-            </h3>
-            <ul className="space-y-2 !mt-3">
-              {isLoading ? (
-                <p>Loading ...</p>
-              ) : (
-                sizes?.map((size: any) => (
-                  <li key={size} className="flex items-center justify-between">
-                    <label className="flex items-center gap-3 text-sm text-gray-700">
-                      <input
-                        type="checkbox"
-                        checked={selectedSizes.includes(size)}
-                        onChange={() => toggleSize(size)}
-                        className="accent-blue-600"
-                      />
-                      {size}
-                    </label>
-                  </li>
-                ))
-              )}
-            </ul>
-          </aside>
-
-          {/* Product grid */}
-          <div className="flex-1 px-2 lg:px-3">
-            {isProductLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2">
-                {Array.from({ length: 10 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-[250px] bg-gray-300 animate-pulse rounded-xl"
-                  ></div>
-                ))}
-              </div>
-            ) : products.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2">
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            ) : (
-              <p>No Products found!</p>
-            )}
-
-            {totalPages > 1 && (
-              <div className="flex justify-center mt-8 gap-2">
-                {Array.from({ length: totalPages }).map((_, i) => (
-                  <button
-                    key={i + 1}
-                    onClick={() => setPage(i + 1)}
-                    className={`px-3 py-1 !rounded border border-gray-200 text-sm ${page === i + 1 ? "bg-blue-600 text-white" : "bg-white text-black"}`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+  return <main className="w-full bg-[#f5f5f5] pb-10">
+    <div className="mx-auto w-[90%] lg:w-[80%]">
+      <div className="pb-[50px] pt-8 md:pt-[40px]">
+        <h1 className="mb-[14px] font-jost text-[44px] font-medium leading-tight">{t('All Products')}</h1>
+        <Link href="/" className="text-[#55585b] hover:underline">{t('Home')}</Link><span className="mx-1 inline-block rounded-full bg-[#a8acb0] p-[1.5px]" /><span className="text-[#55585b]">{t('All Products')}</span>
+      </div>
+      <button className="mb-5 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm lg:hidden" aria-expanded={filtersOpen} aria-controls="catalog-filters" onClick={() => setFiltersOpen(!filtersOpen)}><SlidersHorizontal size={16} />{t('Bộ lọc')}</button>
+      <div className="flex w-full flex-col items-start gap-8 lg:flex-row">
+        <aside id="catalog-filters" className={`${filtersOpen ? 'block' : 'hidden'} w-full shrink-0 space-y-6 rounded-3xl bg-white p-4 shadow-md lg:block lg:w-[270px]`}>
+          <PriceFilter key={`${minimum}-${maximum}-${query.data?.priceBounds.max ?? 0}`} minimum={minimum} maximum={maximum} bound={query.data?.priceBounds.max ?? 0} onApply={applyPrice} />
+          {categories.isLoading && <p role="status" className="text-sm text-gray-500">{t('Đang tải…')}</p>}
+          {categories.isError && <button className="text-sm text-red-600 underline" onClick={() => categories.refetch()}>{t('Tải lại danh mục')}</button>}
+          <fieldset><legend className={`${filterHeading} mb-3 w-full`}>{t('Categories')}</legend><div className="space-y-2">{categories.data?.categories?.map((category: string) => <label key={category} className="flex items-center gap-3 text-sm text-gray-700"><input type="checkbox" className="accent-blue-600" checked={selected('categories').includes(category)} onChange={() => toggle('categories', [category])} />{category}</label>)}</div></fieldset>
+          <fieldset><legend className={`${filterHeading} mb-3 w-full`}>{t('Danh mục con')}</legend><div className="space-y-2">{subCategories.map(category => <label key={category} className="flex items-center gap-3 text-sm text-gray-700"><input type="checkbox" className="accent-blue-600" checked={selected('subCategories').includes(category)} onChange={() => toggle('subCategories', [category])} />{category}</label>)}</div></fieldset>
+          <fieldset><legend className={`${filterHeading} mb-3 w-full`}>{t('Colors')}</legend><div className="space-y-2">{colors.map(color => <label key={color.name} className="flex items-center gap-3 text-sm text-gray-700"><input type="checkbox" className="accent-blue-600" checked={color.aliases.some(value => selected('colors').includes(value))} onChange={() => toggle('colors', color.aliases)} /><span className="h-4 w-4 rounded-full border border-gray-200" style={{ backgroundColor: color.code }} />{t(color.name)}</label>)}{extraColors.map(color => <label key={color} className="flex items-center gap-3 text-sm text-gray-700"><input type="checkbox" className="accent-blue-600" checked onChange={() => toggle('colors', [color])} />{color}</label>)}</div></fieldset>
+          <fieldset><legend className={`${filterHeading} mb-3 w-full`}>{t('Sizes')}</legend><div className="space-y-2">{[...new Set([...sizes, ...selected('sizes')])].map(size => <label key={size} className="flex items-center gap-3 text-sm text-gray-700"><input type="checkbox" className="accent-blue-600" checked={selected('sizes').includes(size)} onChange={() => toggle('sizes', [size])} />{size}</label>)}</div></fieldset>
+          <div className="space-y-4 border-t border-gray-200 pt-4"><label className="flex items-center gap-3 text-sm text-gray-700"><input type="checkbox" className="accent-blue-600" checked={params.get('inStock') === 'true'} onChange={event => change('inStock', event.target.checked ? 'true' : '')} />{t('Chỉ còn hàng')}</label><button className="text-sm font-medium text-blue-600 hover:underline" onClick={() => router.push('/products', { scroll: false })}>{t('Xóa bộ lọc')}</button></div>
+        </aside>
+        <section className="min-w-0 flex-1 px-2 lg:px-3" aria-busy={query.isFetching}>
+          <form key={params.get('q') || ''} className="relative mb-4" onSubmit={event => { event.preventDefault(); change('q', String(new FormData(event.currentTarget).get('q') || '').trim()); }}><input name="q" aria-label={t('Tên sản phẩm hoặc thương hiệu')} placeholder={t('Tên sản phẩm hoặc thương hiệu…')} defaultValue={params.get('q') || ''} className="h-11 w-full rounded-lg border border-gray-200 bg-white pl-4 pr-12 text-sm outline-none focus:border-blue-500" /><button type="submit" aria-label={t('Tìm kiếm')} className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-md text-blue-600 hover:bg-blue-50"><Search size={19} /></button></form>
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600"><p role="status">{query.isFetching ? t('Đang tải sản phẩm…') : pagination ? `${pagination.total} ${t('products')}` : ''}</p><label className="flex items-center gap-2">{t('Sắp xếp')}<select value={params.get('sort') || 'newest'} onChange={event => change('sort', event.target.value)} className="max-w-full rounded-md border border-gray-200 bg-white px-3 py-2 outline-none focus:border-blue-500">{[['newest', 'Mới nhất'], ['priceAsc', 'Giá tăng dần'], ['priceDesc', 'Giá giảm dần'], ['popular', 'Bán chạy'], ['rating', 'Đánh giá cao']].map(([value, label]) => <option key={value} value={value}>{t(label)}</option>)}</select></label></div>
+          {query.isLoading ? <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4" aria-label={t('Đang tải sản phẩm…')}>{Array.from({ length: 8 }, (_, index) => <div key={index} className="h-[350px] animate-pulse rounded-xl bg-gray-200" />)}</div> : query.isError ? <div role="alert" className="rounded-lg border border-red-100 bg-white p-6 text-sm text-red-600"><p>{t('Không tải được sản phẩm. Kiểm tra khoảng giá hoặc thử lại.')}</p><button className="mt-3 font-medium underline" onClick={() => query.refetch()}>{t('Thử lại')}</button></div> : query.data?.products.length ? <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">{query.data.products.map((product: any) => <ProductCard key={product.id} product={product} />)}</div> : <p className="rounded-lg bg-white p-6 text-sm text-gray-500">{t('Không có sản phẩm phù hợp. Thử đổi bộ lọc.')}</p>}
+          {totalPages > 1 && !query.isError && <nav aria-label={t('Page')} className="mt-8 flex flex-wrap justify-center gap-2">{pageNumbers.map((number, index) => <span key={number} className="inline-flex items-center gap-2">{index > 0 && number - pageNumbers[index - 1] > 1 && <span aria-hidden="true">…</span>}<button disabled={query.isPlaceholderData} aria-current={page === number ? 'page' : undefined} aria-label={`${t('Page')} ${number}`} onClick={() => change('page', String(number))} className={`rounded-full border border-gray-200 px-3 py-1 text-sm disabled:opacity-50 ${page === number ? 'bg-blue-600 text-white' : 'bg-white text-black hover:border-blue-400'}`}>{number}</button></span>)}</nav>}
+        </section>
       </div>
     </div>
-  );
-};
+  </main>;
+}
 
-export default ProductListingPage;
+export default function Products() {
+  const { t } = useStorefrontText();
+  return <Suspense fallback={<p className="p-8">{t('Đang tải…')}</p>}><Catalog /></Suspense>;
+}

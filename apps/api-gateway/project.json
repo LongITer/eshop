@@ -12,6 +12,7 @@
         "target": "node",
         "compiler": "tsc",
         "outputPath": "apps/api-gateway/dist",
+        "deleteOutputPath": false,
         "main": "apps/api-gateway/src/main.ts",
         "tsConfig": "apps/api-gateway/tsconfig.app.json",
         "webpackConfig": "apps/api-gateway/webpack.config.js"

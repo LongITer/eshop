@@ -1,4 +1,6 @@
 'use client'
+import { useStorefrontText } from '@packages/components/storefront-language';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useRef, useState } from 'react'
@@ -15,6 +17,7 @@ type FormData = {
 
 }
 const ForgotPassword = () => {
+  const { t } = useStorefrontText();
     const [step, setStep] = useState<"email" | "otp" | "reset">("email");
     const [serverError, setServerError] = useState<string | null>(null);
     const [otp, setOtp] = useState(["", "", "", ""]);
@@ -88,7 +91,7 @@ const ForgotPassword = () => {
         },
         onSuccess: () => {
             setStep('email');
-            toast.success("Password reset successful!");
+            toast.success(t("Password reset successful!"));
             setServerError(null);
             router.push('/login');
         },
@@ -138,23 +141,19 @@ const ForgotPassword = () => {
     return (
         <div className='w-full py-10 min-h-[85vh] bg-[#f1f1f1]'>
             <h1 className='text-4xl font-Poppins font-semibold text-black text-center'>
-                Forgot Password
-            </h1>
+                {t("Forgot Password")}</h1>
             <p className='text-center text-lg font-medium py-3 text-[#00000099]'>
-                Home . Forgot Password
-            </p>
+                {t("Home . Forgot Password")}</p>
             <div className='w-full flex justify-center'>
                 <div className='md:w-[480px] p-8 bg-white shadow rounded-lg'>
                     {step === "email" && (
                         <>
                             <h3 className='text-2xl font-semibold text-center mb-2'>
-                                Login to Eshop
-                            </h3>
+                                {t("Login to Eshop")}</h3>
                             <p className='text-center text-gray-500 mb-4'>
-                                Go back to {" "}
+                                {t("Go back to ")}{" "}
                                 <Link href={'/login'} className='text-blue-500'>
-                                    Login
-                                </Link>
+                                    {t("Login")}</Link>
                             </p>
 
                             <form onSubmit={handleSubmit(onSubmitEmail)}>
@@ -162,17 +161,17 @@ const ForgotPassword = () => {
                                 <input type="email" placeholder='name@gmail.com'
                                     className='w-full p-2 border border-gray-300 outline-0 rounded mb-1'
                                     {...register("email", {
-                                        required: "Email is required",
+                                        required: t("Email is required"),
                                         pattern: {
                                             value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
-                                            message: "Please enter a valid email address"
+                                            message: t("Please enter a valid email address")
                                         }
                                     })}
                                 />
 
                                 {errors.email && (
                                     <p className='text-red-500 text-sm'>
-                                        {String(errors.email?.message)}
+                                        {t(String(errors.email?.message || ""))}
                                     </p>
 
                                 )}
@@ -181,12 +180,12 @@ const ForgotPassword = () => {
                                     type="submit"
                                     disabled={requestOtpMutation.isPending}
                                     className='w-full mt-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600'>
-                                    {requestOtpMutation.isPending ? "Sending OTP..." : "Send Reset Link"}
+                                    {requestOtpMutation.isPending ? t("Sending OTP...") : t("Send Reset Link")}
                                 </button>
 
                                 {serverError && (
                                     <p className='text-red-500 text-sm mt-4'>
-                                        {serverError}
+                                        {t(serverError || "")}
                                     </p>
                                 )}
                             </form>
@@ -196,7 +195,7 @@ const ForgotPassword = () => {
                     {
                         step === "otp" && (
                             <>
-                                <h3 className='text-xl font-semibold text-center mb-4'>Enter OTP</h3>
+                                <h3 className='text-xl font-semibold text-center mb-4'>{t("Enter OTP")}</h3>
                                 <div className='flex justify-center gap-4'>
                                     {otp.map((digit, index) => (
                                         <input
@@ -217,26 +216,24 @@ const ForgotPassword = () => {
                                     disabled={verifyOtpMutation.isPending}
                                     className='w-full mt-6 py-2 text-white bg-blue-500 rounded hover:bg-blue-600 flex justify-center items-center'
                                 >
-                                    {verifyOtpMutation.isPending ? <Loader2 className="animate-spin" /> : "Verify OTP"}
+                                    {verifyOtpMutation.isPending ? <Loader2 className="animate-spin" /> : t("Verify OTP")}
                                 </button>
 
                                 <div className='text-center text-sm mt-4'>
                                     {canResend ? (
                                         <button onClick={resendOtp} className='text-blue-500 hover:underline'>
-                                            Resend OTP
-                                        </button>
+                                            {t("Resend OTP")}</button>
                                     ) : (
-                                        <span className="text-gray-400">Resend OTP in {timer}s</span>
+                                        <span className="text-gray-400">{t("Resend OTP in ")}{timer}s</span>
                                     )}
                                 </div>
-                                {serverError && <p className='text-red-500 text-sm mt-4 text-center'>{serverError}</p>}
+                                {serverError && <p className='text-red-500 text-sm mt-4 text-center'>{t(serverError || "")}</p>}
 
                                 <button
                                     onClick={() => setStep("email")}
                                     className='w-full mt-2 text-sm text-gray-500 hover:underline'
                                 >
-                                    Back to Signup
-                                </button>
+                                    {t("Back to Signup")}</button>
                             </>
                         )
                     }
@@ -244,27 +241,27 @@ const ForgotPassword = () => {
                     {
                         step === "reset" && (
                             <>
-                                <h3 className='text-xl font-semibold text-center mb-4'>Reset Password</h3>
+                                <h3 className='text-xl font-semibold text-center mb-4'>{t("Reset Password")}</h3>
                                 <form onSubmit={handleSubmit(onSubmitPassword)}>
-                                    <label className='block text-gray-700 mb-1'>New Password</label>
-                                    <input type="password" placeholder='Your new password'
+                                    <label className='block text-gray-700 mb-1'>{t("New Password")}</label>
+                                    <input type="password" placeholder={t('Your new password')}
                                         className='w-full p-2 border border-gray-300 outline-0 rounded mb-1'
                                         {...register("password", {
-                                            required: "Password is required",
+                                            required: t("Password is required"),
                                             minLength: {
                                                 value: 6,
-                                                message: "Password must be at least 6 characters"
+                                                message: t("Password must be at least 6 characters")
                                             }
                                         })}
                                     />
-                                    {errors.password && <p className='text-red-500 text-sm'>{errors.password.message}</p>}
-                                    {serverError && <p className='text-red-500 text-sm mt-4 text-center'>{serverError}</p>}
+                                    {errors.password && <p className='text-red-500 text-sm'>{t(String(errors.password.message || ""))}</p>}
+                                    {serverError && <p className='text-red-500 text-sm mt-4 text-center'>{t(serverError || "")}</p>}
                                     <button
                                         type='submit'
                                         disabled={resetPasswordMutation.isPending}
                                         className='w-full mt-6 py-2 text-white bg-blue-500 rounded hover:bg-blue-600 flex justify-center items-center'
                                     >
-                                        {resetPasswordMutation.isPending ? <Loader2 className="animate-spin" /> : "Reset Password"}
+                                        {resetPasswordMutation.isPending ? <Loader2 className="animate-spin" /> : t("Reset Password")}
                                     </button>
                                 </form>
                             </>

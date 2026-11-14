@@ -1,3 +1,4 @@
+import { startNotificationWorker } from '../../apps/admin-service/src/lib/notification-jobs';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
@@ -22,11 +23,21 @@ export async function start() {
   const image = 'https://hunggiaco.com/wp-content/uploads/2026/03/avatar-mac-dinh-facebook-1-1.jpg';
   const cpu = await prisma.products.create({ data: { title: 'Ryzen Gaming CPU', slug: 'acceptance-cpu', category: 'PC Components', subCategory: 'CPU', short_description: 'A fast processor for daily work and gaming.', detailed_description: 'Six cores for your next desktop build.', tags: ['gaming'], colors: ['Black'], sizes: [], stock: 3, sale_price: 80, regular_price: 100, warranty: '24 months', shopId: shop.id, discount_codes: [], images: { create: { url: image, file_id: 'acceptance-image' } } } });
   await prisma.site_config.create({ data: { categories: ['PC Components'], subCategories: { 'PC Components': ['CPU', 'GPU', 'Memory'] } } });
+  await prisma.products.update({ where: { id: cpu.id }, data: { custom_specification: { socket: 'AM5' } } });
+  for (const [subCategory, title, price, specs] of [
+    ['Motherboard', 'AM5 DDR5 Motherboard', 120, { socket: 'AM5', memoryType: 'DDR5' }],
+    ['RAM', 'DDR5 Memory Kit', 60, { memoryType: 'DDR5' }],
+    ['Motherboard', 'Incompatible Intel Motherboard', 100, { socket: 'LGA1700', memoryType: 'DDR4' }],
+  ] as const) {
+    await prisma.products.create({ data: { title, slug: title.toLowerCase().replaceAll(' ', '-'), category: 'PC Components', subCategory, detailed_description: title, tags: [], colors: [], sizes: [], stock: 10, sale_price: price, regular_price: price, warranty: '24 months', shopId: shop.id, discount_codes: [], custom_specification: specs } });
+  }
   const address = await prisma.address.create({ data: { userId: buyer.id, name: buyer.name, label: 'Home', street: '12 Nguyen Hue', city: 'Ho Chi Minh City', zip: '70000', country: 'Vietnam', isDefault: true } });
   const orders: any[] = [];
   for (const [i, status] of ['Pending', 'Delivered', 'Shipped', 'Cancelled'].entries()) {
     orders.push(await prisma.orders.create({ data: { orderNumber: `ACCEPTANCE-${i + 1}`, userId: buyer.id, shopId: shop.id, status: status as any, paymentStatus: 'Paid', stripePaymentId: 'pi_acceptance', subTotal: 80, totalAmount: 80, shippingAddress: { name: buyer.name, street: address.street, city: address.city, country: address.country }, trackingNumber: status === 'Shipped' ? 'TRACK12345' : null, estimatedDelivery: status === 'Shipped' ? new Date(Date.now() + 2 * 86400000) : null, createdAt: new Date(Date.now() - i * 86400000), items: { create: { productId: cpu.id, title: cpu.title, quantity: 1, unitPrice: 80, totalPrice: 80 } } } }));
   }
+  await prisma.returnRequest.create({ data: { orderId: orders[1].id, userId: buyer.id, shopId: shop.id, reason: 'Damaged packaging; please inspect', evidence: [] } });
+  startNotificationWorker();
   await prisma.notifications.createMany({ data: [{ userId: buyer.id, type: 'OrderShipped', title: 'Your order is on the way', message: 'Track your package for the latest updates.', redirectUrl: `/order/${orders[2].id}` }, { sellerId: seller.id, type: 'LowStock', title: 'Low stock', message: 'Ryzen Gaming CPU has 3 units remaining.', redirectUrl: '/dashboard/inventory' }, { type: 'System', title: 'Platform order alert', message: 'New order from Saigon PC Store.' }] });
   await prisma.behaviorLog.createMany({ data: ['productView', 'addToCart', 'paymentSuccess'].map((action, i) => ({ eventId: `acceptance-${i}`, action, userId: buyer.id, source: 'acceptance', type: 'info', message: `Example ${action}`, metadata: { productId: cpu.id } })) });
   await prisma.productAnalytics.create({ data: { productId: cpu.id, shopId: shop.id, views: 20, cartAdds: 4, purchases: 3, lastViewedAt: new Date() } });
@@ -45,6 +56,7 @@ export async function start() {
   app.get('/recommendation/api/recommendations/:userId', isAuthenticated, isUser, recommendations.personalized);
   app.get('/gateway-health', handle(async (_req, res) => { res.json({ fixture: true }); }));
   app.use(errorMiddleware);
-  const server = app.listen(8080, '127.0.0.1', () => console.log('ACCEPTANCE_READY http://localhost:8080 (isolated MongoDB; Stripe/Redis/logging doubles)'));
+  const port = Number(process.env.ACCEPTANCE_PORT || 8080);
+  const server = app.listen(port, '127.0.0.1', () => console.log(`ACCEPTANCE_READY http://localhost:${port} (isolated MongoDB; Stripe/Redis/logging doubles)`));
   return { server, prisma };
 }

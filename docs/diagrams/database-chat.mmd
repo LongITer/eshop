@@ -1,0 +1,85 @@
+erDiagram
+  pushSubscription {
+    ObjectId id PK "Mongo _id"
+    String endpoint UK
+    ObjectId actorId
+    String actorType
+    Json subscription
+    DateTime createdAt
+  }
+  chatAttachment {
+    ObjectId id PK "Mongo _id"
+    String url UK
+    ObjectId actorId
+    ObjectId conversationId
+    DateTime createdAt
+  }
+  users {
+    ObjectId id PK "Mongo _id"
+    String name
+    String email UK
+    String role
+  }
+  sellers {
+    ObjectId id PK "Mongo _id"
+    String name
+    String email UK
+  }
+  orders {
+    ObjectId id PK "Mongo _id"
+    String orderNumber UK
+    orderStatus status "enum"
+    paymentStatus paymentStatus "enum"
+  }
+  notifications {
+    ObjectId id PK "Mongo _id"
+    String title
+    String message
+    notificationType type "enum"
+    Boolean isRead
+    String redirectUrl "nullable"
+    ObjectId userId FK "nullable"
+    ObjectId sellerId FK "nullable"
+    ObjectId orderId "nullable"
+    Json metadata "nullable"
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  conversationGroup {
+    ObjectId id PK "Mongo _id"
+    Boolean isGroup
+    String name "nullable"
+    String creatorId
+    ObjectId[] participantIds
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  Participant {
+    ObjectId id PK "Mongo _id"
+    ObjectId conversationId
+    ObjectId userId "nullable"
+    ObjectId sellerId "nullable"
+    DateTime lastSeenAt "nullable"
+    Boolean isOnline
+    Int unreadCount
+    Boolean muted
+    DateTime joinedAt
+  }
+  message {
+    ObjectId id PK "Mongo _id"
+    ObjectId conversationId
+    ObjectId senderId
+    String senderType
+    String content "nullable"
+    String[] attachments
+    String status
+    DateTime createdAt
+  }
+  users |o--o{ notifications : "userId"
+  sellers |o--o{ notifications : "sellerId"
+  orders |o..o{ notifications : "orderId [ID]"
+  conversationGroup ||..o{ Participant : "conversationId [ID]"
+  users |o..o{ Participant : "userId [ID]"
+  sellers |o..o{ Participant : "sellerId [ID]"
+  conversationGroup ||..o{ message : "conversationId [ID]"
+  conversationGroup ||..o{ chatAttachment : "conversationId [ID]"

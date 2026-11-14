@@ -1,6 +1,8 @@
 'use client'
 import React, { useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import ShoppingSync from '@/shared/components/shopping-sync';
+import { StorefrontLanguageProvider } from '@packages/components/storefront-language';
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
     const [queryClient] = useState(() => new QueryClient({
@@ -13,7 +15,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
     }));
     return (
         <QueryClientProvider client={queryClient}>
-            {children}
+            <StorefrontLanguageProvider><ShoppingSync>{children}</ShoppingSync></StorefrontLanguageProvider>
         </QueryClientProvider>
     )
 }

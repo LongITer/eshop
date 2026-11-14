@@ -40,6 +40,13 @@ test('existing Google identity logs into same user without creating duplicates',
   db.oauthIdentity.findUnique.mockResolvedValue({ userId }); db.users.findUniqueOrThrow.mockResolvedValue({ id: userId, role: 'user' });
   const result = await callback(); expect(result.status).toBe(302); expect(result.headers['set-cookie'].some((value: string) => value.startsWith('access_token='))).toBe(true); expect(db.users.create).not.toHaveBeenCalled();
 });
+
+test('suspended Google account receives no session cookies', async () => {
+  db.oauthIdentity.findUnique.mockResolvedValue({ userId });
+  db.users.findUniqueOrThrow.mockResolvedValue({ id: userId, role: 'user', suspendedAt: new Date(), suspendedUntil: null });
+  const result = await callback();
+  expect(result.status).toBe(401); expect(result.headers['set-cookie'].some((value: string) => value.startsWith('access_token='))).toBe(false);
+});
 test('verified Gmail links an existing buyer account', async () => {
   db.oauthIdentity.findUnique.mockResolvedValue(null); db.users.findUnique.mockResolvedValue({ id: userId, role: 'user' });
   expect((await callback()).status).toBe(302); expect(db.users.create).not.toHaveBeenCalled();

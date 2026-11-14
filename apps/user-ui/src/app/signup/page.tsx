@@ -1,4 +1,6 @@
 'use client'
+import { useStorefrontText } from '@packages/components/storefront-language';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useRef, useState, useEffect } from 'react'
@@ -16,6 +18,7 @@ type FormData = {
 }
 
 const Signup = () => {
+  const { t } = useStorefrontText();
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
     const [canResend, setCanResend] = useState(true);
@@ -72,7 +75,7 @@ const Signup = () => {
             return response.data;
         },
         onSuccess: () => {
-            toast.success("Success! You can now log in.");
+            toast.success(t("Success! You can now log in."));
             router.push('/login');
         },
         onError: (error: any) => {
@@ -121,52 +124,52 @@ const Signup = () => {
 
     return (
         <div className='w-full py-10 min-h-[85vh] bg-[#f1f1f1]'>
-            <h1 className='text-4xl font-Poppins font-semibold text-black text-center'>Signup</h1>
-            <p className='text-center text-lg font-medium py-3 text-[#00000099]'>Home . Signup</p>
+            <h1 className='text-4xl font-Poppins font-semibold text-black text-center'>{t("Signup")}</h1>
+            <p className='text-center text-lg font-medium py-3 text-[#00000099]'>{t("Home . Signup")}</p>
 
             <div className='w-full flex justify-center'>
                 <div className='md:w-[480px] p-8 bg-white shadow rounded-lg'>
-                    <h3 className='text-2xl font-semibold text-center mb-2'>Signup to Eshop</h3>
+                    <h3 className='text-2xl font-semibold text-center mb-2'>{t("Signup to Eshop")}</h3>
                     <p className='text-center text-gray-500 mb-4'>
-                        Already have an account? <Link href={'/login'} className='text-blue-500'>Login</Link>
+                        {t("Already have an account? ")}<Link href={'/login'} className='text-blue-500'>{t("Login")}</Link>
                     </p>
 
                     <GoogleButton />
 
                     <div className='flex items-center my-5 text-gray-500 text-sm'>
                         <div className='flex-1 border-t border-gray-300' />
-                        <span className='px-3'>or Sign in with Email</span>
+                        <span className='px-3'>{t("or Sign in with Email")}</span>
                         <div className='flex-1 border-t border-gray-300' />
                     </div>
 
                     {!showOtp ? (
                         <form onSubmit={handleSubmit(onSubmit)}>
-                            <label className='block text-gray-700 mb-1'>Name</label>
-                            <input type="text" placeholder='Your name'
+                            <label className='block text-gray-700 mb-1'>{t("Name")}</label>
+                            <input type="text" placeholder={t('Your name')}
                                 className='w-full p-2 border border-gray-300 outline-0 rounded mb-1'
-                                {...register("name", { required: "Name is required" })}
+                                {...register("name", { required: t("Name is required") })}
                             />
-                            {errors.name && <p className='text-red-500 text-sm'>{errors.name.message}</p>}
+                            {errors.name && <p className='text-red-500 text-sm'>{t(String(errors.name.message || ""))}</p>}
 
                             <label className='block text-gray-700 mb-1 mt-2'>Email</label>
                             <input type="email" placeholder='name@gmail.com'
                                 className='w-full p-2 border border-gray-300 outline-0 rounded mb-1'
                                 {...register("email", {
-                                    required: "Email is required",
-                                    pattern: { value: /^\S+@\S+$/i, message: "Invalid email" }
+                                    required: t("Email is required"),
+                                    pattern: { value: /^\S+@\S+$/i, message: t("Invalid email") }
                                 })}
                             />
-                            {errors.email && <p className='text-red-500 text-sm'>{errors.email.message}</p>}
+                            {errors.email && <p className='text-red-500 text-sm'>{t(String(errors.email.message || ""))}</p>}
 
-                            <label className='block text-gray-700 mb-1 mt-2'>Password</label>
+                            <label className='block text-gray-700 mb-1 mt-2'>{t("Password")}</label>
                             <div className="relative">
                                 <input
                                     type={passwordVisible ? "text" : "password"}
-                                    placeholder='Min 6 characters'
+                                    placeholder={t('Min 6 characters')}
                                     className='w-full p-2 border border-gray-300 outline-0 rounded mb-1'
                                     {...register("password", {
-                                        required: "Password is required",
-                                        minLength: { value: 6, message: "Min 6 characters" }
+                                        required: t("Password is required"),
+                                        minLength: { value: 6, message: t("Min 6 characters") }
                                     })}
                                 />
                                 <button type="button" onClick={() => setPasswordVisible(!passwordVisible)}
@@ -175,21 +178,21 @@ const Signup = () => {
                                     {passwordVisible ? <Eye size={20} /> : <EyeOff size={20} />}
                                 </button>
                             </div>
-                            {errors.password && <p className='text-red-500 text-sm'>{errors.password.message}</p>}
+                            {errors.password && <p className='text-red-500 text-sm'>{t(String(errors.password.message || ""))}</p>}
 
                             <button
                                 type="submit"
                                 disabled={signupMutation.isPending}
                                 className='w-full mt-6 py-2 text-white bg-blue-500 rounded hover:bg-blue-600 flex justify-center items-center'
                             >
-                                {signupMutation.isPending ? <Loader2 className="animate-spin" /> : "Signup"}
+                                {signupMutation.isPending ? <Loader2 className="animate-spin" /> : t("Signup")}
                             </button>
 
-                            {serverError && <p className='text-red-500 text-sm mt-4 text-center'>{serverError}</p>}
+                            {serverError && <p className='text-red-500 text-sm mt-4 text-center'>{t(serverError || "")}</p>}
                         </form>
                     ) : (
                         <div>
-                            <h3 className='text-xl font-semibold text-center mb-4'>Enter OTP</h3>
+                            <h3 className='text-xl font-semibold text-center mb-4'>{t("Enter OTP")}</h3>
                             <div className='flex justify-center gap-4'>
                                 {otp.map((digit, index) => (
                                     <input
@@ -210,26 +213,24 @@ const Signup = () => {
                                 disabled={verifyOtpMutation.isPending}
                                 className='w-full mt-6 py-2 text-white bg-blue-500 rounded hover:bg-blue-600 flex justify-center items-center'
                             >
-                                {verifyOtpMutation.isPending ? <Loader2 className="animate-spin" /> : "Verify OTP"}
+                                {verifyOtpMutation.isPending ? <Loader2 className="animate-spin" /> : t("Verify OTP")}
                             </button>
 
                             <div className='text-center text-sm mt-4'>
                                 {canResend ? (
                                     <button onClick={resendOtp} className='text-blue-500 hover:underline'>
-                                        Resend OTP
-                                    </button>
+                                        {t("Resend OTP")}</button>
                                 ) : (
-                                    <span className="text-gray-400">Resend OTP in {timer}s</span>
+                                    <span className="text-gray-400">{t("Resend OTP in ")}{timer}s</span>
                                 )}
                             </div>
-                            {serverError && <p className='text-red-500 text-sm mt-4 text-center'>{serverError}</p>}
+                            {serverError && <p className='text-red-500 text-sm mt-4 text-center'>{t(serverError || "")}</p>}
 
                             <button
                                 onClick={() => setShowOtp(false)}
                                 className='w-full mt-2 text-sm text-gray-500 hover:underline'
                             >
-                                Back to Signup
-                            </button>
+                                {t("Back to Signup")}</button>
                         </div>
                     )}
                 </div>

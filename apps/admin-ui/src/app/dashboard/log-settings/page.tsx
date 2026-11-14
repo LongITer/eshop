@@ -189,7 +189,7 @@ const LogSettingsPage = () => {
       {configQuery.isLoading ? (
         <div className="space-y-5 py-8" aria-label="Loading log settings">
           {[0, 1, 2].map((item) => (
-            <div key={item} className="h-28 animate-pulse rounded-md bg-slate-900" />
+            <div key={item} className="h-28  rounded-md bg-slate-900" />
           ))}
         </div>
       ) : configQuery.isError ? (

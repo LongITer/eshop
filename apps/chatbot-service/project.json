@@ -12,6 +12,7 @@
         "target": "node",
         "compiler": "tsc",
         "outputPath": "apps/chatbot-service/dist",
+        "deleteOutputPath": false,
         "main": "apps/chatbot-service/src/main.ts",
         "tsConfig": "apps/chatbot-service/tsconfig.app.json",
         "webpackConfig": "apps/chatbot-service/webpack.config.js"

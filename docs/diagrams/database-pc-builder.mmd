@@ -1,0 +1,55 @@
+erDiagram
+  users {
+    ObjectId id PK "Mongo _id"
+    String name
+    String email UK
+    String role
+  }
+  products {
+    ObjectId id PK "Mongo _id"
+    String title
+    Int stock
+    Float sale_price
+    productStatus status "enum"
+  }
+  savedPcBuild {
+    ObjectId id PK "Mongo _id"
+    Json parts
+    Int revision
+    DateTime updatedAt
+  }
+  pcBuildTemplate {
+    ObjectId id PK "Mongo _id"
+    String name
+    String purpose
+    Float budgetMin
+    Float budgetMax
+    Json components
+    ObjectId[] productIds
+    String description "nullable"
+    Boolean isActive
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  chatbotConversation {
+    ObjectId id PK "Mongo _id"
+    ObjectId userId "nullable"
+    String sessionId
+    String status
+    Json context "nullable"
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  chatbotMessage {
+    ObjectId id PK "Mongo _id"
+    ObjectId conversationId FK
+    String role
+    String content
+    String messageType
+    Json metadata "nullable"
+    DateTime createdAt
+  }
+  chatbotConversation ||--o{ chatbotMessage : "conversationId"
+  users ||..o| savedPcBuild : "id [ID]"
+  products }o..o{ pcBuildTemplate : "productIds array [ID]"
+  users |o..o{ chatbotConversation : "userId [ID]"

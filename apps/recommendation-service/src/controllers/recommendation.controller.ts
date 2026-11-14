@@ -26,7 +26,7 @@ export const similar = handle(async (req, res) => {
 });
 export const personalized = handle(async (req, res) => {
   const userId = objectId(req.params.userId);
-  if (userId !== req.user.id) throw new ForbiddenError();
+  if (userId !== req.user!.id) throw new ForbiddenError();
   const history = await prisma.userAnalytics.findUnique({ where: { userId } });
   const actions = (history?.actions ?? []).filter((a): a is any => !!a && typeof a === 'object');
   const ids = actions.map((a: any) => a.productId).filter((id: unknown): id is string => typeof id === 'string' && /^[a-f\d]{24}$/i.test(id));

@@ -1,0 +1,129 @@
+erDiagram
+  images {
+    ObjectId id PK "Mongo _id"
+    ObjectId productId FK "nullable"
+  }
+  users {
+    ObjectId id PK "Mongo _id"
+    String name
+    String email UK
+    String role
+  }
+  shops {
+    ObjectId id PK "Mongo _id"
+    String name
+  }
+  sellers {
+    ObjectId id PK "Mongo _id"
+    String name
+    String email UK
+  }
+  site_config {
+    ObjectId id PK "Mongo _id"
+    String[] categories
+    Json subCategories
+    String logo "nullable"
+    String banner "nullable"
+  }
+  discountCodes {
+    ObjectId id PK "Mongo _id"
+    String public_name
+    String discountType
+    Float discountValue
+    String discountCode
+    ObjectId sellerId
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  products {
+    ObjectId id PK "Mongo _id"
+    String title
+    String slug UK
+    String category
+    String subCategory
+    String short_description "nullable"
+    String detailed_description
+    String video_url "nullable"
+    String[] tags
+    String brand "nullable"
+    String[] colors
+    String[] sizes
+    DateTime starting_date "nullable"
+    DateTime ending_date "nullable"
+    Int stock
+    Float sale_price
+    Float regular_price
+    Float rating
+    Float totalSales
+    String warranty
+    Json custom_specification "nullable"
+    Json custom_properties "nullable"
+    Boolean isDeleted
+    String cash_on_delivery "nullable"
+    ObjectId[] discount_codes
+    productStatus status "enum"
+    String moderationReason "nullable"
+    DateTime deleteAt "nullable"
+    DateTime createdAt
+    DateTime updatedAt
+    ObjectId shopId FK
+  }
+  productVariant {
+    ObjectId id PK "Mongo _id"
+    ObjectId productId FK
+    String sku
+    String color
+    String size
+    Float price
+    Int stock
+    Boolean active
+  }
+  productReviews {
+    ObjectId id PK "Mongo _id"
+    ObjectId productId FK
+    ObjectId userId FK
+    Int rating
+    String comment
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  inventoryHistory {
+    ObjectId id PK "Mongo _id"
+    ObjectId productId FK
+    ObjectId shopId
+    Int delta
+    Int stockAfter
+    String reason
+    String actorId
+    DateTime createdAt
+  }
+  orderItems {
+    ObjectId id PK "Mongo _id"
+    ObjectId productId FK
+    String sku "nullable"
+    String title
+  }
+  productAnalytics {
+    ObjectId id PK "Mongo _id"
+    ObjectId productId UK
+    ObjectId shopId "nullable"
+    Int cartAdds
+    Int views
+    Int wishListAdds
+    Int purchases
+    DateTime lastViewedAt
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  products |o--o{ images : "productId"
+  shops ||--o{ products : "shopId"
+  products ||--o{ productVariant : "productId"
+  products ||--o{ productReviews : "productId"
+  users ||--o{ productReviews : "userId"
+  products ||--o{ inventoryHistory : "productId"
+  products ||--o{ orderItems : "productId"
+  sellers ||..o{ discountCodes : "sellerId [ID]"
+  discountCodes }o..o{ products : "discount_codes array [ID]"
+  shops ||..o{ inventoryHistory : "shopId [ID]"
+  products ||..o| productAnalytics : "productId [ID]"
+  shops |o..o{ productAnalytics : "shopId [ID]"

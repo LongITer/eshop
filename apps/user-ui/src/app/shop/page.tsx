@@ -1,4 +1,6 @@
 "use client";
+import { useStorefrontText } from '@packages/components/storefront-language';
+
 import { categories } from "@/config/categories";
 import ShopCard from "@/shared/cards/shop.cart";
 import axiosInstance from "@/utils/axioInstance";
@@ -8,6 +10,7 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 const ProductListingPage = () => {
+  const { t } = useStorefrontText();
   const router = useRouter();
   const [isShopLoading, setIsShopLoading] = useState(false);
 
@@ -81,13 +84,11 @@ const ProductListingPage = () => {
       <div className="w-[90%] lg:w-[80%] m-auto">
         <div className="pb-[50px]">
           <h1 className="md:pt-[40px] font-medium text-[44px] leading-1 mb-[14px] font-jost">
-            All Shops
-          </h1>
+            {t("All Shops")}</h1>
           <Link href={"/"} className="text-[#55585b] hover:underline">
-            Home
-          </Link>
+            {t("Home")}</Link>
           <span className="inline-block p-[1.5px] mx-1 bg-[#a8acb0] rounded-full"></span>
-          <span className="text-[#55585b]">All Shops</span>
+          <span className="text-[#55585b]">{t("All Shops")}</span>
         </div>
 
         <div className="w-full flex flex-cols lg:flex-row gap-8">
@@ -95,8 +96,7 @@ const ProductListingPage = () => {
           <aside className="w-full lg:w-[270px] !rounded bg-white p-4 space-y-6 shadow-md">
             {/* Categories */}
             <h3 className="text-xl font-Poppins font-medium border-b border-b-slate-300 pb-1">
-              Categories
-            </h3>
+              {t("Categories")}</h3>
             <ul className="space-y-2 !mt-3">
               {categories?.map((category: any) => (
                 <li
@@ -117,8 +117,7 @@ const ProductListingPage = () => {
             </ul>
 
             <h3 className="text-xl font-Poppins font-medium border-b border-b-slate-300 pb-1">
-              Countries
-            </h3>
+              {t("Countries")}</h3>
             <ul className="space-y-2 !mt-3">
               {countries?.map((country: any) => (
                 <li key={country} className="flex items-center justify-between">
@@ -154,7 +153,7 @@ const ProductListingPage = () => {
                 ))}
               </div>
             ) : (
-              <p>No Shops found!</p>
+              <p>{t("No Shops found!")}</p>
             )}
 
             {totalPages > 1 && (

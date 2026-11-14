@@ -3,13 +3,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { ShoppingCart } from 'lucide-react';
-import { useStore } from '../../../store';
-import useUser from '../../../hooks/useUser';
-import useLocationTracking from '../../../hooks/useLocationTracking';
-import useDeviceTracking from '../../../hooks/useDeviceTracking';
 
 const CONVERSATION_STORAGE_KEY = 'chatbot_conversation_id';
-const LANGUAGE_STORAGE_KEY = 'chatbot_language';
+import { useStorefrontText } from '@packages/components/storefront-language';
 type ChatLanguage = 'vi' | 'en';
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -50,17 +46,12 @@ const ChatbotWidget: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [language, setLanguage] = useState<ChatLanguage>('vi');
+  const { language, setLanguage, t } = useStorefrontText();
   const [sessionId, setSessionId] = useState('');
 
   // Keep the server and first client render identical. Restore browser state
   // only after hydration, and never write to storage during rendering.
   useEffect(() => {
-    try {
-      setLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'vi');
-    } catch {
-      // Keep the default language when browser storage is unavailable.
-    }
     const newId = crypto.randomUUID();
     try {
       const stored = sessionStorage.getItem('chatbot_session_id');
@@ -70,11 +61,6 @@ const ChatbotWidget: React.FC = () => {
       setSessionId(newId);
     }
   }, []);
-  const { user } = useUser();
-  const location = useLocationTracking();
-  const deviceInfo = useDeviceTracking();
-  const addToCart = useStore((state) => state.addToCart);
-  const cart = useStore((state) => state.cart);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -153,7 +139,7 @@ const ChatbotWidget: React.FC = () => {
           id: 'fallback-greeting',
           role: 'bot',
           content:
-            'Xin chào! 👋 Tôi là trợ lý tư vấn build PC của Eshop.\n\nHiện tại đang có lỗi kết nối. Vui lòng thử lại sau.',
+            language === 'en' ? 'Hello! 👋 I am the Eshop PC building assistant.\n\nThere is a connection error. Please try again later.' : 'Xin chào! 👋 Tôi là trợ lý tư vấn build PC của Eshop.\n\nHiện tại đang có lỗi kết nối. Vui lòng thử lại sau.',
           messageType: 'text',
           metadata: null,
           createdAt: new Date().toISOString(),
@@ -166,11 +152,6 @@ const ChatbotWidget: React.FC = () => {
 
   const handleLanguageChange = (nextLanguage: ChatLanguage) => {
     setLanguage(nextLanguage);
-    try {
-      localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
-    } catch {
-      // The selected language still applies for this page visit.
-    }
   };
 
   const sendMessage = async (text: string) => {
@@ -359,11 +340,11 @@ const ChatbotWidget: React.FC = () => {
                       <div className="chatbot-product-info">
                         <p className="chatbot-product-title">{product.title}</p>
                         <p className="chatbot-product-price">
-                          {product.sale_price.toLocaleString('vi-VN')}đ
+                          ${product.sale_price.toFixed(2)} USD
                         </p>
                         {product.regular_price > product.sale_price && (
                           <p className="chatbot-product-old-price">
-                            {product.regular_price.toLocaleString('vi-VN')}đ
+                            ${product.regular_price.toFixed(2)} USD
                           </p>
                         )}
                         <div className="chatbot-product-meta">
@@ -372,32 +353,10 @@ const ChatbotWidget: React.FC = () => {
                         </div>
                       </div>
                     </a>
-                    <button
-                      type="button"
-                      className="chatbot-product-add-btn"
-                      title={cart.some((item) => item.id === product.id) ? 'Đã có trong giỏ' : 'Thêm vào giỏ'}
-                      aria-label={`Thêm ${product.title} vào giỏ hàng`}
-                      disabled={cart.some((item) => item.id === product.id)}
-                      onClick={() => addToCart(
-                        {
-                          id: product.id,
-                          title: product.title,
-                          price: product.sale_price,
-                          sale_price: product.sale_price,
-                          regular_price: product.regular_price,
-                          images: product.image ? [product.image] : [],
-                          slug: product.slug,
-                          shopId: product.shopId,
-                          quantity: 1,
-                        },
-                        user,
-                        location,
-                        deviceInfo
-                      )}
-                    >
+                    <a className="chatbot-product-add-btn" href={`/product/${product.slug}`}>
                       <ShoppingCart size={14} aria-hidden="true" />
-                      <span>{cart.some((item) => item.id === product.id) ? 'Trong giỏ' : 'Thêm giỏ'}</span>
-                    </button>
+                      <span>{language === 'en' ? 'Choose options' : 'Chọn sản phẩm'}</span>
+                    </a>
                   </div>
                 ))}
               </div>
@@ -427,16 +386,16 @@ const ChatbotWidget: React.FC = () => {
               </svg>
             </div>
             <div>
-              <h3 className="chatbot-header-title">PC Builder Assistant</h3>
+              <h3 className="chatbot-header-title">{t("PC Builder Assistant")}</h3>
               <p className="chatbot-header-subtitle">
-                {language === 'en' ? 'PC building advice' : 'Tư vấn build cấu hình PC'}
+                {language === 'en' ? 'PC advice · Store prices in USD' : 'Tư vấn PC · Giá cửa hàng bằng USD'}
               </p>
             </div>
           </div>
           <div className="chatbot-header-actions">
             <select
               className="chatbot-language-select"
-              aria-label="Chat language"
+              aria-label={t("Chat language")}
               value={language}
               onChange={(event) => handleLanguageChange(event.target.value as ChatLanguage)}
             >
@@ -456,7 +415,7 @@ const ChatbotWidget: React.FC = () => {
             <button
               className="chatbot-header-btn"
               onClick={() => setIsOpen(false)}
-              title="Đóng"
+              title={t("Close")}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M18 6 6 18" />
@@ -524,7 +483,7 @@ const ChatbotWidget: React.FC = () => {
       <button
         className={`chatbot-bubble-btn ${isOpen ? 'chatbot-bubble-btn-hidden' : ''}`}
         onClick={handleToggle}
-        aria-label="Mở chatbot tư vấn PC"
+        aria-label={t("Mở chatbot tư vấn PC")}
       >
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="3" y="11" width="18" height="10" rx="2" />

@@ -59,9 +59,11 @@ model paymentSession {
 
 model paymentReceipt {
   id String @id @map("_id")
+  sessionId String?
   userId String @db.ObjectId
   orderIds String[] @db.ObjectId
   createdAt DateTime @default(now())
+  @@index([sessionId, userId])
 }
 
 model users {
@@ -70,6 +72,10 @@ model users {
   email         String          @unique
   password      String?
   role          String          @default("user")
+  adminRole     String?
+  suspendedAt   DateTime?
+  suspendedUntil DateTime?
+  suspensionReason String?
   following     String[]
   avatar        images[]
   createdAt     DateTime        @default(now())
@@ -122,6 +128,10 @@ model sellers {
   country       String
   password      String?
   stripe_id     String?
+  suspendedAt   DateTime?
+  suspendedUntil DateTime?
+  suspensionReason String?
+  moderationRevision Int @default(0)
   shop          shops?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -151,6 +161,9 @@ enum productStatus {
   Active
   Inactive
   Draft
+  Suspended
+  PendingReview
+  Rejected
 }
 
 model products {
@@ -181,6 +194,7 @@ model products {
   cash_on_delivery     String?
   discount_codes       String[]      @db.ObjectId
   status               productStatus @default(Active)
+  moderationReason     String?
   deleteAt             DateTime?     @default(now())
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
@@ -189,6 +203,21 @@ model products {
   orderItems           orderItems[]
   reviews              productReviews[]
   inventoryHistory     inventoryHistory[]
+  variants             productVariant[]
+}
+
+model productVariant {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  productId String @db.ObjectId
+  product   products @relation(fields: [productId], references: [id])
+  sku       String
+  color     String @default("")
+  size      String @default("")
+  price     Float
+  stock     Int
+  active    Boolean @default(true)
+  @@unique([productId, sku])
+  @@unique([productId, color, size])
 }
 
 model productReviews {
@@ -265,6 +294,8 @@ model orders {
   status          orderStatus   @default(Pending)
   paymentStatus   paymentStatus @default(Pending)
   paymentMethod   String?
+  currency        String @default("usd")
+  platformFeeCents Int?
   stripePaymentId String?
   stripeRefundId  String?
   refundState     String?
@@ -275,8 +306,152 @@ model orders {
   deliveredAt     DateTime?
   cancelledAt     DateTime?
   cancelReason    String?
+  moderationHold Boolean @default(false)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([shopId, createdAt])
+  @@index([shopId, userId, createdAt])
+  @@index([paymentStatus, status, createdAt])
+}
+
+model productReport {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  productId String @db.ObjectId
+  shopId String @db.ObjectId
+  reporterId String @db.ObjectId
+  source String
+  category String
+  reason String
+  snapshot Json
+  dedupeKey String @unique
+  status String @default("Pending")
+  resolutionReason String?
+  resolvedBy String? @db.ObjectId
+  resolvedAt DateTime?
+  violationId String? @db.ObjectId
+  createdAt DateTime @default(now())
+  @@index([status, createdAt])
+  @@index([productId, createdAt])
+}
+
+model productViolation {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  productId String @db.ObjectId
+  shopId String @db.ObjectId
+  sellerId String @db.ObjectId
+  actorId String @db.ObjectId
+  productTitle String
+  category String
+  reason String
+  severity String
+  productAction String
+  sellerAction String
+  suspendedUntil DateTime?
+  occurrence Int
+  reports Json
+  followupStatus String @default("Queued")
+  followupRevision Int @default(0)
+  followupCursor String? @db.ObjectId
+  affectedOrders Int @default(0)
+  createdAt DateTime @default(now())
+  @@index([sellerId, createdAt])
+  @@index([followupStatus, createdAt])
+}
+
+// Private seller/customer order work; admin APIs never return these records.
+model moderationOrderTask {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  violationId String @db.ObjectId
+  orderId String @db.ObjectId
+  shopId String @db.ObjectId
+  productTitle String
+  reason String
+  status String @default("Pending")
+  resolution String?
+  resolvedAt DateTime?
+  createdAt DateTime @default(now())
+  @@unique([violationId, orderId])
+  @@index([shopId, status, createdAt])
+}
+
+model adminAudit {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  actorId String @db.ObjectId
+  action String
+  targetId String
+  reason String
+  before Json?
+  after Json?
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+  @@index([targetId, createdAt])
+}
+
+// A shared write serializes owner changes, including concurrent demotions.
+model adminGuard {
+  id String @id @map("_id")
+  revision Int @default(0)
+}
+
+model notificationJob {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  requestKey String @unique
+  actorId String @db.ObjectId
+  title String
+  message String
+  audience String
+  recipientId String? @db.ObjectId
+  status String @default("Queued")
+  cursor String? @db.ObjectId
+  sent Int @default(0)
+  error String?
+  leaseUntil DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([status, createdAt])
+}
+
+model orderEvent {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String @db.ObjectId
+  actorId   String
+  from      String
+  to        String
+  reason    String?
+  createdAt DateTime @default(now())
+  @@index([orderId, createdAt])
+}
+
+model returnRequest {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  orderId     String @unique @db.ObjectId
+  userId      String @db.ObjectId
+  shopId      String @db.ObjectId
+  reason      String
+  evidence    String[]
+  status      String @default("Requested")
+  sellerNote  String?
+  escalatedAt DateTime?
+  escalationReason String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([shopId, status])
+}
+
+model shoppingState {
+  id        String @id @map("_id") @db.ObjectId
+  payload   Json
+  revision  Int @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model savedPcBuild {
+  id        String @id @map("_id") @db.ObjectId
+  parts     Json
+  revision  Int @default(0)
+  updatedAt DateTime @updatedAt
 }
 
 model orderItems {
@@ -284,6 +459,8 @@ model orderItems {
   orderId     String   @db.ObjectId
   order       orders   @relation(fields: [orderId], references: [id])
   productId   String   @db.ObjectId
+  variantId   String?  @db.ObjectId
+  sku         String?
   product     products @relation(fields: [productId], references: [id])
   title       String
   image       String?
@@ -294,6 +471,8 @@ model orderItems {
   totalPrice  Float
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  @@index([orderId])
+  @@index([productId, orderId])
 }
 
 model userAnalytics {

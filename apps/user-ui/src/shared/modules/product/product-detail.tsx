@@ -1,5 +1,12 @@
 "use client";
+import ProductReport from '../../components/product-report';
 
+import { useStorefrontText } from '@packages/components/storefront-language';
+
+
+import toast from 'react-hot-toast';
+import useProductVariant from '@/hooks/useProductVariant';
+import { cartLineKey } from '@packages/utils/cart';
 import useDeviceTracking from "@/hooks/useDeviceTracking";
 import useLocationTracking from "@/hooks/useLocationTracking";
 import useUser from "@/hooks/useUser";
@@ -61,9 +68,10 @@ const formatSpecificationValue = (value: unknown): string => {
   return String(value);
 };
 
-const ProductDetails = ({ productDetails }: { productDetails: any }) => {
+const ProductDetails = ({ productDetails: rawProduct }: { productDetails: any }) => {
+  const { t } = useStorefrontText();
   const [currentImage, setCurrentImage] = useState(
-    productDetails?.images?.[0]?.url || "/default-image.jpg",
+    rawProduct?.images?.[0]?.url || "/product-placeholder.svg",
   );
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -74,13 +82,14 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
   const [chatLoading, setChatLoading] = useState(false);
 
   const [isSelectedColor, setIsSelectedColor] = useState(
-    productDetails?.colors?.[0] || "",
+    rawProduct?.colors?.[0] || "",
   );
 
   const [isSelectedSize, setIsSelectedSize] = useState(
-    productDetails?.sizes?.[0] || "",
+    rawProduct?.sizes?.[0] || "",
   );
 
+  const productDetails = useProductVariant(rawProduct, isSelectedColor, isSelectedSize);
   const [quantity, setQuantity] = useState(1);
 
   const [priceRange] = useState([0, 2000]);
@@ -94,7 +103,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
 
   const addToCart = useStore((state: any) => state.addToCart);
   const cart = useStore((state: any) => state.cart);
-  const isInCart = cart.some((item: any) => item.id === productDetails.id);
+  const isInCart = cart.some((item: any) => cartLineKey(item) === cartLineKey({ ...productDetails, selectedOptions: { color: isSelectedColor, size: isSelectedSize } }));
   const addToWishlist = useStore((state: any) => state.addToWishlist);
   const removeFromWishlist = useStore((state: any) => state.removeFromWishlist);
   const wishlist = useStore((state: any) => state.wishlist);
@@ -134,17 +143,27 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
     };
     loadCombo();
     return () => { active = false; };
-  }, [productDetails]);
+  }, [rawProduct]);
 
   const toggleComboItem = (id: string) => {
     if (id === productDetails.id) return;
     setSelectedComboIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
   };
 
-  const addCombo = () => {
-    comboItems.filter(item => selectedComboIds.includes(item.id)).forEach(item => {
-      addToCart({ ...item, quantity: 1 }, user, location, deviceInfo);
-    });
+  const addCombo = async () => {
+    setComboLoading(true);
+    try {
+      const prepared = await Promise.all(comboItems.filter(item => selectedComboIds.includes(item.id)).map(async item => {
+        const { data } = await axiosInstance.get(`/product/api/variants/${item.id}`);
+        const selected = item.id === productDetails.id ? productDetails : item;
+        const variant = data.variants.find((v: any) => v.id === selected.variantId) || data.variants.find((v: any) => v.stock > 0);
+        if (data.variants.length && !variant) throw new Error('A component is out of stock');
+        return { ...item, quantity: 1, variantId: variant?.id || null, sale_price: variant?.price ?? item.sale_price, selectedOptions: { color: variant?.color ?? item.colors?.[0] ?? '', size: variant?.size ?? item.sizes?.[0] ?? '' } };
+      }));
+      prepared.forEach(item => addToCart(item, user, location, deviceInfo));
+      toast.success(t('Components added to cart'));
+    } catch { toast.error(t('Could not add these components. Check availability and try again.')); }
+    finally { setComboLoading(false); }
   };
 
   const compatibility = specifications.filter((item: any) => /socket|memory|vram|power|length|form/i.test(item.name));
@@ -230,12 +249,10 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
         <nav className="flex items-center gap-2 text-sm text-gray-500">
           <Link href="/" className="flex items-center gap-1 hover:text-blue-600 transition-colors">
             <Home size={14} />
-            Home
-          </Link>
+            {t("Home")}</Link>
           <span>/</span>
           <Link href="/products" className="hover:text-blue-600 transition-colors">
-            Products
-          </Link>
+            {t("Products")}</Link>
           <span>/</span>
           <span className="text-gray-800 font-medium truncate max-w-[300px]">
             {productDetails?.title}
@@ -286,8 +303,8 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           const target = e.currentTarget;
-                          if (target.src !== window.location.origin + "/default-image.jpg") {
-                            target.src = "/default-image.jpg";
+                          if (target.src !== window.location.origin + "/product-placeholder.svg") {
+                            target.src = "/product-placeholder.svg";
                           }
                         }}
                       />
@@ -315,18 +332,17 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
           <h1 className="text-2xl font-semibold text-gray-900 leading-tight">
             {productDetails.title}
           </h1>
+            <ProductReport productId={productDetails.id} />
 
           {/* Ratings and Reviews */}
           <div className="w-full flex items-center justify-between mt-3">
             <div className="flex items-center gap-2 text-yellow-500">
               <Ratings rating={productDetails?.rating} />
               <Link href={"#reviews"} className="text-sm text-blue-500 hover:underline">
-                Customer reviews
-              </Link>
+                {t("Customer reviews")}</Link>
               <span className="text-gray-300">|</span>
               <span className="text-sm text-gray-500">
-                {productDetails.totalSales || 0} sold
-              </span>
+                {productDetails.totalSales || 0} {t(" sold")}</span>
             </div>
             <button
               className="p-2 rounded-full hover:bg-red-50 transition-colors"
@@ -366,12 +382,12 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
 
           <div className="py-2 border-b border-gray-100">
             <span className="text-sm text-gray-500">
-              Brand:{" "}
+              {t("Brand:")}{" "}
               <Link
                 href="#"
                 className="text-blue-600 font-medium hover:underline"
               >
-                {productDetails?.brand || "No brand"}
+                {productDetails?.brand || t("No brand")}
               </Link>
             </span>
           </div>
@@ -397,7 +413,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
               {/* Color options */}
               {productDetails?.colors?.length > 0 && (
                 <div>
-                  <span className="text-sm font-semibold text-gray-700">Color:</span>
+                  <span className="text-sm font-semibold text-gray-700">{t("Color:")}</span>
                   <div className="flex gap-2 mt-2">
                     {productDetails?.colors?.map(
                       (color: string, index: number) => (
@@ -421,7 +437,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
               {/* Size options */}
               {productDetails?.sizes?.length > 0 && (
                 <div>
-                  <span className="text-sm font-semibold text-gray-700">Size:</span>
+                  <span className="text-sm font-semibold text-gray-700">{t("Size:")}</span>
                   <div className="flex gap-2 mt-2">
                     {productDetails?.sizes?.map(
                       (size: string, index: number) => (
@@ -446,7 +462,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
 
           {/* Quantity & Stock */}
           <div className="mt-6">
-            <span className="text-sm font-semibold text-gray-700 block mb-2">Quantity:</span>
+            <span className="text-sm font-semibold text-gray-700 block mb-2">{t("Quantity:")}</span>
             <div className="flex items-center gap-4">
               <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
                 <button
@@ -468,15 +484,14 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
 
               {productDetails?.stock > 0 ? (
                 <span className="text-sm">
-                  <span className="text-green-600 font-semibold">In Stock</span>{" "}
+                  <span className="text-green-600 font-semibold">{t("In Stock")}</span>{" "}
                   <span className="text-gray-400">
-                    ({productDetails?.stock} available)
+                    ({productDetails?.stock} {t("available)")}
                   </span>
                 </span>
               ) : (
                 <span className="text-red-500 font-semibold text-sm">
-                  Out of Stock
-                </span>
+                  {t("Out of Stock")}</span>
               )}
             </div>
 
@@ -503,14 +518,14 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                     deviceInfo,
                   )
                 }
-                disabled={isInCart || productDetails?.stock === 0}
+                disabled={isInCart || productDetails?.stock < quantity}
               >
                 <ShoppingCart size={18} />
                 {isInCart
-                  ? "Already in Cart"
+                  ? t("Already in Cart")
                   : productDetails?.stock > 0
-                    ? "Add to Cart"
-                    : "Out of Stock"}
+                    ? t("Add to Cart")
+                    : t("Out of Stock")}
               </button>
             </div>
           </div>
@@ -521,12 +536,11 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
           {/* Delivery options */}
           <div className="pb-3 border-b border-gray-200">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Delivery options
-            </span>
+              {t("Delivery options")}</span>
             <div className="flex items-center text-gray-700 gap-1.5 mt-1.5">
               <MapPin size={16} className="text-gray-400 flex-shrink-0" />
               <span className="text-sm font-medium">
-                {location ? `${location.city}, ${location.country}` : "Detecting location…"}
+                {location ? `${location.city}, ${location.country}` : t("Detecting location…")}
               </span>
             </div>
           </div>
@@ -534,16 +548,15 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
           {/* Return & Warranty */}
           <div className="py-3 border-b border-gray-200">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Return & Warranty
-            </span>
+              {t("Return & Warranty")}</span>
             <div className="flex items-center text-gray-700 gap-1.5 mt-1.5">
               <Package size={16} className="text-gray-400 flex-shrink-0" />
-              <span className="text-sm">7 Days Returns</span>
+              <span className="text-sm">{t("7 Days Returns")}</span>
             </div>
             <div className="flex items-center text-gray-700 gap-1.5 mt-1.5">
               <WalletMinimal size={16} className="text-gray-400 flex-shrink-0" />
               <span className="text-sm">
-                {productDetails?.warranty || "Warranty not available"}
+                {productDetails?.warranty || t("Warranty not available")}
               </span>
             </div>
           </div>
@@ -552,7 +565,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
           <div className="pt-3">
             <div className="flex items-start justify-between">
               <div>
-                <span className="text-xs text-gray-500">Sold by</span>
+                <span className="text-xs text-gray-500">{t("Sold by")}</span>
                 <Link
                   href={`/shop/${productDetails?.shop?.id}`}
                   className="block max-w-[150px] truncate font-semibold text-base text-blue-600 hover:underline mt-0.5"
@@ -574,18 +587,16 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
             <div className="grid grid-cols-3 gap-2 border-t border-gray-200 mt-3 pt-3">
               <div>
                 <p className="text-[11px] text-gray-400 leading-tight">
-                  Positive Seller Ratings
-                </p>
+                  {t("Positive Seller Ratings")}</p>
                 <p className="text-base font-bold text-gray-800 mt-0.5">80%</p>
               </div>
               <div>
-                <p className="text-[11px] text-gray-400 leading-tight">Ship on time</p>
+                <p className="text-[11px] text-gray-400 leading-tight">{t("Ship on time")}</p>
                 <p className="text-base font-bold text-gray-800 mt-0.5">100%</p>
               </div>
               <div>
                 <p className="text-[11px] text-gray-400 leading-tight">
-                  Chat Response
-                </p>
+                  {t("Chat Response")}</p>
                 <p className="text-base font-bold text-gray-800 mt-0.5">100%</p>
               </div>
             </div>
@@ -597,8 +608,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                 className="inline-flex items-center gap-1.5 text-blue-600 font-semibold text-sm hover:underline transition-colors"
               >
                 <Store size={15} />
-                GO TO STORE
-              </Link>
+                {t("GO TO STORE")}</Link>
             </div>
           </div>
         </div>
@@ -613,8 +623,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
             <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
               <h2 className="flex items-center gap-2 text-base font-bold text-slate-900">
                 <Check size={16} className="text-blue-600" />
-                Product Specifications
-              </h2>
+                {t("Product Specifications")}</h2>
               <span className="shrink-0 bg-slate-50 px-2 py-1 text-[11px] text-slate-500">
                 {productDetails?.subCategory || productDetails?.category}
                 {productDetails?.brand ? ` / ${productDetails.brand}` : ""}
@@ -638,15 +647,13 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
               </dl>
             ) : (
               <p className="py-5 text-3xl text-slate-500">
-                Product specifications have not been added yet.
-              </p>
+                {t("Product specifications have not been added yet.")}</p>
             )}
           </div>
 
           <div className="min-w-0 max-w-full overflow-hidden border border-slate-200 bg-white p-5 shadow-sm md:p-6">
             <h2 className="border-b border-slate-100 pb-3 text-base font-bold text-slate-900">
-              Product Details &amp; Summary
-            </h2>
+              {t("Product Details & Summary")}</h2>
             {productDetails?.short_description && (
               <p className="mt-4 border border-slate-100 bg-slate-50 p-3 text-sm leading-relaxed text-slate-600 [overflow-wrap:anywhere]">
                 {productDetails.short_description}
@@ -673,10 +680,9 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
         <aside className="min-w-0 space-y-4">
           <div className="min-w-0 border border-slate-200 bg-white p-4 shadow-sm">
             <h2 className="border-b border-slate-100 pb-3 text-sm font-bold text-slate-900">
-              Recommended Combo
-            </h2>
+              {t("Recommended Combo")}</h2>
             <div className="divide-y divide-slate-100">
-              {comboLoading && <p className="py-4 text-xs text-slate-500">Finding compatible components…</p>}
+              {comboLoading && <p className="py-4 text-xs text-slate-500">{t("Finding compatible components…")}</p>}
               {!comboLoading && comboItems.map((item: any) => (
                 <div key={item.id} className="flex items-center gap-2 py-3">
                   <input
@@ -685,22 +691,22 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                     onChange={() => toggleComboItem(item.id)}
                     disabled={item.id === productDetails.id}
                     readOnly
-                    aria-label={`${item.title} included in combo`}
+                    aria-label={`${item.title} ${t("included in combo")}`}
                     className="accent-blue-600"
                   />
                   <Link href={`/product/${item.slug}`} className="min-w-0 flex-1 truncate text-xs text-slate-600 hover:text-blue-600" title={item.title}>
-                    {item.id === productDetails.id ? `This item: ${item.title}` : item.title}
+                    {item.id === productDetails.id ? `${t("This item:")} ${item.title}` : item.title}
                   </Link>
                   <span className="shrink-0 text-xs font-semibold text-slate-900">
                     ${Number(item.sale_price ?? item.price ?? 0).toFixed(2)}
                   </span>
                 </div>
               ))}
-              {!comboLoading && comboItems.length <= 1 && <p className="py-3 text-xs text-slate-500">No compatible components found yet.</p>}
+              {!comboLoading && comboItems.length <= 1 && <p className="py-3 text-xs text-slate-500">{t("No compatible components found yet.")}</p>}
             </div>
             <div className="flex items-center justify-between border-t border-slate-100 pt-3">
               <div>
-                <p className="text-[11px] text-slate-500">Bundle Total</p>
+                <p className="text-[11px] text-slate-500">{t("Bundle Total")}</p>
                 <p className="text-lg font-bold text-slate-900">
                   ${comboItems.filter(item => selectedComboIds.includes(item.id)).reduce((total, item) => total + Number(item.sale_price ?? item.price ?? 0), 0).toFixed(2)}
                 </p>
@@ -711,7 +717,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
                 disabled={comboLoading || selectedComboIds.length === 0}
                 className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white"
               >
-                <span className="inline-flex items-center gap-1"><Plus size={14} />Add Combo</span>
+                <span className="inline-flex items-center gap-1"><Plus size={14} />{t("Add Combo")}</span>
               </button>
             </div>
           </div>
@@ -719,17 +725,15 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
           <div className="min-w-0 bg-slate-900 p-4 text-white shadow-sm">
             <h2 className="flex items-center gap-2 text-sm font-bold">
               <CircleHelp size={16} />
-              Need Help Choosing?
-            </h2>
+              {t("Need Help Choosing?")}</h2>
             <p className="mt-2 text-xs leading-relaxed text-slate-300">
-              Compare socket, memory type, and component dimensions before building your PC.
-            </p>
+              {t("Compare socket, memory type, and component dimensions before building your PC.")}</p>
             <button type="button" onClick={() => setShowCompatibility(current => !current)} className="mt-3 inline-flex items-center gap-1 rounded-md border border-slate-600 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">
-              {showCompatibility ? <X size={14} /> : <CircleHelp size={14} />} {showCompatibility ? "Hide Compatibility Specs" : "View Compatibility Specs"}
+              {showCompatibility ? <X size={14} /> : <CircleHelp size={14} />} {showCompatibility ? t("Hide Compatibility Specs") : t("View Compatibility Specs")}
             </button>
             {showCompatibility && <div className="mt-3 rounded-md bg-slate-800 p-3 text-xs text-slate-300">
-              <p className="mb-2 font-semibold text-white">Detected compatibility data</p>
-              {compatibility.length > 0 ? <dl className="space-y-1">{compatibility.map((item: any) => <div key={item.name} className="flex justify-between gap-3"><dt>{item.name}</dt><dd className="text-right text-white">{formatSpecificationValue(item.value)}</dd></div>)}</dl> : <p>Compatibility specifications have not been added for this product.</p>}
+              <p className="mb-2 font-semibold text-white">{t("Detected compatibility data")}</p>
+              {compatibility.length > 0 ? <dl className="space-y-1">{compatibility.map((item: any) => <div key={item.name} className="flex justify-between gap-3"><dt>{item.name}</dt><dd className="text-right text-white">{formatSpecificationValue(item.value)}</dd></div>)}</dl> : <p>{t("Compatibility specifications have not been added for this product.")}</p>}
             </div>}
           </div>
         </aside>
@@ -740,8 +744,7 @@ const ProductDetails = ({ productDetails }: { productDetails: any }) => {
         <div className="w-[90%] lg:w-[80%] mx-auto">
           <div className="w-full h-full my-5">
             <h3 className="text-xl font-bold text-gray-900 mb-4">
-              You may also like
-            </h3>
+              {t("You may also like")}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {recommendedProducts.map((i: any) => (
                 <ProductCard key={i.id} product={i} />

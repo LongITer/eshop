@@ -1,82 +1,77 @@
-# 
+# Eshop
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+Multi-vendor PC ecommerce application built with an Nx/TypeScript monorepo, Next.js, Express, Prisma/MongoDB, Redis, Kafka and Stripe.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
+## Applications
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/node?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+- `apps/user-ui`: storefront, cart, checkout, order tracking and PC Builder.
+- `apps/seller-ui`: products/SKUs, inventory, orders, returns and reporting.
+- `apps/admin-ui`: platform administration and refund processing.
+- Backend services: gateway, authentication, products, orders, administration, recommendations, chat, chatbot, logging and Kafka consumers.
+- `packages`: shared middleware, components and business rules.
+- `prisma/schema.prisma`: database models. MongoDB must run as a replica set for transactions.
 
-## Finish your CI setup
+Seller workspace changes and validation are documented in [seller improvements](docs/seller-improvements.md).
 
-[Click here to finish setting up your workspace!](https://cloud.nx.app)
+## Local setup
 
+Use Node.js 22 (matching CI).
 
-## Run tasks
-
-To run the dev server for your app, use:
-
-```sh
-npx nx serve auth-service
-```
-
-To create a production bundle:
-
-```sh
-npx nx build auth-service
-```
-
-To see all available targets to run for a project, run:
+1. Run `npm ci`.
+2. Copy `.env.example` to `.env` and fill in the database, infrastructure and provider settings. Use test credentials for development.
+3. Run `npx prisma generate` and `npx prisma db push --skip-generate` against the intended development database.
+4. Run `npm run dev` for backend serve targets. Run the UI targets in separate terminals:
 
 ```sh
-npx nx show project auth-service
+npm run user-ui
+npm run seller-ui
+npm run admin-ui
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+The native local UI ports are 3000 (buyer), 3002 (seller) and 3001 (admin); the gateway uses 8080. Docker port mappings are defined separately in the compose file.
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+`npm run seller-ui` starts Next.js directly on port 3002. This avoids repeated Nx project-graph initialization, which can leave the Windows dev server at `Starting…` when Nx's daemon or graph workers stall. If an old instance is still running, stop that terminal with Ctrl+C before restarting the command.
 
-## Add new projects
+The Docker alternative is `docker compose up --build` after configuring `.env`. External providers still require valid credentials.
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
-
-Use the plugin's generator to create new projects.
-
-To generate a new application, use:
+## Verification
 
 ```sh
-npx nx g @nx/node:app demo
+npm run typecheck
+npm run test:implementation
+npm run test:integration
+npm run build:services
+npx next build apps/user-ui
+npx next build apps/seller-ui
+npx next build apps/admin-ui
 ```
 
-To generate a new library, use:
+Integration tests start a disposable MongoDB replica set. `npm run test:acceptance:serve` starts a separate fixture API using disposable MongoDB and Stripe/Redis/logging doubles. Set `ACCEPTANCE_PORT` to avoid an existing gateway and point UI `GATEWAY_INTERNAL_URL` at that port. `NEXT_DIST_DIR` lets user/seller UI build output stay separate from a running dev server.
+
+For release preparation, see the [staging, backup and rollback runbook](docs/deployment-runbook.md). `node scripts/deployment-preflight.cjs --env-file tmp/staging.env --mode staging` validates configuration offline without printing credentials or contacting providers. `node scripts/local-load-smoke.cjs --base http://127.0.0.1:8185` checks a bounded set of read-only local API requests; it is not a production capacity benchmark.
+
+### Stripe provider verification (test mode)
+
+Configure matching Stripe test secret/publishable keys in the ignored `.env` and `apps/user-ui/.env`. Never commit keys. Install the official CLI with `npm install -g @stripe/cli`, then run in a separate terminal:
 
 ```sh
-npx nx g @nx/node:lib mylib
+node scripts/stripe-listen-test.cjs
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+The helper uses the test key, forwards payment/refund events to the local gateway, and writes its signing secret into `.env`. Wait for the readiness message, then start/restart the backend so the order service loads that secret. Keep the listener running. On systems without the default Windows npm global path, set `STRIPE_CLI_SHIM` to the installed `@stripe/cli/bin/shim.js`.
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+With MongoDB, Redis and the backend running:
 
+```sh
+node scripts/verify-stripe-test.cjs
+```
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+This runner accepts only a database named `development` and Stripe test credentials. It creates dedicated test accounts, a shop, SKU and orders, tests payment/webhook replay/decline/cancellation/refund, and writes `tmp/stripe-provider-verification.json`. Audit fixtures remain in the development database; the product is marked inactive/deleted and the temporary administrator is downgraded afterward. Reserved `.invalid` fixture addresses are excluded from outgoing order emails. This is an actual Stripe test API check, not a real-money charge or a browser card-entry test.
 
-## Install Nx Console
+## Commerce behavior
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+GHTK fee API setup and the read-only verification command are documented in [GHTK setup](docs/ghtk-setup.md). Carrier checkout pricing is pending credentials, shipping data and an explicit VND/USD conversion policy.
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Prices are USD. Shipping defaults to free; `SHIPPING_FEE_USD` sets a flat fee per shop. Final price, stock, coupon and shipping values are calculated server-side before payment.
 
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/nx-api/node?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+See [commerce changes and activation](docs/commerce-improvements.md) for SKU inventory, return workflow, payment confirmation, PC Builder, database changes and verification limits. The older [implementation tracker](docs/implementation-progress.md) records the wider project's acceptance status.

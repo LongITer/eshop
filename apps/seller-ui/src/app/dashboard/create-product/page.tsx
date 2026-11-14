@@ -1,844 +1,94 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ColorSelector from "apps/seller-ui/src/shared/components/color-selector";
-import ImagePlaceHolder from "apps/seller-ui/src/shared/components/image-placeholder";
-import axiosInstance from "apps/seller-ui/src/utils/axioInstance";
-import { ChevronRight, Wand, X } from "lucide-react";
+import axios from "apps/seller-ui/src/utils/axioInstance";
+import { ArrowLeft, ImagePlus, Loader2, Package, Plus, Save, Trash2, WandSparkles, X } from "lucide-react";
 import Input from "packages/components/input";
 import CustomProperties from "packages/components/input/custom-properties";
 import CustomSpecifications from "packages/components/input/custom-specification";
-import dynamic from "next/dynamic";
-const RichTextEditor = dynamic(
-  () => import("packages/components/rich-text-editor"),
-  { ssr: false },
-);
-
 import SizeSelector from "packages/components/size-selector";
-import React, { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import Image from "next/image";
-import { enhancements } from "apps/seller-ui/src/utils/AI.enhancement";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import { enhancements } from "apps/seller-ui/src/utils/AI.enhancement";
+import useSeller from "apps/seller-ui/src/hooks/useSeller";
 
-const Page = () => {
-  const {
-    register,
-    control,
-    watch,
-    setValue,
-    setError,
-    clearErrors,
-    handleSubmit,
-    formState: { errors },
-  } = useForm();
-
-  const [openImageModel, setOpenImageModel] = useState(false);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const [imageLoading, setImageLoading] = useState(false);
-  const [pictureUploadingLoader, setPictureUploadingLoader] = useState(false);
-  const [isChanged] = useState(true);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [activeEffect, setActiveEffect] = useState<string | null>(null);
+const RichTextEditor = dynamic(() => import("packages/components/rich-text-editor"), { ssr: false });
+type UploadedImage = { url: string; fileId: string };
+const fieldClass = "w-full rounded-xl border border-slate-700 bg-slate-950/50 p-2.5 text-sm text-slate-100 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10";
+const panelClass = "rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6";
+export default function CreateProduct() {
+  const { seller } = useSeller();
+  const { register, control, watch, setValue, handleSubmit, formState: { errors } } = useForm<any>({ defaultValues: { category: "", subCategory: "", cash_on_delivery: "yes", colors: [], sizes: [], discountCodes: [], custom_specifications: [] } });
+  const [images, setImages] = useState<UploadedImage[]>([]);
+  const [imageBusy, setImageBusy] = useState(false);
+  const imageLock = useRef(false);
+  const [saving, setSaving] = useState(false);
+  const [enhance, setEnhance] = useState<{ index: number; url: string } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
   const router = useRouter();
-  const [images, setImages] = useState<
-    (File | { url: string; fileId: string } | null)[]
-  >([null]);
-
-  const [loading, setLoading] = useState(false);
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      try {
-        const res = await axiosInstance.get("/product/api/get-categories");
-        return res.data;
-      } catch (error) {
-        console.log(error);
-      }
-    },
-    staleTime: 1000 * 60 * 5,
-    retry: 2,
-  });
-
-  const { data: discountCodes = [], isLoading: discountLoading } = useQuery({
-    queryKey: ["shop-discounts"],
-    queryFn: async () => {
-      const res = await axiosInstance.get("/product/api/get-discount-code");
-      return res?.data?.discount_codes || [];
-    },
-  });
-
-  const categories = data?.categories || [];
-  const subCategoriesData = data?.subCategories || {};
-
+  const client = useQueryClient();
+  const categoriesQuery = useQuery({ queryKey: ["categories"], queryFn: async () => (await axios.get("/product/api/get-categories")).data, staleTime: 300_000 });
+  const discountsQuery = useQuery({ queryKey: ["shop-discounts", seller?.id], enabled: !!seller?.id, queryFn: async () => (await axios.get("/product/api/get-discount-code")).data.discount_codes || [] });
+  const categories: string[] = categoriesQuery.data?.categories || [];
   const selectedCategory = watch("category");
+  const subcategories: string[] = categoriesQuery.data?.subCategories?.[selectedCategory] || [];
   const regularPrice = watch("regular_price");
-
-  const subCategories = useMemo(() => {
-    return selectedCategory ? subCategoriesData[selectedCategory] || [] : [];
-  }, [selectedCategory, subCategoriesData]);
-
-  const onSubmit = async (data: any) => {
+  const selectedDiscounts: string[] = watch("discountCodes") || [];
+  const error = (key: string) => errors[key] ? <p className="mt-1 text-xs leading-5 text-rose-400" role="alert">{String(errors[key]?.message || "Check this field")}</p> : null;
+  const upload = async (file?: File) => {
+    if (!file || imageLock.current || saving) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) { toast.error("Choose a JPG, PNG or WebP image."); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Each image must be 5 MB or smaller."); return; }
+    if (images.length >= 8) { toast.error("You can upload up to 8 images."); return; }
+    imageLock.current = true; setImageBusy(true);
     try {
-      setLoading(true);
-      const uploadedImages = images.filter(
-        (image): image is { url: string; fileId: string } =>
-          Boolean(image && typeof image === "object" && "url" in image && "fileId" in image),
-      );
-      if (uploadedImages.length === 0) {
-        const message = "Upload at least one product image.";
-        setError("images", { type: "required", message });
-        toast.error(message);
-        return;
-      }
-
-      await axiosInstance.post("/product/api/create-product", {
-        ...data,
-        images: uploadedImages,
-      });
-      toast.success("Product created successfully", { duration: 3000 });
-      window.setTimeout(() => router.push("/dashboard/all-products"), 1200);
-    } catch (error: any) {
-      console.log("Create product error:", error.response?.data || error);
-      toast.error(error.response?.data?.message || "Failed to create product");
-    } finally {
-      setLoading(false);
-    }
+      const fileName = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(new Error("Could not read image")); reader.readAsDataURL(file); });
+      const { data } = await axios.post("/product/api/upload-product-image", { fileName });
+      if (typeof data.file_url !== "string" || typeof data.fileName !== "string") throw new Error("Invalid upload response");
+      setImages(previous => [...previous, { url: data.file_url, fileId: data.fileName }]);
+    } catch (failure: any) { toast.error(failure.response?.data?.message || "Could not upload image. Please try again."); }
+    finally { imageLock.current = false; setImageBusy(false); }
   };
-
-  const convertToBase64 = async (file: File) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
+  const removeImage = async (index: number) => {
+    if (imageLock.current || saving) return;
+    const image = images[index];
+    if (!image) return;
+    imageLock.current = true; setImageBusy(true);
+    try { await axios.delete("/product/api/delete-product-image", { data: { fileId: image.fileId } }); setImages(previous => previous.filter(item => item.fileId !== image.fileId)); }
+    catch (failure: any) { toast.error(failure.response?.data?.message || "Could not remove image."); }
+    finally { imageLock.current = false; setImageBusy(false); }
   };
-
-  const handleImageChange = async (file: File | null, index: number) => {
-    if (!file) return;
-
+  const submit = async (values: any) => {
+    if (imageLock.current || saving) return;
+    if (!images.length) { toast.error("Upload at least one product image."); return; }
+    setSaving(true);
     try {
-      const fileName = await convertToBase64(file);
-      setPictureUploadingLoader(true);
-      const response = await axiosInstance.post(
-        "/product/api/upload-product-image",
-        { fileName },
-      );
-
-      const updatedImages = [...images];
-      updatedImages[index] = {
-        url: response.data.file_url,
-        fileId: response.data.fileName,
-      };
-
-      if (index === images.length - 1 && images.length < 8) {
-        updatedImages.push(null);
-      }
-
-      setImages(updatedImages);
-      setValue("images", updatedImages);
-      clearErrors("images");
-    } catch (error: any) {
-      console.error("Product image upload error:", error.response?.data || error);
-      toast.error(error.response?.data?.message || "Failed to upload product image");
-    } finally {
-      setPictureUploadingLoader(false);
-    }
+      const response = await axios.post("/product/api/create-product", { ...values, images, title: values.title.trim(), tag: values.tag.split(",").map((v: string) => v.trim()).filter(Boolean) });
+      await Promise.all(["products", "seller-stats", "inventory"].map(key => client.invalidateQueries({ queryKey: [key] })));
+      toast.success(response.data.message || "Product created successfully"); router.push("/dashboard/all-products");
+    } catch (failure: any) { toast.error(failure.response?.data?.message || "Could not create product. Your entered details have been kept."); setSaving(false); }
   };
-
-  const handleRemoveImage = async (index: number) => {
-    try {
-      const updatedImages = [...images];
-      const imageToDelete = updatedImages[index];
-
-      if (
-        imageToDelete &&
-        typeof imageToDelete === "object" &&
-        "fileId" in imageToDelete
-      ) {
-        // Delete our image
-        await axiosInstance.delete("/product/api/delete-product-image", {
-          data: {
-            fileId: imageToDelete.fileId,
-          },
-        });
-      }
-
-      updatedImages.splice(index, 1);
-
-      // Add null placeholder
-      if (!updatedImages.includes(null) && updatedImages.length < 8) {
-        updatedImages.push(null);
-      }
-
-      setImages(updatedImages);
-      setValue("images", updatedImages);
-    } catch (error) {
-      console.log(error);
-    }
+  const applyEffect = (effect: string) => {
+    if (!enhance) return;
+    try { const url = new URL(enhance.url); const current = url.searchParams.get("tr")?.split(",") || []; if (!current.includes(effect)) current.push(effect); url.searchParams.set("tr", current.join(",")); setPreviewLoading(true); setPreviewError(false); setEnhance({ ...enhance, url: url.toString() }); }
+    catch { toast.error("This image could not be enhanced."); }
   };
-
-  const applyTransformation = async (transformation: string) => {
-    if (!selectedImage || processing) return;
-    setProcessing(true);
-    setImageLoading(true);
-    setActiveEffect(transformation);
-
-    try {
-      // Use URL object for more robust parsing if possible, fallback to string split
-      let baseUrl = "";
-      let params = new URLSearchParams();
-
-      if (selectedImage.startsWith("http")) {
-        const url = new URL(selectedImage);
-        baseUrl = `${url.protocol}//${url.host}${url.pathname}`;
-        params = new URLSearchParams(url.search);
-      } else {
-        const [path, query] = selectedImage.split("?");
-        baseUrl = path;
-        params = new URLSearchParams(query || "");
-      }
-
-      let currentTr = params.get("tr") || "";
-
-      if (currentTr) {
-        const effects = currentTr.split(",");
-        if (!effects.includes(transformation)) {
-          currentTr = `${currentTr},${transformation}`;
-        }
-      } else {
-        currentTr = transformation;
-      }
-
-      params.set("tr", currentTr);
-      // Construct URL manually to ensure commas are not double-encoded if necessary,
-      // but decoded string is usually safest for ImageKit.
-      const transformedUrl = `${baseUrl}?${decodeURIComponent(params.toString())}`;
-      setSelectedImage(transformedUrl);
-    } catch (error) {
-      console.error("Transformation error:", error);
-    } finally {
-      setProcessing(false);
-      setActiveEffect(null);
-    }
-  };
-
-  const handleSaveEnhancedImage = () => {
-    if (editingIndex !== null && selectedImage) {
-      setImages((prevImages) => {
-        const updatedImages = [...prevImages];
-        const currentImage = updatedImages[editingIndex];
-
-        // Ensure we are updating an existing image object with a URL
-        if (
-          currentImage &&
-          typeof currentImage === "object" &&
-          "url" in currentImage
-        ) {
-          updatedImages[editingIndex] = {
-            ...currentImage,
-            url: selectedImage,
-          };
-        }
-        return updatedImages;
-      });
-
-      // Also update react-hook-form
-      const currentImages = [...images];
-      const img = currentImages[editingIndex];
-      if (img && typeof img === "object" && "url" in img) {
-        currentImages[editingIndex] = { ...img, url: selectedImage };
-        setValue("images", currentImages);
-      }
-
-      setOpenImageModel(false);
-      setEditingIndex(null);
-    }
-  };
-
-  const handleSaveDraft = () => {};
-
-  return (
-    <form
-      className="w-full mx-auto p-8 shadow-md rounded-lg text-white"
-      onSubmit={handleSubmit(onSubmit)}
-    >
-      {/* Heading & Breadcrumbs */}
-      <h2 className="text-2xl py-2 font-semibold font-Poppins text-while">
-        Create Product
-      </h2>
-      <div className="flex items-center">
-        <span className="text-[#80Deea] cursor-pointer">Dashboard</span>
-        <ChevronRight size={20} className="opacity-[.8]" />
-        <span>Create product</span>
-      </div>
-
-      {/* Content Layout*/}
-      <div className="py-4 w-full flex gap-6 ">
-        {/* Left side - Image upload section */}
-        <div className="md:w-[35%]">
-          {images?.length > 0 && (
-            <ImagePlaceHolder
-              defaultImage={
-                images[0] && typeof images[0] === "object" && "url" in images[0]
-                  ? images[0].url
-                  : null
-              }
-              setOpenImageModel={(open) => {
-                setOpenImageModel(open);
-                if (open) {
-                  setEditingIndex(0);
-                  setImageLoading(true);
-                }
-              }}
-              size="765 × 850"
-              small={false}
-              pictureUploadingLoader={pictureUploadingLoader}
-              index={0}
-              images={images}
-              onImageChange={handleImageChange}
-              setSelectedImage={setSelectedImage}
-              onRemove={handleRemoveImage}
-            />
-          )}
-
-          <div className="grid grid-cols-2 gap-3 mt-4">
-            {images?.slice(1).map((img, index) => (
-              <ImagePlaceHolder
-                defaultImage={
-                  img && typeof img === "object" && "url" in img
-                    ? img.url
-                    : null
-                }
-                setOpenImageModel={(open) => {
-                  setOpenImageModel(open);
-                  if (open) {
-                    setEditingIndex(index + 1);
-                    setImageLoading(true);
-                  }
-                }}
-                size="765 × 850"
-                pictureUploadingLoader={pictureUploadingLoader}
-                key={
-                  img && typeof img === "object" && "url" in img
-                    ? img.url
-                    : typeof img === "string"
-                      ? img
-                      : index
-                }
-                small={true}
-                setSelectedImage={setSelectedImage}
-                index={index + 1}
-                onImageChange={handleImageChange}
-                onRemove={handleRemoveImage}
-              />
-            ))}
-          </div>
-          {errors.images && (
-            <p className="mt-2 text-sm text-red-500" role="alert">
-              {errors.images.message as string}
-            </p>
-          )}
-        </div>
-
-        {/* Right side - form inputs*/}
-        <div className="md:w-[65%]">
-          <div className="w-full flex gap-6">
-            {/* Product title input*/}
-            <div className="w-2/4">
-              {/* Title */}
-              <Input
-                label="Product Title *"
-                placeholder="Enter product title"
-                {...register("title", { required: "Title is required" })}
-              />
-
-              {errors.title && (
-                <span className="text-red-500">
-                  {errors.title.message as string}
-                </span>
-              )}
-
-              {/* Description */}
-              <div className="mt-2">
-                <Input
-                  rows={7}
-                  cols={10}
-                  label="Short description * (Max 150 words)"
-                  placeholder="Enter product description"
-                  type="textarea"
-                  {...register("short_description", {
-                    required: "Description is required",
-                    validate: (value) => {
-                      const wordCount = value.trim().split(/\s+/).length;
-                      return (
-                        wordCount <= 150 ||
-                        `Description can't exceed more than 150 words (Current: ${wordCount})`
-                      );
-                    },
-                  })}
-                />
-
-                {errors.description && (
-                  <span className="text-red-500">
-                    {errors.description.message as string}
-                  </span>
-                )}
-              </div>
-
-              {/* Tag */}
-              <div className="mt-2">
-                <Input
-                  label="Tag (Max 100 words)"
-                  placeholder="Apple, Flagship"
-                  {...register("tag", {
-                    required: "Separate related products with a coma",
-                  })}
-                />
-
-                {errors.tag && (
-                  <span className="text-red-500">
-                    {errors.tag.message as string}
-                  </span>
-                )}
-              </div>
-
-              {/* Warranty */}
-              <div className="mt-2">
-                <Input
-                  label="Warranty *"
-                  placeholder="1 Year Warranty"
-                  {...register("warranty", { required: "Warranty is required" })}
-                />
-
-                {errors.warranty && (
-                  <span className="text-red-500">
-                    {errors.warranty.message as string}
-                  </span>
-                )}
-              </div>
-
-              {/* Slug */}
-              <div className="mt-2">
-                <Input
-                  label="Slug *"
-                  placeholder="product_slug"
-                  {...register("slug", {
-                    required: "Slug is required",
-                    pattern: {
-                      value: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-                      message:
-                        "Invalid slug format! Use only lowercase letters, numbers and hyphens.",
-                    },
-                    minLength: {
-                      value: 3,
-                      message: "Slug must be at least 3 characters long",
-                    },
-                    maxLength: {
-                      value: 50,
-                      message: "Slug can't be more than 50 characters",
-                    },
-                  })}
-                />
-
-                {errors.slug && (
-                  <span className="text-red-500">
-                    {errors.slug.message as string}
-                  </span>
-                )}
-              </div>
-
-              {/* Brand */}
-              <div className="mt-2">
-                <Input
-                  label="Brand *"
-                  placeholder="Apple"
-                  {...register("brand", { required: "Brand is required" })}
-                />
-
-                {errors.brand && (
-                  <span className="text-red-500">
-                    {errors.brand.message as string}
-                  </span>
-                )}
-              </div>
-
-              {/* Color selector */}
-              <div className="mt-2">
-                <ColorSelector control={control} error={errors} />
-              </div>
-
-              {/* Custom specifications */}
-              <div className="mt-2">
-                <CustomSpecifications control={control} error={errors} />
-              </div>
-
-              {/* Custom properties */}
-              <div className="mt-2">
-                <CustomProperties control={control} error={errors} />
-              </div>
-
-              {/* Cash */}
-              <div className="mt-2">
-                <label className="block font-semibold text-gray-300 mb-1">
-                  Cash on delivery *
-                </label>
-                <select
-                  {...register("cash_on_delivery", {
-                    required: "Cash on delivery is required",
-                  })}
-                  defaultValue="yes"
-                  className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-lg"
-                >
-                  <option value="yes" className="bg-black">
-                    Yes
-                  </option>
-                  <option value="no" className="bg-black">
-                    No
-                  </option>
-                </select>
-
-                {errors.cash_on_delivery && (
-                  <span className="text-red-500">
-                    {errors.cash_on_delivery.message as string}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Right Side */}
-            <div className="w-2/4">
-              <label className="block font-semibold text-gray-300 mb-1">
-                Category *
-              </label>
-
-              {isLoading ? (
-                <p className="text-gray-400">Loading categories ...</p>
-              ) : isError ? (
-                <p className="text-red-500">Failed to load categories</p>
-              ) : (
-                <Controller
-                  name="category"
-                  control={control}
-                  rules={{ required: "Category is required" }}
-                  render={({ field }) => (
-                    <select
-                      {...field}
-                      className="w-full border outline-none border-gray-700 bg-transparent"
-                    >
-                      {" "}
-                      <option value="" className="bg-black">
-                        Select Category
-                      </option>
-                      {categories.map((category: string) => (
-                        <option
-                          key={category}
-                          value={category}
-                          className="bg-black"
-                        >
-                          {category}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                />
-              )}
-              {errors.category && (
-                <span className="text-red-500">
-                  {errors.category.message as string}
-                </span>
-              )}
-
-              <div className="mt-2">
-                <label className="block font-semibold text-gra-300 mb-1">
-                  Subcategory *
-                </label>
-
-                <Controller
-                  name="subCategory"
-                  control={control}
-                  rules={{ required: "Sub category is required" }}
-                  render={({ field }) => (
-                    <select
-                      {...field}
-                      className="w-full border outline-none border-gray-700 bg-transparent"
-                    >
-                      {" "}
-                      <option value="" className="bg-black">
-                        Select Category
-                      </option>
-                      {subCategories.map((category: string) => (
-                        <option
-                          key={category}
-                          value={category}
-                          className="bg-black"
-                        >
-                          {category}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                />
-
-                {errors.subCategory && (
-                  <span className="text-red-500">
-                    {errors.subCategory.message as string}
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <label className="block font-semibold text-gray-300 mb-1">
-                  Detail Description * (Min 20 words)
-                </label>
-                <Controller
-                  name="detail_description"
-                  control={control}
-                  rules={{
-                    required: "Detail description is required",
-                    validate: (value) => {
-                      const text = value?.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ') || '';
-                      const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
-                      return (
-                        wordCount >= 20 ||
-                        "Detail description must be at least 20 words"
-                      );
-                    },
-                  }}
-                  render={({ field }) => (
-                    <RichTextEditor
-                      value={field.value || ""}
-                      onChange={(content) => field.onChange(content)}
-                    />
-                  )}
-                />
-                {errors.detail_description && (
-                  <span className="text-red-500">
-                    {errors.detail_description.message as string}
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <Input
-                  label="Video URL"
-                  placeholder="https://www.youtube.com/watch?v=xyz123"
-                  {...register("video_url", {
-                    pattern: {
-                      value:
-                        /^https:\/\/(www\.)?(youtube\.com\/(watch\?v=|embed\/)|youtu\.be\/)[a-zA-Z0-9_-]+/,
-                      message:
-                        "Invalid Youtube URL. Please provide a valid YouTube link",
-                    },
-                  })}
-                />
-                {errors.video_url && (
-                  <span className="text-red-500">
-                    {errors.video_url.message as string}
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <Input
-                  label="Regular price"
-                  placeholder="20$"
-                  {...register("regular_price", {
-                    required: "Regular price is required",
-                    valueAsNumber: true,
-                    min: { value: 1, message: "Price must be at least 1" },
-                    validate: (value) =>
-                      !isNaN(value) || "Please enter a valid number",
-                  })}
-                />
-                {errors.regular_price && (
-                  <span className="text-red-500">
-                    {errors.regular_price.message as string}
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <Input
-                  label="Sale price"
-                  placeholder="15$"
-                  {...register("sale_price", {
-                    required: "Sale price is required",
-                    valueAsNumber: true,
-                    min: { value: 1, message: "Price must be at least 1" },
-                    validate: (value) => {
-                      if (isNaN(value)) return "Please enter a valid number";
-                      if (regularPrice && value >= regularPrice) {
-                        return "Sale price must be less than regular price";
-                      }
-                      return true;
-                    },
-                  })}
-                />
-                {errors.regular_price && (
-                  <span className="text-red-500">
-                    {errors.regular_price.message as string}
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <Input
-                  label="Stock *"
-                  placeholder="100"
-                  {...register("stock", {
-                    required: "Stock is required",
-                    valueAsNumber: true,
-                    min: { value: 1, message: "Stock must be at least 1" },
-                    max: {
-                      value: 10000,
-                      message: "Stock cannot exceed 1000",
-                    },
-                    validate: (value) => {
-                      if (isNaN(value)) return "Please enter a valid number";
-                      if (!Number.isInteger(value))
-                        return "Stock must be a whole number";
-                      return true;
-                    },
-                  })}
-                />
-                {errors.stock && (
-                  <span className="text-red-500">
-                    {errors.stock.message as string}
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <SizeSelector control={control} errors={errors} />
-              </div>
-
-              <div className="mt-3">
-                <label className="block font-semibold text-gray-300 mb-1">
-                  Select Discount Code (optional)
-                </label>
-
-                {discountLoading ? (
-                  <p className="text-gray-400">Loading discount codes</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {discountCodes?.map((code: any) => (
-                      <button
-                        key={code.id}
-                        type="button"
-                        className={`px-3 py-4 rounded-md text-sm font-semibold border ${watch("discountCodes")?.includes(code.id) ? "bg-blue-600 text-white border-blue-600" : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700"}`}
-                        onClick={() => {
-                          const currentSelection = watch("discountCodes") || [];
-                          const updatedSelection = currentSelection?.includes(
-                            code.id,
-                          )
-                            ? currentSelection.filter(
-                                (id: string) => id !== code.id,
-                              )
-                            : [...currentSelection, code.id];
-                          setValue("discountCodes", updatedSelection);
-                        }}
-                      >
-                        {code?.public_name} ({code?.discountValue}
-                        {code?.discountType === "percentage" ? "%" : "$"})
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      {openImageModel && (
-        <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-gray-800 p-6 rounded-lg w-[450px] text-white">
-            <div className="flex justify-between items-center pb-3 mb-4">
-              <h2 className="text-lg font-semibold">Enhance Product Images</h2>
-              <X
-                size={20}
-                className="cursor-pointer"
-                onClick={() => setOpenImageModel(false)}
-              />
-            </div>
-            <div className="w-full h-[250px] relative rounded-md overflow-hidden border border-gray-600 bg-black/20">
-              {selectedImage && (
-                <Image
-                  src={selectedImage}
-                  alt="product-image"
-                  fill
-                  unoptimized
-                  onLoad={() => setImageLoading(false)}
-                  className={`object-cover transition-opacity duration-300 ${processing || imageLoading ? "opacity-30 blur-sm" : "opacity-100"}`}
-                />
-              )}
-              {(processing || imageLoading) && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] transition-all">
-                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mb-2"></div>
-                  <p className="text-xs text-blue-400 font-medium animate-pulse">
-                    Processing with AI...
-                  </p>
-                </div>
-              )}
-            </div>
-            {selectedImage && (
-              <div className="mt-4 space-y-2">
-                <h3 className="text-white text-sm font-semibold">
-                  AI Enhancements
-                </h3>
-                <div className="grid grid-cols-2 gap-3 mx-h-[250px] overflow-y-auto">
-                  {enhancements?.map(({ label, effect }) => (
-                    <button
-                      key={effect}
-                      type="button"
-                      onClick={() => applyTransformation(effect)}
-                      disabled={processing}
-                      className={`p-2 rounded-md flex items-center gap-2 ${activeEffect === effect ? "bg-blue-600 text-white " : "bg-gray-700 hover:bg-gray-600"}`}
-                    >
-                      <Wand size={18} />
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSaveEnhancedImage}
-                  className="w-full mt-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
-                >
-                  Apply Enhancement
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="mt-6 flex justify-end gap-3">
-        {isChanged && (
-          <button
-            type="button"
-            onClick={handleSaveDraft}
-            className="px-4 py-2 bg-gray-700 text-white rounded-md"
-          >
-            Save Draft
-          </button>
-        )}
-
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md"
-          disabled={loading}
-        >
-          {loading ? "Creating..." : "Create"}
-        </button>
+  return <main className="mx-auto max-w-[1440px] space-y-6 p-4 text-slate-100 sm:p-6 lg:p-8">
+    <header><Link href="/dashboard/all-products" className="mb-4 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-blue-300"><ArrowLeft size={16}/>Products</Link><h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Create product</h1><p className="mt-2 text-sm text-slate-400">Add clear photos, accurate specifications and pricing to help customers choose.</p></header>
+    <form onSubmit={handleSubmit(submit)} className="grid items-start gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <aside className={`${panelClass} xl:sticky xl:top-24`}><div className="flex items-center justify-between"><h2 className="font-semibold">Product photos</h2><span className="text-xs text-slate-500">{images.length} / 8</span></div><p className="mb-4 mt-2 text-xs leading-5 text-slate-400">The first image is your cover. JPG, PNG or WebP, up to 5 MB each.</p><div className="grid grid-cols-2 gap-3">{images.map((image, index) => <div key={image.fileId} className={`group relative overflow-hidden rounded-xl border border-slate-700 bg-slate-950 ${index === 0 ? "col-span-2 aspect-[4/3]" : "aspect-square"}`}><img src={image.url} alt={`Product ${index + 1}`} className="h-full w-full object-contain"/>{index === 0 && <span className="absolute left-2 top-2 rounded-md bg-slate-950/80 px-2 py-1 text-[10px] font-medium">Cover photo</span>}<div className="absolute bottom-2 right-2 flex gap-1"><button type="button" aria-label={`Enhance photo ${index + 1}`} disabled={imageBusy || saving} onClick={() => { setEnhance({ index, url: image.url }); setPreviewLoading(false); setPreviewError(false); }} className="rounded-lg bg-slate-900/90 p-2 text-blue-300 hover:bg-blue-600 hover:text-white"><WandSparkles size={15}/></button><button type="button" aria-label={`Remove photo ${index + 1}`} disabled={imageBusy || saving} onClick={() => removeImage(index)} className="rounded-lg bg-slate-900/90 p-2 text-slate-300 hover:bg-rose-600 hover:text-white"><Trash2 size={15}/></button></div></div>)}{images.length < 8 && <label className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-700 bg-slate-950/30 px-3 py-7 text-center text-slate-400 transition hover:border-blue-500 hover:text-blue-300 ${images.length === 0 ? "col-span-2 min-h-48" : "aspect-square"} ${imageBusy || saving ? "pointer-events-none opacity-50" : ""}`}>{imageBusy ? <Loader2 size={26} className="animate-spin"/> : <ImagePlus size={28}/>}<span className="text-xs font-medium">{imageBusy ? "Uploading photo…" : "Upload photo"}</span><input type="file" className="sr-only" aria-label="Upload product photo" accept="image/jpeg,image/png,image/webp" disabled={imageBusy || saving} onChange={e => { const file = e.target.files?.[0]; e.target.value = ""; upload(file); }}/></label>}</div><div className="mt-5 flex gap-2 rounded-xl bg-blue-500/5 p-3 text-xs leading-5 text-slate-400"><Package size={17} className="mt-0.5 shrink-0 text-blue-400"/>Use real product photos and include details such as ports, packaging and accessories.</div></aside>
+      <div className="min-w-0 space-y-6"><section className={panelClass}><h2 className="mb-5 font-semibold">Basic information</h2><div className="grid gap-5 md:grid-cols-2"><div className="md:col-span-2"><Input label="Product title *" placeholder="e.g. AMD Ryzen 7 7700" className={fieldClass} {...register("title", { required: "Enter a product title", validate: v => !!v.trim() || "Enter a product title", maxLength: { value: 200, message: "Use at most 200 characters" } })}/>{error("title")}</div><div><Input label="Product URL slug *" placeholder="amd-ryzen-7-7700" className={fieldClass} {...register("slug", { required: "Enter a URL slug", pattern: { value: /^[a-z0-9]+(?:-[a-z0-9]+)*$/, message: "Use lowercase letters, numbers and hyphens" }, minLength: { value: 3, message: "Use at least 3 characters" }, maxLength: { value: 50, message: "Use at most 50 characters" } })}/>{error("slug")}</div><div><Input label="Brand *" placeholder="e.g. AMD" className={fieldClass} {...register("brand", { required: "Enter a brand" })}/>{error("brand")}</div><div className="md:col-span-2"><Input type="textarea" rows={3} label="Short description *" placeholder="Briefly describe the product and its key benefits (up to 150 words)." className={fieldClass} {...register("short_description", { required: "Enter a short description", validate: v => { const count = v.trim().split(/\s+/).filter(Boolean).length; return count > 0 && count <= 150 || "Use between 1 and 150 words"; } })}/>{error("short_description")}</div><div><label className="mb-1 block text-sm font-semibold text-slate-300">Category *</label><Controller name="category" control={control} rules={{ required: "Choose a category" }} render={({ field }) => <select {...field} disabled={categoriesQuery.isLoading || categoriesQuery.isError} onChange={e => { field.onChange(e); setValue("subCategory", ""); }} className={fieldClass}><option value="">{categoriesQuery.isLoading ? "Loading categories…" : "Choose category"}</option>{categories.map(value => <option key={value}>{value}</option>)}</select>}/>{error("category")}{categoriesQuery.isError && <button type="button" onClick={() => categoriesQuery.refetch()} className="mt-2 text-xs text-rose-400">Categories unavailable. Try again</button>}</div><div><label className="mb-1 block text-sm font-semibold text-slate-300">Subcategory *</label><select {...register("subCategory", { required: "Choose a subcategory" })} disabled={!selectedCategory || categoriesQuery.isLoading} className={fieldClass}><option value="">Choose subcategory</option>{subcategories.map(value => <option key={value}>{value}</option>)}</select>{error("subCategory")}</div><div><Input label="Tags *" placeholder="processor, gaming, AM5" className={fieldClass} {...register("tag", { required: "Enter at least one tag", validate: v => v.split(",").some((s: string) => s.trim()) || "Enter at least one tag" })}/>{error("tag")}</div><div><Input label="Warranty *" placeholder="e.g. 3-year manufacturer warranty" className={fieldClass} {...register("warranty", { required: "Enter warranty details" })}/>{error("warranty")}</div></div></section>
+      <section className={panelClass}><h2 className="mb-2 font-semibold">Pricing & inventory</h2><p className="mb-5 text-xs text-slate-400">Prices are in USD. You can add individual SKUs after creating the product.</p><div className="grid gap-5 sm:grid-cols-3"><div><Input type="number" min="0.01" step="0.01" label="Regular price *" placeholder="0.00" className={fieldClass} {...register("regular_price", { required: "Enter a price", valueAsNumber: true, deps: ["sale_price"], validate: v => Number.isFinite(v) && v > 0 || "Enter a price greater than zero" })}/>{error("regular_price")}</div><div><Input type="number" min="0.01" step="0.01" label="Selling price *" placeholder="0.00" className={fieldClass} {...register("sale_price", { required: "Enter a selling price", valueAsNumber: true, validate: v => !Number.isFinite(v) || v <= 0 ? "Enter a price greater than zero" : v <= Number(regularPrice) || "Selling price cannot exceed regular price" })}/>{error("sale_price")}</div><div><Input type="number" min="0" max="10000" step="1" label="Stock *" placeholder="0" className={fieldClass} {...register("stock", { required: "Enter stock quantity", valueAsNumber: true, validate: v => Number.isSafeInteger(v) && v >= 0 && v <= 10000 || "Enter a whole number from 0 to 10,000" })}/>{error("stock")}</div></div><div className="mt-5 grid gap-5 md:grid-cols-2"><ColorSelector control={control} error={errors}/><SizeSelector control={control} errors={errors}/><label className="text-sm font-semibold text-slate-300">Cash on delivery<select {...register("cash_on_delivery")} className={`${fieldClass} mt-1`}><option value="yes">Available</option><option value="no">Not available</option></select></label></div></section>
+      <section className={panelClass}><h2 className="mb-5 font-semibold">Description & specifications</h2><label className="mb-2 block text-sm font-semibold text-slate-300">Detailed description * <span className="font-normal text-slate-500">(at least 20 words)</span></label><Controller name="detail_description" control={control} rules={{ required: "Enter a detailed description", validate: v => (v?.replace(/<[^>]*>?/gm, " ").replace(/&nbsp;/g, " ").trim().split(/\s+/).filter(Boolean).length || 0) >= 20 || "Use at least 20 words" }} render={({ field }) => <RichTextEditor value={field.value || ""} onChange={field.onChange}/>}/>{error("detail_description")}<div className="mt-6"><CustomSpecifications control={control} error={errors} category={selectedCategory} subCategory={watch("subCategory")}/></div><div className="mt-6"><CustomProperties control={control} error={errors}/></div><div className="mt-6"><Input label="YouTube video (optional)" placeholder="https://www.youtube.com/watch?v=…" className={fieldClass} {...register("video_url", { validate: v => !v || /^https:\/\/(www\.)?(youtube\.com\/(watch\?v=|embed\/)|youtu\.be\/)[a-zA-Z0-9_-]+/.test(v) || "Enter a valid YouTube URL" })}/>{error("video_url")}</div></section>
+      <section className={panelClass}><h2 className="font-semibold">Discount codes <span className="text-sm font-normal text-slate-500">(optional)</span></h2><div className="mt-4 flex flex-wrap gap-2">{discountsQuery.isLoading ? <p className="text-sm text-slate-500">Loading discounts…</p> : discountsQuery.isError ? <button type="button" onClick={() => discountsQuery.refetch()} className="text-sm text-rose-400">Could not load discounts. Try again</button> : discountsQuery.data?.length ? discountsQuery.data.map((code: any) => <button key={code.id} type="button" aria-pressed={selectedDiscounts.includes(code.id)} onClick={() => setValue("discountCodes", selectedDiscounts.includes(code.id) ? selectedDiscounts.filter(v => v !== code.id) : [...selectedDiscounts, code.id])} className={`rounded-xl border px-3 py-2 text-sm transition ${selectedDiscounts.includes(code.id) ? "border-blue-500 bg-blue-500/10 text-blue-300" : "border-slate-700 text-slate-400 hover:bg-slate-800"}`}>{code.public_name} · {code.discountType === "percentage" ? `${code.discountValue}%` : `$${code.discountValue}`}</button>) : <p className="text-sm text-slate-500">No discount codes available. <Link href="/dashboard/discount-codes" className="text-blue-400 hover:underline">Manage discounts</Link></p>}</div></section>
+      <footer className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-4"><p className="text-xs text-slate-500">Fields marked * are required.</p><div className="flex gap-3"><Link href="/dashboard/all-products" className="rounded-xl border border-slate-700 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800">Cancel</Link><button type="submit" disabled={saving || imageBusy || categoriesQuery.isLoading || categoriesQuery.isError} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50">{saving ? <Loader2 className="animate-spin" size={17}/> : <Plus size={17}/>} {saving ? "Creating…" : "Create product"}</button></div></footer>
       </div>
     </form>
-  );
-};
-
-export default Page;
-
+    {enhance && <div role="dialog" aria-modal="true" aria-labelledby="enhance-title" className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"><div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-5"><div className="mb-4 flex items-center justify-between"><h2 id="enhance-title" className="font-semibold">Enhance product photo</h2><button type="button" aria-label="Close photo editor" onClick={() => setEnhance(null)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800"><X size={18}/></button></div><div className="relative h-64 overflow-hidden rounded-xl bg-slate-950"><img src={enhance.url} alt="Enhanced product preview" className="h-full w-full object-contain" onLoad={() => setPreviewLoading(false)} onError={() => { setPreviewLoading(false); setPreviewError(true); toast.error("The enhanced image could not be loaded. Choose another effect or close the editor."); }}/>{previewLoading && <div className="absolute inset-0 flex items-center justify-center bg-slate-950/70"><Loader2 className="animate-spin"/></div>}</div><div className="mt-4 grid grid-cols-2 gap-2">{enhancements.map(({ label, effect }) => <button type="button" key={effect} disabled={previewLoading} onClick={() => applyEffect(effect)} className="rounded-lg border border-slate-700 p-2 text-left text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40">{label}</button>)}</div><button type="button" disabled={previewLoading || previewError} onClick={() => { setImages(previous => previous.map((image, index) => index === enhance.index ? { ...image, url: enhance.url } : image)); setEnhance(null); }} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold disabled:opacity-50"><Save size={16}/>Apply to product</button></div></div>}
+  </main>;
+}

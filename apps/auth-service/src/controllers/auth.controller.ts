@@ -1,3 +1,4 @@
+import { isSuspended } from '@packages/utils/admin-access';
 import { NextFunction, Request, Response } from "express";
 import {
   checkOtpRestrictions,
@@ -110,6 +111,7 @@ export const loginUser = async (
     const user = await prisma.users.findUnique({ where: { email } });
 
     if (!user) return next(new AuthError("Invalid email or password!"));
+    if (isSuspended(user)) return res.status(403).json({ message: 'Account suspended. Contact support.' });
 
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password!);
@@ -118,8 +120,6 @@ export const loginUser = async (
       return next(new AuthError("Invalid email or password!"));
     }
     // Delete seller token
-    res.clearCookie("seller_access_token");
-    res.clearCookie("seller_refresh_token");
     // Generate access token and refresh token
     const accessToken = await jwt.sign(
       { id: user.id, role: "user" },
@@ -165,10 +165,10 @@ export const refreshUserToken = async (
 ) => {
   try {
     const token =
-      req.cookies["refresh_token"] || req.headers.authorization?.split(" ")[1];
+      req.cookies?.["refresh_token"] || req.headers.authorization?.split(" ")[1];
 
     if (!token) {
-      return next(new ValidationError("Unauthorized! No refresh token!"));
+      return next(new AuthError("Your session has ended. Please sign in again."));
     }
 
     const decoded = jwt.verify(
@@ -176,9 +176,12 @@ export const refreshUserToken = async (
       process.env.REFRESH_TOKEN_JWT_SECRET as string,
     ) as { id: string; role: string };
 
-    if (!decoded || !decoded.id || decoded.role !== "user") {
+    // Admin sessions use the same user account cookies as customer sessions,
+    // but retain the admin role so the admin UI can refresh without being
+    // downgraded to a customer session.
+    if (!decoded || !decoded.id || !["user", "admin"].includes(decoded.role)) {
       return next(
-        new JsonWebTokenError("Forbidden! Invalid user refresh token!"),
+        new JsonWebTokenError("Forbidden! Invalid account refresh token!"),
       );
     }
 
@@ -190,8 +193,11 @@ export const refreshUserToken = async (
       return next(new AuthError("Forbidden! User not found!"));
     }
 
+    if (isSuspended(account)) return res.status(403).json({ message: 'Account suspended. Contact support.' });
+    if (decoded.role === 'admin' && (account as any).role !== 'admin') return next(new AuthError('Administrator access was revoked'));
+
     const newAccessToken = jwt.sign(
-      { id: decoded.id, role: "user" },
+      { id: decoded.id, role: decoded.role },
       process.env.ACCESS_TOKEN_JWT_SECRET as string,
       { expiresIn: "15m" },
     );
@@ -218,12 +224,12 @@ export const refreshSellerToken = async (
 ) => {
   try {
     const token =
-      req.cookies["seller_refresh_token"] ||
+      req.cookies?.["seller_refresh_token"] ||
       req.headers.authorization?.split(" ")[1];
 
     if (!token) {
       return next(
-        new ValidationError("Unauthorized! No seller refresh token!"),
+        new AuthError("Your session has ended. Please sign in again."),
       );
     }
 
@@ -246,6 +252,8 @@ export const refreshSellerToken = async (
     if (!account) {
       return next(new AuthError("Forbidden! Seller not found!"));
     }
+
+
 
     const newAccessToken = jwt.sign(
       { id: decoded.id, role: "seller" },
@@ -271,7 +279,7 @@ export const getUser = async (
   next: NextFunction,
 ) => {
   try {
-    const user = await prisma.users.findUnique({ where: { id: req.user.id }, select: { id: true, name: true, email: true, role: true, createdAt: true, following: true, avatar: true } });
+    const user = await prisma.users.findUnique({ where: { id: req.user!.id }, select: { id: true, name: true, email: true, role: true, adminRole: true, createdAt: true, following: true, avatar: true } });
     if (!user) {
       return next(new ValidationError("User not found"));
     }
@@ -303,6 +311,8 @@ export const getAdmin = async (
         id: admin.id,
         email: admin.email,
         name: admin.name,
+        role: admin.role,
+        adminRole: admin.adminRole ?? 'owner',
       },
     });
   } catch (error) {
@@ -627,6 +637,7 @@ export const loginSeller = async (
     const seller = await prisma.sellers.findUnique({ where: { email } });
 
     if (!seller) return next(new AuthError("Invalid email or password!"));
+    // Suspended sellers may sign in for existing-order remediation; API access remains restricted.
     if (!seller.password) {
       return next(new AuthError("Invalid email or password!"));
     }
@@ -638,8 +649,6 @@ export const loginSeller = async (
       return next(new AuthError("Invalid email or password!"));
     }
     // Delete user token
-    res.clearCookie("access_token");
-    res.clearCookie("refresh_token");
     // Generate access token and refresh token
     const accessToken = await jwt.sign(
       { id: seller.id, role: "seller" },
@@ -684,7 +693,7 @@ export const getSeller = async (
   next: NextFunction,
 ) => {
   try {
-    const seller = await prisma.sellers.findUnique({ where: { id: req.seller!.id }, select: { id: true, name: true, email: true, phone_number: true, country: true, createdAt: true, stripe_id: true, shop: { include: { avatar: true } } } });
+    const seller = await prisma.sellers.findUnique({ where: { id: req.seller!.id }, select: { id: true, name: true, email: true, phone_number: true, country: true, createdAt: true, stripe_id: true, suspendedAt: true, suspendedUntil: true, suspensionReason: true, shop: { include: { avatar: true } } } });
     if (!seller) {
       return next(new ValidationError("Seller not found"));
     }
@@ -705,7 +714,7 @@ export const addUserAddress = async (
   next: NextFunction,
 ) => {
   try {
-    const userId = req?.user?.id;
+    const userId = req.user!.id;
     const { label, name, street, city, zip, country, isDefault } = req.body;
 
     if (!label || !name || !street || !city || !zip || !country) {
@@ -827,6 +836,7 @@ export const loginAdmin = async (
     const user = await prisma.users.findUnique({ where: { email } });
 
     if (!user) return next(new AuthError("Invalide email or password!"));
+    if (isSuspended(user)) return res.status(403).json({ message: 'Account suspended. Contact support.' });
 
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password!);
@@ -853,8 +863,6 @@ export const loginAdmin = async (
     //   source: "auth-service",
     // })
 
-    res.clearCookie("seller_access_token");
-    res.clearCookie("seller_refresh_token");
 
     // Generate access token and refresh token
     const accessToken = await jwt.sign(

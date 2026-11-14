@@ -1,13 +1,18 @@
 import prisma from "@packages/libs/prisma";
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { isSuspended } from '@packages/utils/admin-access';
+import { sellerRemediationRequest } from '@packages/utils/seller-remediation-access';
 
 
 const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
     try {
         // Get token
-        const token = req.headers.authorization?.split(' ')[1] ||
-            req.cookies?.['access_token'] || req.cookies?.['seller_access_token'];
+        const sessionRole = req.headers['x-session-role'];
+        const cookieToken = sessionRole === 'seller' ? req.cookies?.seller_access_token
+            : sessionRole === 'user' ? req.cookies?.access_token
+            : req.cookies?.access_token || req.cookies?.seller_access_token;
+        const token = req.headers.authorization?.split(' ')[1] || cookieToken;
 
         if (!token) {
             return res.status(401).json({
@@ -44,6 +49,10 @@ const isAuthenticated = async (req: Request, res: Response, next: NextFunction) 
 
         if (!account) {
             return res.status(401).json({ message: "Unauthorized! Account not found." })
+        }
+
+        if (isSuspended(account) && !(decoded.role === 'seller' && sellerRemediationRequest(req.path, req.method))) {
+            return res.status(403).json({ message: 'Account suspended. Contact support.' });
         }
 
         // Customer sessions carry only customer permissions, even when the

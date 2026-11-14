@@ -1,3 +1,7 @@
+'use client';
+import { useStorefrontText } from '@packages/components/storefront-language';
+import useProductVariant from '@/hooks/useProductVariant';
+import { cartLineKey } from '@packages/utils/cart';
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState } from "react";
@@ -12,15 +16,17 @@ import axiosInstance from "@/utils/axioInstance";
 import isProtected from "@/utils/protected";
 
 const ProductDetailsCard = ({
-  data,
+  data: rawProduct,
   setOpen,
 }: {
   data: any;
   setOpen: (open: boolean) => void;
 }) => {
+  const { t } = useStorefrontText();
   const [activeImage, setActiveImage] = useState(0);
-  const [isSelected, setIsSelected] = useState(data?.colors?.[0] || "");
-  const [isSizeSelected, setIsSizeSelected] = useState(data?.sizes?.[0] || "");
+  const [isSelected, setIsSelected] = useState(rawProduct?.colors?.[0] || "");
+  const [isSizeSelected, setIsSizeSelected] = useState(rawProduct?.sizes?.[0] || "");
+  const data = useProductVariant(rawProduct, isSelected, isSizeSelected);
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -34,7 +40,7 @@ const ProductDetailsCard = ({
   const wishlist = useStore((state: any) => state.wishlist);
   const isWishlisted = wishlist.some((item: any) => item.id === data.id);
   const cart = useStore((state: any) => state.cart);
-  const isInCart = cart.some((item: any) => item.id === data.id);
+  const isInCart = cart.some((item: any) => cartLineKey(item) === cartLineKey({ ...data, selectedOptions: { color: isSelected, size: isSizeSelected } }));
 
   const estimatedDelivery = new Date();
   estimatedDelivery.setDate(estimatedDelivery.getDate() + 5);
@@ -73,8 +79,8 @@ const ProductDetailsCard = ({
         <section className="bg-slate-50 p-4 md:p-7">
           <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-slate-200 bg-white">
             <Image
-              src={data?.images?.[activeImage]?.url || "/default-image.jpg"}
-              alt={data?.title || "Product image"}
+              src={data?.images?.[activeImage]?.url || "/product-placeholder.svg"}
+              alt={data?.title || t("Product image")}
               fill
               sizes="(max-width: 768px) 100vw, 50vw"
               className="object-contain p-5 md:p-8"
@@ -96,7 +102,7 @@ const ProductDetailsCard = ({
                   onClick={() => setActiveImage(index)}
                 >
                   <Image
-                    src={img.url || "/default-image.jpg"}
+                    src={img.url || "/product-placeholder.svg"}
                     alt={`${data?.title || "Product"} image ${index + 1}`}
                     width={68}
                     height={68}
@@ -112,7 +118,7 @@ const ProductDetailsCard = ({
         <section className="relative p-5 pt-14 md:p-8 md:pt-8">
           <button
             type="button"
-            aria-label="Close product preview"
+            aria-label={t("Close product preview")}
             className="absolute right-4 top-4 rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 md:right-6 md:top-6"
             onClick={() => setOpen(false)}
           >
@@ -125,7 +131,7 @@ const ProductDetailsCard = ({
                 {data?.shop?.avatar ? (
                   <Image
                     src={data.shop.avatar}
-                    alt="Shop Logo"
+                    alt={t("Shop Logo")}
                     width={60}
                     height={60}
                     className="w-[50px] h-[50px] rounded-full object-cover"
@@ -151,7 +157,7 @@ const ProductDetailsCard = ({
                   {/* Shop location */}
                   <p className="text-gray-600 mt-1 flex  items-center">
                     <MapPin size={20} />{" "}
-                    {data?.shop?.address || "Location not available"}
+                    {data?.shop?.address || t("Location not available")}
                   </p>
                 </div>
               </div>
@@ -163,7 +169,7 @@ const ProductDetailsCard = ({
                 disabled={isLoading}
               >
                 <MessageCircle size={16} />
-                {isLoading ? "Opening..." : "Chat with Seller"}
+                {isLoading ? "Opening..." : t("Chat with Seller")}
               </button>
             </div>
 
@@ -192,7 +198,7 @@ const ProductDetailsCard = ({
             {/* Brand */}
             {data?.brand && (
               <p className="mt-4 text-sm text-slate-700">
-                <strong className="text-slate-900">Brand:</strong> {data.brand}
+                <strong className="text-slate-900">{t("Brand:")}</strong> {data.brand}
               </p>
             )}
             {/* Color & Size Selection */}
@@ -200,7 +206,7 @@ const ProductDetailsCard = ({
               {/* Color Option */}
               {data?.colors?.length > 0 && (
                 <div>
-                  <strong>Color: </strong>
+                  <strong>{t("Color: ")}</strong>
                   <div className="flex gap-2 mt-1">
                     {data?.colors?.map((color: string, index: number) => (
                       <button
@@ -217,7 +223,7 @@ const ProductDetailsCard = ({
               {/* Size Options */}
               {data?.sizes?.length > 0 && (
                 <div>
-                  <strong>Size: </strong>
+                  <strong>{t("Size: ")}</strong>
                   <div className="flex gap-2 mt-1">
                     {data?.sizes.map((size: string, index: number) => (
                       <button
@@ -267,7 +273,7 @@ const ProductDetailsCard = ({
                 </div>
 
                 <button
-                  disabled={isInCart}
+                  disabled={isInCart || data.stock < quantity}
                   onClick={() =>
                     addToCart(
                       {
@@ -286,7 +292,7 @@ const ProductDetailsCard = ({
                   className={`flex items-center gap-2 px-4 py-2 bg-[#ff5722] hover:bg-[#e64a19] text-white font-medium rounded-lg transition ${isInCart ? "cursor-not-allowed opacity-70" : "cursor-pointer"} `}
                 >
                   <ShoppingCart size={18} />
-                  {isInCart ? "In Cart" : "Add to Cart"}
+                  {isInCart ? t("In Cart") : data.stock < quantity ? "Unavailable" : t("Add to Cart")}
                 </button>
 
                 <button
@@ -312,15 +318,14 @@ const ProductDetailsCard = ({
               </div>
               <div className="mt-3">
                 {data.stock > 0 ? (
-                  <span className="text-green-600 font-semibold">In Stock</span>
+                  <span className="text-green-600 font-semibold">{t("In Stock")}</span>
                 ) : (
                   <span className="text-red-600 font-semibold">
-                    Out of Stock
-                  </span>
+                    {t("Out of Stock")}</span>
                 )}
               </div>{" "}
               <div className="mt-3 text-gray-600 text-sm">
-                Estimated delivery :{" "}
+                {t("Estimated delivery :")}{" "}
                 <strong>{estimatedDelivery.toDateString()}</strong>
               </div>
             </div>

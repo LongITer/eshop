@@ -1,11 +1,11 @@
-import { Users, Sellers, Shop } from "@prisma/client";
+import { users, sellers, shops } from "@prisma/client";
 
 declare global {
   namespace Express {
     interface Request {
-      user?: Users;
-      seller?: Sellers & { shop?: Shop | null };
-      role?: "user" | "seller";
+      user?: users;
+      seller?: sellers & { shop?: shops | null };
+      role?: "user" | "seller" | "admin";
     }
   }
 }

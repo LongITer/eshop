@@ -8,6 +8,9 @@ const { composePlugins, withNx } = require('@nx/next');
  * @type {import('@nx/next/plugins/with-nx').WithNxOptions}
  **/
 const nextConfig = {
+  distDir: process.env.NEXT_DIST_DIR || '.next',
+  // Bound parallel build workers on local machines with limited memory.
+  experimental: { cpus: 2 },
   nx: {
     // Set this to true if you would like to use SVGR
     // See: https://github.com/gregberge/svgr
@@ -46,6 +49,10 @@ const nextConfig = {
       {
         source: '/chatting/:path*',
         destination: `${process.env.GATEWAY_INTERNAL_URL || "http://localhost:8080"}/chatting/:path*`,
+      },
+      {
+        source: '/chatting-ws',
+        destination: 'http://localhost:6006',
       },
     ];
   },

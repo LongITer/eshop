@@ -12,6 +12,7 @@
         "target": "node",
         "compiler": "tsc",
         "outputPath": "apps/product-service/dist",
+        "deleteOutputPath": false,
         "main": "apps/product-service/src/main.ts",
         "tsConfig": "apps/product-service/tsconfig.app.json",
         "webpackConfig": "apps/product-service/webpack.config.js"

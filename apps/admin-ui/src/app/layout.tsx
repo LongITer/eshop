@@ -1,17 +1,11 @@
 import "./global.css";
-import { Poppins } from "next/font/google";
 import Providers from "./provider";
 
 export const metadata = {
   title: "Eshop Admin | Marketplace management",
-  description: "Manage marketplace orders, payments, sellers and customers with Eshop Admin.",
+  description: "Manage marketplace shops, products and violation reports with Eshop Admin.",
 };
 
-const poppins = Poppins({
-  variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["100", "200", "300", "400", "500", "600", "700", "800"],
-});
 export default function RootLayout({
   children,
 }: {
@@ -20,7 +14,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`min-h-screen bg-slate-900 font-sans antialiased ${poppins.variable}`}
+        className={`min-h-screen bg-slate-900 font-sans antialiased `}
       >
         <Providers>
           {children}

@@ -1,9 +1,13 @@
 import { NextFunction, Request, Response } from "express";
 import prisma from "@packages/libs/prisma";
-import { ValidationError } from "@packages/error-handler";
+import { ForbiddenError, NotFoundError, ValidationError } from "@packages/error-handler";
 import { imageKit } from "@packages/libs/imagekit";
 import { Prisma } from "@prisma/client";
 import { sendBehaviorLog } from "@packages/utils/logs/behavior-log";
+import { objectId } from "@packages/utils/api";
+import { transaction } from "@packages/utils/transaction";
+import { scanProductListing } from "@packages/utils/product-moderation-ai";
+import { submitProductReport } from "@packages/utils/product-moderation";
 
 // Get product categories
 export const getCategories = async (
@@ -34,23 +38,37 @@ export const createDiscountCode = async (
   next: NextFunction,
 ) => {
   try {
-    const { public_name, discountType, discountValue, discountCode } = req.body;
+    const { public_name, discountType, discountValue, discountCode, productIds = [] } = req.body;
+    const value = Number(discountValue);
+    if (typeof public_name !== 'string' || !public_name.trim() || typeof discountCode !== 'string' || !discountCode.trim() || discountCode.length > 100 || !['percentage', 'fixed', 'flat'].includes(discountType) || !Number.isFinite(value) || value <= 0 || (discountType === 'percentage' && value > 100)) throw new ValidationError('Provide a valid name, code and discount value');
+    if (!Array.isArray(productIds) || productIds.length > 1000 || productIds.some(id => typeof id !== 'string' || !/^[a-f\d]{24}$/i.test(id))) throw new ValidationError('Invalid selected products');
+    const selectedIds = [...new Set<string>(productIds)];
+    if (selectedIds.length && !req.seller.shop?.id) throw new ValidationError('Create a shop before selecting products');
     const isDiscountCodeExists = await prisma.discountCodes.findFirst({
-      where: { discountCode },
+      where: { discountCode: discountCode.trim() },
     });
 
     if (isDiscountCodeExists) {
       return res.status(400).json({ message: "Discount code already exists" });
     }
 
-    const discount_code = await prisma.discountCodes.create({
+    const discount_code = await prisma.$transaction(async tx => {
+      const where = { id: { in: selectedIds }, shopId: req.seller.shop?.id, isDeleted: false };
+      if (selectedIds.length && await tx.products.count({ where }) !== selectedIds.length) throw new ValidationError('Select available products belonging to your shop');
+      const code = await tx.discountCodes.create({
       data: {
-        public_name,
-        discountType,
-        discountValue: parseFloat(discountValue),
-        discountCode,
+        public_name: public_name.trim(),
+        discountType: discountType === 'flat' ? 'fixed' : discountType,
+        discountValue: value,
+        discountCode: discountCode.trim(),
         sellerId: req.seller.id,
       },
+      });
+      if (selectedIds.length) {
+        const updated = await tx.products.updateMany({ where, data: { discount_codes: { push: code.id } } });
+        if (updated.count !== selectedIds.length) throw new ValidationError('Selected products changed. Please retry');
+      }
+      return code;
     });
 
     try {
@@ -103,28 +121,32 @@ export const deleteDiscountCodes = async (
   next: NextFunction,
 ) => {
   try {
-    const { id } = req.params;
+    const id = objectId(req.params.id);
     const sellerId = req.seller.id;
-
-    // Check discount code exists and belongs to the seller
-    const discountCode = await prisma.discountCodes.findUnique({
-      where: { id },
-      select: { id: true, sellerId: true },
-    });
-
-    // If discount code not found or doesn't belong to the seller
-    if (!discountCode) {
-      return res.status(404).json({ message: "Discount code not found" });
-    }
-
-    if (discountCode.sellerId !== sellerId) {
-      return res.status(403).json({
-        message: "You don't have permission to access this discount code",
+    await transaction(async tx => {
+      const discountCode = await tx.discountCodes.findUnique({
+        where: { id },
+        select: { id: true, sellerId: true },
       });
-    }
+      if (!discountCode) throw new NotFoundError("Discount code not found");
+      if (discountCode.sellerId !== sellerId) throw new ForbiddenError("You don't have permission to access this discount code");
 
-    await prisma.discountCodes.delete({
-      where: { id },
+      const shop = await tx.shops.findUnique({ where: { sellerId }, select: { id: true } });
+      if (shop) {
+        const products = await tx.products.findMany({
+          where: { shopId: shop.id, discount_codes: { has: id } },
+          select: { id: true, discount_codes: true },
+        });
+        // MongoDB scalar lists require replacing the array. A conflicting product
+        // update aborts this transaction; the helper retries from a fresh snapshot.
+        for (const product of products) {
+          await tx.products.update({
+            where: { id: product.id, shopId: shop.id },
+            data: { discount_codes: { set: product.discount_codes.filter(code => code !== id) } },
+          });
+        }
+      }
+      await tx.discountCodes.delete({ where: { id, sellerId } });
     });
 
     return res.status(200).json({ message: "Discount code deleted successfully" });
@@ -272,6 +294,11 @@ export const createProduct = async (
       );
     }
 
+    const listing = { title, category, description: `${short_description}\n${String(detailed_description || detail_description)}`.replace(/<[^>]*>/g, ' ').slice(0, 12000) };
+    let moderation: { flagged: boolean; category: string; reason: string } | null = null;
+    let scanUnavailable = false;
+    try { moderation = await scanProductListing(listing); } catch { scanUnavailable = true; }
+    const reviewRequired = scanUnavailable || moderation?.flagged === true;
     const newProduct = await prisma.products.create({
       data: {
         title,
@@ -296,6 +323,8 @@ export const createProduct = async (
         regular_price: parseFloat(regular_price),
         custom_properties: finalCustomProperties,
         custom_specification: finalCustomSpecifications,
+        status: reviewRequired ? 'PendingReview' : 'Active',
+        ...(reviewRequired ? { moderationReason: scanUnavailable ? 'Automatic screening is unavailable; administrator review is required.' : moderation!.reason } : {}),
         images: {
           create: images
             .filter((img: any) => img && img.fileId && img.url) // UI sends img.url
@@ -307,6 +336,10 @@ export const createProduct = async (
       },
     });
 
+    if (moderation?.flagged) {
+      await submitProductReport(newProduct.id, req.seller.id, 'AI', moderation.category, moderation.reason, listing).catch(error => console.error('Could not persist AI moderation report:', error));
+    }
+
     await sendBehaviorLog("productCreated", {
       type: "success",
       source: "product-service",
@@ -316,7 +349,7 @@ export const createProduct = async (
 
     return res.status(201).json({
       success: true,
-      message: "Product created successfully",
+      message: reviewRequired ? "Product submitted for administrator review" : "Product created successfully",
       newProduct,
     });
   } catch (error) {
@@ -337,6 +370,7 @@ export const getShopProducts = async (
       },
       include: {
         images: true,
+        _count: { select: { reviews: true } },
       },
     });
 
@@ -457,6 +491,7 @@ export const getAllProducts = async (
     const type = req.query.type;
 
     const baseFilter = {
+      status: 'Active' as const, isDeleted: false,
       OR: [
         { starting_date: null },
         { starting_date: { isSet: false } },
@@ -512,7 +547,7 @@ export const getProductDetails = async (
 ) => {
   try {
     const product = await prisma.products.findUnique({
-      where: { slug: req.params.slug },
+      where: { slug: req.params.slug, status: 'Active', isDeleted: false },
       include: {
         images: true,
         shop: true,
@@ -538,125 +573,7 @@ export const getProductDetails = async (
 };
 
 // Get filtered products
-export const getFilteredProducts = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const {
-      priceRange = [0, 10000],
-      categories = [],
-      subCategories = [],
-      colors = [],
-      sizes = [],
-      excludeId = "",
-      page = 1,
-      limit = 12,
-    } = req.query;
-
-    const parsedPriceRange =
-      typeof priceRange === "string"
-        ? priceRange.split(",").map(Number)
-        : [0, 10000];
-
-    const parsedPage = Number(page);
-    const parsedLimit = Number(limit);
-
-    const skip = (parsedPage - 1) * parsedLimit;
-
-    const filters: Record<string, any> = {
-      sale_price: {
-        gte: parsedPriceRange[0],
-        lte: parsedPriceRange[1],
-      },
-      OR: [{ starting_date: null }, { starting_date: { isSet: false } }],
-    };
-
-    // Exclude current product from recommendations
-    if (excludeId && typeof excludeId === "string") {
-      filters.id = {
-        not: excludeId,
-      };
-    }
-
-    if (categories && (categories as string[]).length > 0) {
-      filters.category = {
-        in: Array.isArray(categories)
-          ? categories
-          : String(categories).split(","),
-      };
-    }
-
-    if (subCategories && (subCategories as string[]).length > 0) {
-      filters.subCategory = {
-        in: Array.isArray(subCategories)
-          ? subCategories
-          : String(subCategories).split(","),
-      };
-    }
-
-    if (colors && (colors as string[]).length > 0) {
-      filters.colors = {
-        hasSome: Array.isArray(colors) ? colors : [colors],
-      };
-    }
-
-    if (sizes && (sizes as string[]).length > 0) {
-      filters.sizes = {
-        hasSome: Array.isArray(sizes) ? sizes : [sizes],
-      };
-    }
-
-    const [products, total] = await Promise.all([
-      prisma.products.findMany({
-        where: filters,
-        skip,
-        take: parsedLimit,
-        include: {
-          images: true,
-          shop: true,
-        },
-      }),
-      prisma.products.count({ where: filters }),
-    ]);
-
-    const activeFilterKeys = [
-      "priceRange",
-      "categories",
-      "subCategories",
-      "colors",
-      "sizes",
-    ]
-      .filter((key) => req.query[key] !== undefined)
-      .filter((key) => {
-        const value = req.query[key];
-        return Array.isArray(value) ? value.length > 0 : Boolean(value);
-      });
-
-    if (activeFilterKeys.length > 0) {
-      await sendBehaviorLog("productFilter", {
-        type: "info",
-        source: "product-service",
-        message: "Product filters applied",
-        metadata: { filterKeys: activeFilterKeys, resultCount: total },
-      });
-    }
-
-    const totalPages = Math.ceil(total / parsedLimit);
-
-    return res.json({
-      products,
-      pagination: {
-        total,
-        page: parsedPage,
-        totalPages,
-      },
-    });
-  } catch (error) {
-    return next(error);
-  }
-};
+export { filteredCatalog as getFilteredProducts } from './catalog-query';
 // Get filtered events
 export const getFilteredEvents = async (
   req: Request,
@@ -684,6 +601,7 @@ export const getFilteredEvents = async (
     const skip = (parsedPage - 1) * parsedLimit;
 
     const filters: Record<string, any> = {
+      status: 'Active', isDeleted: false,
       sale_price: {
         gte: parsedPriceRange[0],
         lte: parsedPriceRange[1],
@@ -762,7 +680,7 @@ export const getShopById = async (
           },
         },
         products: {
-          where: { isDeleted: false },
+          where: { isDeleted: false, status: 'Active' },
           take: 20,
           orderBy: { createdAt: "desc" },
           include: {
@@ -803,7 +721,8 @@ export const getFilteredShops = async (
     const parsedLimit = Number(limit);
     const skip = (parsedPage - 1) * parsedLimit;
 
-    const filters: Record<string, any> = {};
+    const filters: Record<string, any> = {
+      status: 'Active', isDeleted: false,};
 
     if (categories && String(categories).length > 0) {
       filters.category = {
@@ -871,6 +790,7 @@ export const searchProducts = async (
 
     const products = await prisma.products.findMany({
       where: {
+        status: 'Active', isDeleted: false,
         OR: [
           {
             title: {
@@ -1006,6 +926,7 @@ export const getAllEvents = async (
     const skip = (page - 1) * limit;
 
     const baseFilter = {
+      status: 'Active' as const, isDeleted: false,
       AND: [{ starting_date: { not: null } }, { ending_date: { not: null } }],
     };
 

@@ -30,10 +30,26 @@ import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isSeller, isUser } from "@packages/middleware/authorizeRoles";
 import * as management from '../controllers/product-management.controller';
 import { revenueReport } from '../controllers/reports.controller';
+import { sellerStatistics, sellerAnalytics, sellerProductAnalytics, sellerCustomerAnalytics } from '../controllers/statistics.controller';
+import * as moderation from '../controllers/product-reports.controller';
+import { updateDiscountProducts } from '../controllers/discount-products.controller';
 import prisma from '@packages/libs/prisma';
 import { handle } from '@packages/utils/api';
+import rateLimit from 'express-rate-limit';
 
 const router: Router = express.Router();
+router.post('/products/:id/report', isAuthenticated, isUser, moderation.reportProduct);
+router.get('/seller-violations', isAuthenticated, isSeller, moderation.sellerViolations);
+router.get('/seller-moderation-tasks', isAuthenticated, isSeller, moderation.sellerModerationTasks);
+router.patch('/seller-moderation-tasks/:id', isAuthenticated, isSeller, moderation.resolveModerationTask);
+import { listVariants, saveVariant } from '../controllers/variants.controller';
+import { buildCatalog, quoteBuild, getSavedBuild, saveBuild } from '../controllers/pc-builder.controller';
+router.get('/pc-builder/catalog', buildCatalog);
+router.post('/pc-builder/quote', quoteBuild);
+router.get('/pc-builder/saved', isAuthenticated, isUser, getSavedBuild);
+router.put('/pc-builder/saved', isAuthenticated, isUser, saveBuild);
+router.get('/variants/:id', listVariants);
+router.put('/variants/:id', isAuthenticated, isSeller, saveVariant);
 router.get('/sitemap-data', handle(async (req, res) => {
   const skip = Math.max(0, Math.floor(Number(req.query.page) || 0)) * 500;
   const [products, shops] = await Promise.all([
@@ -43,8 +59,12 @@ router.get('/sitemap-data', handle(async (req, res) => {
   res.json({ entries: [...products.map(p => ({ path: `/product/${encodeURIComponent(p.slug)}`, updatedAt: p.updatedAt })), ...shops.map(s => ({ path: `/shop/${s.id}`, updatedAt: s.updatedAt }))], hasMore: products.length === 500 || shops.length === 500 });
 }));
 router.get('/seller-reports', isAuthenticated, isSeller, revenueReport);
+router.get('/seller-statistics', isAuthenticated, isSeller, sellerStatistics);
+router.get('/seller-analytics', isAuthenticated, isSeller, sellerAnalytics);
+router.get('/seller-analytics/products/:id', isAuthenticated, isSeller, sellerProductAnalytics);
+router.get('/seller-analytics/customers/:id', isAuthenticated, isSeller, sellerCustomerAnalytics);
 router.get('/seller-product/:id', isAuthenticated, isSeller, management.getEditableProduct);
-router.put('/update-product/:id', isAuthenticated, isSeller, management.updateProduct);
+router.put('/update-product/:id', isAuthenticated, isSeller, rateLimit({ windowMs: 60000, max: 10, keyGenerator: req => (req as any).seller.id }), management.updateProduct);
 router.get('/inventory', isAuthenticated, isSeller, management.getInventory);
 router.post('/create-review', isAuthenticated, isUser, management.createReview);
 router.get('/product-reviews/:productId', management.getReviews);
@@ -53,6 +73,7 @@ router.get("/get-categories", getCategories);
 router.get("/get-seller-stats", isAuthenticated, isSeller, getSellerStats);
 // Discount
 router.get("/get-discount-code", isAuthenticated, isSeller, getDiscountCodes);
+router.patch('/discount-code/:id/products', isAuthenticated, isSeller, updateDiscountProducts);
 router.get(
   "/get-seller-notifications",
   isAuthenticated,
@@ -81,7 +102,7 @@ router.delete(
 router.post("/upload-product-image", isAuthenticated, isSeller, uploadProductImages);
 router.delete("/delete-product-image", isAuthenticated, isSeller, deleteProductImages);
 // Products
-router.post("/create-product", isAuthenticated, isSeller, createProduct);
+router.post("/create-product", isAuthenticated, isSeller, rateLimit({ windowMs: 60000, max: 10, keyGenerator: req => (req as any).seller.id }), createProduct);
 router.get("/get-shop-products", isAuthenticated, isSeller, getShopProducts);
 router.post("/delete-product/:id", isAuthenticated, isSeller, deleteProduct);
 router.post("/restore-product/:id", isAuthenticated, isSeller, restoreProduct);

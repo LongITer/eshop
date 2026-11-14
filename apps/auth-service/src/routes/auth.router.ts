@@ -25,7 +25,10 @@ import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isAdmin, isSeller, isUser } from "@packages/middleware/authorizeRoles";
 import * as account from '../controllers/account.controller';
 import { googleStart, googleCallback } from '../controllers/google.controller';
+import { getShoppingState, saveShoppingState } from '../controllers/shopping-state.controller';
 const router: Router = express.Router();
+router.get('/shopping-state',isAuthenticated,isUser,getShoppingState);
+router.put('/shopping-state',isAuthenticated,isUser,saveShoppingState);
 router.get('/auth/google', googleStart);
 router.get('/auth/google/callback', googleCallback);
 router.get('/user-notifications', isAuthenticated, isUser, account.getNotifications);
@@ -47,10 +50,26 @@ router.get('/logout-user', (_req, res) => {
   for (const name of ['access_token', 'refresh_token']) res.clearCookie(name, { path: '/' });
   res.json({ success: true });
 });
+router.get('/logout-admin', (_req, res) => {
+  for (const name of ['access_token', 'refresh_token']) res.clearCookie(name, { path: '/' });
+  res.json({ success: true });
+});
+router.get('/logout-seller', (_req, res) => {
+  for (const name of ['seller_access_token', 'seller_refresh_token']) res.clearCookie(name, { path: '/' });
+  res.json({ success: true });
+});
 router.post("/login-admin", loginAdmin);
 router.post("/refresh-token", refreshUserToken);
 router.post("/seller-refresh-token", refreshSellerToken);
-router.get("/logged-in-user", isAuthenticated, isUser, getUser);
+router.get("/logged-in-user", (req, res, next) => {
+  // A guest profile probe must not trigger a refresh for a nonexistent session.
+  res.setHeader('Cache-Control', 'no-store');
+  if (!req.cookies?.access_token && !req.cookies?.refresh_token && !req.headers.authorization) {
+    res.status(401).json({ code: 'SESSION_MISSING', message: 'Please sign in.' });
+    return;
+  }
+  next();
+}, isAuthenticated, isUser, getUser);
 router.get("/logged-in-admin", isAuthenticated, isAdmin, getAdmin);
 router.patch("/change-password", isAuthenticated, changeUserPassword);
 router.post("/forgot-password-user", userForgotPassword);

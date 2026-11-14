@@ -1,4 +1,6 @@
 "use client";
+import { useStorefrontText } from '@packages/components/storefront-language';
+
 import { useChatConnection, ChatAttachments, PushOptIn, AttachmentPreview, MessageAttachment } from "@packages/components/chat";
 
 import useRequireAuth from "@/hooks/useRequireAuth";
@@ -47,18 +49,19 @@ interface Message {
 const DEFAULT_AVATAR =
   "https://hunggiaco.com/wp-content/uploads/2026/03/avatar-mac-dinh-facebook-1-1.jpg";
 
-const formatTime = (iso: string) => {
+const formatTime = (iso: string, locale: string) => {
   const d = new Date(iso);
   const now = new Date();
   const diff = now.getTime() - d.getTime();
-  if (diff < 60_000) return "Just now";
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  return d.toLocaleDateString();
+  if (diff < 60_000) return new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(0, "second");
+  if (diff < 3_600_000) return new Intl.RelativeTimeFormat(locale).format(-Math.floor(diff / 60_000), "minute");
+  if (diff < 86_400_000) return new Intl.RelativeTimeFormat(locale).format(-Math.floor(diff / 3_600_000), "hour");
+  return d.toLocaleDateString(locale);
 };
 
 /* ═══════════════════════════ page ═══════════════════════════ */
 const Inbox = () => {
+  const { t } = useStorefrontText();
   const searchParams = useSearchParams();
   const { user, isLoading: userLoading } = useRequireAuth();
   const router = useRouter();
@@ -220,8 +223,7 @@ const Inbox = () => {
       <div className="md:w-[85%] mx-auto pt-5 pb-10 px-4">
         <h1 className="text-2xl font-bold text-gray-800 mb-5 flex items-center gap-2">
           <MessageCircle className="w-6 h-6 text-blue-500" />
-          Inbox
-        </h1>
+          {t("Inbox")}</h1>
 
         <div className="flex h-[80vh] rounded-xl shadow-md overflow-hidden border border-gray-200 bg-white">
           {/* ── LEFT: Conversation List ── */}
@@ -231,8 +233,7 @@ const Inbox = () => {
             {/* header */}
             <div className="px-4 py-3 border-b border-gray-100 bg-white">
               <p className="text-sm font-semibold text-gray-700">
-                All Conversations
-              </p>
+                {t("All Conversations")}</p>
             </div>
 
             {/* list */}
@@ -330,13 +331,12 @@ const Inbox = () => {
                       onClick={loadMore}
                       className="mx-auto text-xs text-blue-500 hover:underline py-2"
                     >
-                      Load older messages
-                    </button>
+                      {t("Load older messages")}</button>
                   )}
                 </div>
 
                 {/* input */}
-                <div className="text-sm px-4">{chatReady ? '' : 'Connecting…'}{typingUntil > 0 && <p>Typing…</p>}{chatError && <p role="alert">{chatError}</p>}{attachments.map(url => <AttachmentPreview key={url} url={url} onRemove={() => setAttachments(current => current.filter(item => item !== url))} />)}</div>
+                <div className="text-sm px-4">{chatReady ? '' : t('Connecting…')}{typingUntil > 0 && <p>{t("Typing…")}</p>}{chatError && <p role="alert">{chatError}</p>}{attachments.map(url => <AttachmentPreview key={url} url={url} onRemove={() => setAttachments(current => current.filter(item => item !== url))} />)}</div>
                 <div className="flex items-center gap-1 px-4 py-1.5">{selectedChat && <ChatAttachments key={selectedChat.conversationId} api={axiosInstance} conversationId={selectedChat.conversationId} onUploaded={url => setAttachments(prev => [...prev, url].slice(0, 5))} />}
                 <PushOptIn api={axiosInstance} /></div>
                 <div className="px-4 py-3 border-t border-gray-100 bg-white flex items-center gap-3">
@@ -345,13 +345,13 @@ const Inbox = () => {
                     value={message}
                     onChange={e => { setMessage(e.target.value); if (chatReady && selectedChat) wsRef.current?.send(JSON.stringify({ type: 'TYPING', conversationId: selectedChat.conversationId, typing: !!e.target.value })); }}
                     onKeyDown={handleKeyDown}
-                    placeholder="Type a message…"
+                    placeholder={t("Type a message…")}
                     className="min-w-0 flex-1 text-sm bg-gray-100 rounded-full px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-300 transition placeholder:text-gray-400"
                   />
                   <button
                     onClick={handleSend}
-                    title="Send message"
-                    aria-label="Send message"
+                    title={t("Send message")}
+                    aria-label={t("Send message")}
                     disabled={(!message.trim() && !attachments.length) || sending || !chatReady}
                     className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white transition active:scale-95"
                   >
@@ -387,7 +387,9 @@ const ConversationItem = ({
   active: boolean;
   onClick: () => void;
   userId?: string;
-}) => (
+}) => {
+  const { locale } = useStorefrontText();
+  return (
   <button
     onClick={onClick}
     className={`w-full flex items-center gap-3 px-4 py-3 text-left border-b border-gray-50 transition hover:bg-blue-50 ${active ? "bg-blue-50 border-l-2 border-l-blue-500" : ""}`}
@@ -411,7 +413,7 @@ const ConversationItem = ({
           {chat.seller.name}
         </p>
         <span className="text-[10px] text-gray-400 ml-1 flex-shrink-0">
-          {formatTime(chat.lastMessageAt)}
+          {formatTime(chat.lastMessageAt, locale)}
         </span>
       </div>
       <div className="flex items-center justify-between mt-0.5">
@@ -425,6 +427,7 @@ const ConversationItem = ({
     </div>
   </button>
 );
+};
 
 const MessageBubble = ({
   msg,
@@ -436,7 +439,9 @@ const MessageBubble = ({
   isOwn: boolean;
   userAvatar?: string | null;
   sellerAvatar?: string | null;
-}) => (
+}) => {
+  const { t, locale } = useStorefrontText();
+  return (
   <div className={`flex items-end gap-2 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
     <Image
       src={
@@ -458,32 +463,37 @@ const MessageBubble = ({
       <p
         className={`text-[10px] mt-1 text-right ${isOwn && !msg.attachments?.length ? "text-blue-100" : "text-gray-400"}`}
       >
-        {msg.status === "sending" ? "Sending…" : formatTime(msg.createdAt)}
+        {msg.status === "sending" ? t("Sending…") : formatTime(msg.createdAt, locale)}
       </p>
     </div>
   </div>
 );
+};
 
-const EmptyConversations = () => (
+const EmptyConversations = () => {
+  const { t } = useStorefrontText();
+  return (
   <div className="flex flex-col items-center justify-center h-full text-center p-6 gap-3">
     <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center">
       <Store className="w-7 h-7 text-blue-400" />
     </div>
-    <p className="font-semibold text-gray-700 text-sm">No conversations yet</p>
+    <p className="font-semibold text-gray-700 text-sm">{t("No conversations yet")}</p>
     <p className="text-xs text-gray-400">
-      Chat with sellers directly from a product page.
-    </p>
+      {t("Chat with sellers directly from a product page.")}</p>
   </div>
 );
+};
 
-const EmptyChat = () => (
+const EmptyChat = () => {
+  const { t } = useStorefrontText();
+  return (
   <div className="flex flex-col items-center justify-center h-full text-center p-6 gap-3">
     <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center">
       <MessageCircle className="w-8 h-8 text-blue-400" />
     </div>
-    <p className="font-semibold text-gray-700">Select a conversation</p>
+    <p className="font-semibold text-gray-700">{t("Select a conversation")}</p>
     <p className="text-xs text-gray-400 max-w-[220px]">
-      Choose a chat from the left to start messaging a seller.
-    </p>
+      {t("Choose a chat from the left to start messaging a seller.")}</p>
   </div>
 );
+};

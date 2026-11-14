@@ -12,6 +12,7 @@
         "target": "node",
         "compiler": "tsc",
         "outputPath": "apps/recommendation-service/dist",
+        "deleteOutputPath": false,
         "main": "apps/recommendation-service/src/main.ts",
         "tsConfig": "apps/recommendation-service/tsconfig.app.json",
         "webpackConfig": "apps/recommendation-service/webpack.config.js"

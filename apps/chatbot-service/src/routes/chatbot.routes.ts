@@ -1,3 +1,4 @@
+import { adminPermission } from '@packages/middleware/adminPermission';
 /**
  * Chatbot Routes
  * Defines HTTP endpoints for the PC builder chatbot service.
@@ -43,7 +44,7 @@ router.delete("/conversations/:id", optionalAuthentication, deleteConversation);
 
 // ─── Templates (admin) ─────────────────────────────────────────────
 router.get("/templates", getTemplates);
-router.post("/templates", isAuthenticated, isAdmin, createTemplate);
-router.put("/templates/:id", isAuthenticated, isAdmin, updateTemplate);
+router.post("/templates", isAuthenticated, isAdmin, adminPermission('catalog'), createTemplate);
+router.put("/templates/:id", isAuthenticated, isAdmin, adminPermission('catalog'), updateTemplate);
 
 export default router;

@@ -21,14 +21,14 @@ const RevenueChart = ({ data, monthly = false }: { data: RevenuePoint[]; monthly
 
   return (
     <div className="w-full relative">
-      <div className="flex items-end gap-[3px] h-48">
+      <div className="relative flex h-52 items-end gap-1 border-b border-slate-700 bg-[linear-gradient(to_top,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[length:100%_25%]">
         {data.map((point, index) => {
           const heightPct = (point.revenue / max) * 100;
           const isActive = activeIndex === index;
           return (
             <div
               key={point.date}
-              className="relative flex-1 h-full flex flex-col justify-end cursor-pointer"
+              className="relative min-w-0 flex-1 h-full flex flex-col justify-end cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
               onMouseEnter={() => setActiveIndex(index)}
               onMouseLeave={() => setActiveIndex(null)}
               tabIndex={0}
@@ -37,7 +37,7 @@ const RevenueChart = ({ data, monthly = false }: { data: RevenuePoint[]; monthly
               aria-label={`${formatDate(point.date)}: $${point.revenue.toFixed(2)}, ${point.orders} paid orders`}
             >
               {isActive && (
-                <div className="absolute z-10 -translate-x-1/2 -top-16 left-1/2 whitespace-nowrap bg-gray-800 border border-gray-700 rounded-md px-3 py-1.5 text-xs text-white shadow-lg pointer-events-none">
+                <div className={`absolute z-10 -top-16 max-w-[240px] rounded-xl bg-slate-800 px-3 py-2 text-xs text-white shadow-lg ring-1 ring-slate-700 pointer-events-none ${index < data.length / 2 ? "left-0" : "right-0"}`}>
                   <span className="text-gray-400">
                     {formatDate(point.date)}
                   </span>
@@ -55,9 +55,9 @@ const RevenueChart = ({ data, monthly = false }: { data: RevenuePoint[]; monthly
               <div
                 className={`w-full rounded-t transition-colors ${
                   isActive
-                    ? "bg-emerald-400"
+                    ? "bg-blue-400"
                     : point.revenue > 0
-                      ? "bg-emerald-500/80"
+                      ? "bg-blue-500/80"
                       : "bg-gray-800"
                 }`}
                 style={{
@@ -75,17 +75,8 @@ const RevenueChart = ({ data, monthly = false }: { data: RevenuePoint[]; monthly
         </div>
       )}
 
-      <div className="flex gap-[3px] mt-2">
-        {data.map((point, index) => (
-          <div
-            key={point.date}
-            className={`flex-1 text-center text-[10px] ${
-              monthly || index % 5 === 0 ? "text-gray-400" : "text-transparent"
-            }`}
-          >
-            {formatDate(point.date)}
-          </div>
-        ))}
+      <div className="relative mt-3 h-5 text-[10px] text-slate-500">
+        {data.filter((_, index) => index === 0 || index === data.length - 1 || (data.length > 2 && index === Math.floor(data.length / 2))).map((point, index, labels) => <span key={point.date} className={`absolute ${index === 0 ? 'left-0' : index === labels.length - 1 ? 'right-0' : 'left-1/2 -translate-x-1/2'}`}>{formatDate(point.date)}</span>)}
       </div>
     </div>
   );

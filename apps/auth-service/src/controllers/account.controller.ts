@@ -5,25 +5,27 @@ import { handle, objectId, pageArgs, textField } from '@packages/utils/api';
 import { NotFoundError, ValidationError } from '@packages/error-handler';
 
 export const getNotifications = handle(async (req, res) => {
-  const where = { userId: req.user.id };
-  const [notifications, unreadCount, total] = await Promise.all([
+  const owner = { userId: req.user!.id };
+  const unreadOnly = req.query.unread === 'true';
+  const where = unreadOnly ? { ...owner, isRead: false } : owner;
+  const [notifications, unreadCount, totalCount] = await Promise.all([
     prisma.notifications.findMany({ where, ...pageArgs(req.query), orderBy: { createdAt: 'desc' } }),
-    prisma.notifications.count({ where: { ...where, isRead: false } }),
-    prisma.notifications.count({ where }),
+    prisma.notifications.count({ where: { ...owner, isRead: false } }),
+    prisma.notifications.count({ where: owner }),
   ]);
-  res.json({ notifications, unreadCount, total });
+  res.json({ notifications, unreadCount, total: unreadOnly ? unreadCount : totalCount, totalCount });
 });
 export const readNotification = handle(async (req, res) => {
-  const result = await prisma.notifications.updateMany({ where: { id: objectId(req.params.id), userId: req.user.id }, data: { isRead: true } });
+  const result = await prisma.notifications.updateMany({ where: { id: objectId(req.params.id), userId: req.user!.id }, data: { isRead: true } });
   if (!result.count) throw new NotFoundError();
   res.json({ success: true });
 });
 export const readAllNotifications = handle(async (req, res) => {
-  await prisma.notifications.updateMany({ where: { userId: req.user.id, isRead: false }, data: { isRead: true } });
+  await prisma.notifications.updateMany({ where: { userId: req.user!.id, isRead: false }, data: { isRead: true } });
   res.json({ success: true });
 });
 export const addAddress = handle(async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user!.id;
   const data = addressFields(req.body);
   const address = await transaction(async tx => {
     await tx.users.update({ where: { id: userId }, data: { updatedAt: new Date() } });
@@ -39,7 +41,7 @@ function addressFields(body: Record<string, unknown>) {
 }
 export const updateAddress = handle(async (req, res) => {
   const id = objectId(req.params.addressId);
-  const userId = req.user.id;
+  const userId = req.user!.id;
   const data = addressFields(req.body);
   const address = await transaction(async tx => {
     if (!await tx.address.findFirst({ where: { id, userId } })) throw new NotFoundError();
@@ -63,7 +65,7 @@ function avatarData(avatar: any) {
 }
 export const updateUser = handle(async (req, res) => {
   const name = textField(req.body.name, 'name', 100);
-  const user = await prisma.users.update({ where: { id: req.user.id }, data: { name, avatar: avatarData(req.body.avatar) }, select: { id: true, name: true, email: true, avatar: true } });
+  const user = await prisma.users.update({ where: { id: req.user!.id }, data: { name, avatar: avatarData(req.body.avatar) }, select: { id: true, name: true, email: true, avatar: true } });
   res.json({ user });
 });
 export const updateShop = handle(async (req: any, res) => {
@@ -88,19 +90,19 @@ export const updateShop = handle(async (req: any, res) => {
 export const followShop = handle(async (req, res) => {
   const shopId = objectId(req.params.shopId);
   if (!await prisma.shops.findUnique({ where: { id: shopId } })) throw new NotFoundError();
-  await prisma.users.updateMany({ where: { id: req.user.id, NOT: { following: { has: shopId } } }, data: { following: { push: shopId } } });
+  await prisma.users.updateMany({ where: { id: req.user!.id, NOT: { following: { has: shopId } } }, data: { following: { push: shopId } } });
   res.json({ success: true });
 });
 export const unfollowShop = handle(async (req, res) => {
   const shopId = objectId(req.params.shopId);
   await transaction(async tx => {
-    const user = await tx.users.findUniqueOrThrow({ where: { id: req.user.id } });
+    const user = await tx.users.findUniqueOrThrow({ where: { id: req.user!.id } });
     await tx.users.update({ where: { id: user.id }, data: { following: user.following.filter(id => id !== shopId) } });
   });
   res.json({ success: true });
 });
 export const followedShops = handle(async (req, res) => {
-  const user = await prisma.users.findUniqueOrThrow({ where: { id: req.user.id } });
+  const user = await prisma.users.findUniqueOrThrow({ where: { id: req.user!.id } });
   const shops = await prisma.shops.findMany({ where: { id: { in: user.following } }, include: { avatar: true } });
   res.json({ shops });
 });

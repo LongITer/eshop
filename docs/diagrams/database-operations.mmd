@@ -1,0 +1,89 @@
+erDiagram
+  users {
+    ObjectId id PK "Mongo _id"
+    String name
+    String email UK
+    String role
+  }
+  behaviorLog {
+    ObjectId id PK "Mongo _id"
+    String eventId UK
+    String action
+    String userId "nullable"
+    String source
+    String type
+    String message
+    Json metadata "nullable"
+    DateTime createdAt
+  }
+  adminAudit {
+    ObjectId id PK "Mongo _id"
+    ObjectId actorId
+    String action
+    String targetId
+    String reason
+    Json before "nullable"
+    Json after "nullable"
+    DateTime createdAt
+  }
+  adminGuard {
+    String id PK "Mongo _id"
+    Int revision
+  }
+  notificationJob {
+    ObjectId id PK "Mongo _id"
+    String requestKey UK
+    ObjectId actorId
+    String title
+    String message
+    String audience
+    ObjectId recipientId "nullable"
+    String status
+    ObjectId cursor "nullable"
+    Int sent
+    String error "nullable"
+    DateTime leaseUntil "nullable"
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  userAnalytics {
+    ObjectId id PK "Mongo _id"
+    ObjectId userId UK
+    Json[] actions
+    DateTime lastVisited
+    String country "nullable"
+    String city "nullable"
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  log_config {
+    ObjectId id PK "Mongo _id"
+    Boolean userLogin
+    Boolean userRegistration
+    Boolean userLogout
+    Boolean passwordChange
+    Boolean passwordReset
+    Boolean productView
+    Boolean productSearch
+    Boolean productFilter
+    Boolean addToCart
+    Boolean addToWishlist
+    Boolean orderCreated
+    Boolean orderCancelled
+    Boolean paymentAttempt
+    Boolean paymentSuccess
+    Boolean paymentFailed
+    Boolean couponUsed
+    Boolean sellerLogin
+    Boolean sellerRegistration
+    Boolean shopCreated
+    Boolean productCreated
+    Boolean productDeleted
+    Boolean orderStatusChange
+    Boolean apiErrors
+    Boolean rateLimitHit
+    Boolean webhookEvents
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  users ||..o| userAnalytics : "userId [ID]"

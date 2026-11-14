@@ -1,4 +1,6 @@
 "use client";
+import { useStorefrontText } from '@packages/components/storefront-language';
+
 
 import axiosInstance from "@/utils/axioInstance";
 import { useQuery } from "@tanstack/react-query";
@@ -87,6 +89,7 @@ export default function OrderDetailPage({
 }: {
   params: Promise<{ orderId: string }>;
 }) {
+  const { t, locale } = useStorefrontText();
   const { orderId } = use(params);
 
   const {
@@ -112,13 +115,12 @@ export default function OrderDetailPage({
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center text-gray-500">
         <Package className="h-12 w-12 text-gray-300" />
-        <p className="text-sm">Order not found or failed to load.</p>
+        <p className="text-sm">{t("Order not found or failed to load.")}</p>
         <Link
           href="/profile?active=My Orders"
           className="text-sm text-blue-500 hover:underline"
         >
-          ← Back to My Orders
-        </Link>
+          {t("← Back to My Orders")}</Link>
       </div>
     );
   }
@@ -138,25 +140,28 @@ export default function OrderDetailPage({
           className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to My Orders
-        </Link>
+          {t("Back to My Orders")}</Link>
 
         {/* Card */}
         <div className="rounded-xl bg-white shadow-sm border border-gray-100 p-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-6">
-            Order <span className="text-blue-500">#{displayId}</span>
+            {t("Order ")}<span className="text-blue-500">#{displayId}</span>
           </h1>
 
           {/* ── Progress Tracker ── */}
           <OrderActions order={order} />
           <div className={`relative mb-8 ${['Cancelled', 'Returned', 'Refunded'].includes(order.status ?? '') ? 'hidden' : ''}`}>
             {/* Background line */}
-            <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200 z-0" />
+            <div
+              className="absolute top-4 h-0.5 bg-gray-200 z-0"
+              style={{ left: `${50 / STATUS_STEPS.length}%`, right: `${50 / STATUS_STEPS.length}%` }}
+            />
             {/* Filled line */}
             <div
-              className="absolute top-4 left-0 h-0.5 bg-green-500 z-0 transition-all duration-500"
+              className="absolute top-4 h-0.5 bg-green-500 z-0 transition-all duration-500"
               style={{
-                width: `${(currentStep / (STATUS_STEPS.length - 1)) * 100}%`,
+                left: `${50 / STATUS_STEPS.length}%`,
+                width: `${(currentStep / STATUS_STEPS.length) * 100}%`,
               }}
             />
             <div className="relative z-10 flex justify-between">
@@ -189,7 +194,7 @@ export default function OrderDetailPage({
                             : "text-gray-400"
                       }`}
                     >
-                      {step.label}
+                      {t(step.label)}
                     </span>
                   </div>
                 );
@@ -201,7 +206,7 @@ export default function OrderDetailPage({
           <div className="space-y-1 text-sm text-gray-600 mb-6">
             <p>
               <span className="font-semibold text-gray-700">
-                Payment Status:{" "}
+                {t("Payment Status:")}{" "}
               </span>
               <span
                 className={
@@ -210,17 +215,17 @@ export default function OrderDetailPage({
                     : "text-amber-600 font-medium"
                 }
               >
-                {order.paymentStatus ?? "Pending"}
+                {t(order.paymentStatus ?? "Pending")}
               </span>
             </p>
             <p>
-              <span className="font-semibold text-gray-700">Total Paid: </span>
+              <span className="font-semibold text-gray-700">{t("Total Paid: ")}</span>
               ${Number(order.totalAmount ?? 0).toFixed(2)}
             </p>
             <p>
-              <span className="font-semibold text-gray-700">Date: </span>
+              <span className="font-semibold text-gray-700">{t("Date: ")}</span>
               {order.createdAt
-                ? new Date(order.createdAt).toLocaleDateString("en-GB", {
+                ? new Date(order.createdAt).toLocaleDateString(locale, {
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",
@@ -234,8 +239,7 @@ export default function OrderDetailPage({
             <div className="mb-6">
               <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-gray-700">
                 <MapPin className="h-4 w-4 text-blue-500" />
-                Shipping Address
-              </h2>
+                {t("Shipping Address")}</h2>
               <div className="text-sm text-gray-600 leading-relaxed pl-6">
                 {addr.name && <p>{addr.name}</p>}
                 {addr.street && <p>{addr.street}</p>}
@@ -253,11 +257,10 @@ export default function OrderDetailPage({
           <div>
             <h2 className="mb-4 text-sm font-semibold text-gray-700 flex items-center gap-1.5">
               <Package className="h-4 w-4 text-blue-500" />
-              Order Items
-            </h2>
+              {t("Order Items")}</h2>
 
             {!order.items || order.items.length === 0 ? (
-              <p className="text-sm text-gray-400 pl-6">No items found.</p>
+              <p className="text-sm text-gray-400 pl-6">{t("No items found.")}</p>
             ) : (
               <div className="divide-y divide-gray-100 rounded-lg border border-gray-100 overflow-hidden">
                 {order.items.map((item) => {
@@ -291,16 +294,16 @@ export default function OrderDetailPage({
                           {itemName}
                         </p>
                         <p className="text-xs text-gray-500 mt-0.5">
-                          Quantity: {item.quantity}
+                          {t("Quantity: ")}{item.quantity}
                         </p>
                         {item.size && (
                           <p className="text-xs text-gray-500">
-                            Size: {item.size}
+                            {t("Size: ")}{item.size}
                           </p>
                         )}
                         {item.color && (
                           <p className="text-xs text-gray-500">
-                            Color: {item.color}
+                            {t("Color: ")}{item.color}
                           </p>
                         )}
                       </div>
@@ -319,7 +322,7 @@ export default function OrderDetailPage({
           {/* ── Total Footer ── */}
           <div className="mt-4 flex justify-end border-t border-gray-100 pt-4">
             <div className="text-right">
-              <p className="text-xs text-gray-500">Order Total</p>
+              <p className="text-xs text-gray-500">{t("Order Total")}</p>
               <p className="text-xl font-bold text-gray-800">
                 ${Number(order.totalAmount ?? 0).toFixed(2)}
               </p>
@@ -331,8 +334,8 @@ export default function OrderDetailPage({
         <div className="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-100 px-4 py-3">
           <Clock className="h-4 w-4 text-blue-500 flex-shrink-0" />
           <p className="text-sm text-blue-700">
-            Current status:{" "}
-            <span className="font-semibold">{order.status ?? "Processing"}</span>
+            {t("Current status:")}{" "}
+            <span className="font-semibold">{t(order.status ?? "Processing")}</span>
           </p>
         </div>
       </div>

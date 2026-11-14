@@ -3,9 +3,11 @@ import { Prisma } from '@prisma/client';
 import prisma from '@packages/libs/prisma';
 import { handle, objectId, pageArgs, textField } from '@packages/utils/api';
 import { NotFoundError, ValidationError, ForbiddenError } from '@packages/error-handler';
+import { scanProductListing } from '@packages/utils/product-moderation-ai';
+import { submitProductReport } from '@packages/utils/product-moderation';
 
 export const getEditableProduct = handle(async (req: any, res) => {
-  const product = await prisma.products.findFirst({ where: { id: objectId(req.params.id), shopId: req.seller.shop?.id, isDeleted: false }, include: { images: true } });
+  const product = await prisma.products.findFirst({ where: { id: objectId(req.params.id), shopId: req.seller.shop?.id, isDeleted: false }, include: { images: true, variants: true } });
   if (!product || !req.seller.shop) throw new NotFoundError();
   res.json({ product });
 });
@@ -49,7 +51,7 @@ export const updateProduct = handle(async (req: any, res) => {
     }
   }
   if (req.body.status !== undefined) {
-    if (!['Active', 'Inactive', 'Draft'].includes(req.body.status)) throw new ValidationError('Invalid status');
+    if (!['Active', 'Inactive', 'Draft', 'Suspended', 'PendingReview', 'Rejected'].includes(req.body.status)) throw new ValidationError('Invalid status');
     data.status = req.body.status;
   }
   if (req.body.images !== undefined) {
@@ -57,9 +59,36 @@ export const updateProduct = handle(async (req: any, res) => {
     if (!Array.isArray(images) || images.length < 1 || images.length > 10 || images.some((img: any) => !img || typeof img.url !== 'string' || !img.url.startsWith('https://') || typeof img.file_id !== 'string' || !img.file_id)) throw new ValidationError('Provide 1–10 uploaded images');
     data.images = { deleteMany: {}, create: images.map((img: any) => ({ file_id: img.file_id, url: img.url })) };
   }
+  const beforeScan = await prisma.products.findFirst({ where: { id, shopId, isDeleted: false } });
+  if (!beforeScan) throw new NotFoundError();
+  if (beforeScan.status === 'PendingReview' && data.status !== undefined && data.status !== 'PendingReview') throw new ValidationError('Administrator approval is required before publishing this product');
+  if (beforeScan.status === 'Rejected' && data.status !== undefined && data.status !== 'Rejected') throw new ValidationError('This listing was rejected by an administrator and cannot be republished');
+  if (beforeScan.status === 'Suspended' && data.status !== undefined && data.status !== 'Suspended') throw new ValidationError('Administrator review is required before republishing this product');
+  const listingChanged = ['title', 'category', 'short_description', 'detailed_description'].some(key => (data as any)[key] !== undefined && (data as any)[key] !== (beforeScan as any)[key]);
+  let moderation: { flagged: boolean; category: string; reason: string } | null = null;
+  let scanUnavailable = false;
+  if (listingChanged) {
+    const candidate = { title: data.title ?? beforeScan.title, category: data.category ?? beforeScan.category, description: `${data.short_description ?? beforeScan.short_description ?? ''}\n${String(data.detailed_description ?? beforeScan.detailed_description)}`.replace(/<[^>]*>/g, ' ').slice(0, 12000) };
+    try { moderation = await scanProductListing(candidate); } catch { scanUnavailable = true; }
+    if (scanUnavailable || moderation?.flagged) {
+      data.status = 'PendingReview';
+      data.moderationReason = scanUnavailable ? 'Automatic screening is unavailable; administrator review is required.' : moderation!.reason;
+    }
+  }
   const product = await transaction(async tx => {
     const current = await tx.products.findFirst({ where: { id, shopId, isDeleted: false } });
     if (!current) throw new NotFoundError();
+    if (current.updatedAt.getTime() !== beforeScan.updatedAt.getTime()) throw new ValidationError('The listing changed while it was being screened. Please review and save again.');
+    if (current.status === 'Suspended' && data.status !== undefined && data.status !== 'Suspended') throw new ValidationError('Administrator review is required before republishing this product');
+    if (current.status === 'PendingReview' && data.status !== undefined && data.status !== 'PendingReview') throw new ValidationError('Administrator approval is required before publishing this product');
+    if (current.status === 'Rejected' && data.status !== undefined && data.status !== 'Rejected') throw new ValidationError('This listing was rejected by an administrator and cannot be republished');
+    const variantCount = await tx.productVariant.count({ where: { productId: id } });
+    if (variantCount) {
+      for (const key of ['stock', 'sale_price', 'colors', 'sizes'] as const) {
+        if (req.body[key] !== undefined && JSON.stringify(req.body[key]) !== JSON.stringify(current[key])) throw new ValidationError('Update stock, price and options in the SKU editor');
+        delete data[key];
+      }
+    }
     if ((req.body.sale_price ?? current.sale_price) > (req.body.regular_price ?? current.regular_price)) throw new ValidationError('Sale price cannot exceed regular price');
     const updated = await tx.products.update({ where: { id, shopId }, data, include: { images: true } });
     if (updated.stock !== current.stock) {
@@ -68,6 +97,7 @@ export const updateProduct = handle(async (req: any, res) => {
     }
     return updated;
   });
+  if (moderation?.flagged) await submitProductReport(product.id, req.seller.id, 'AI', moderation.category, moderation.reason).catch(error => console.error('Could not persist AI moderation report:', error));
   res.json({ success: true, product });
 });
 export const getInventory = handle(async (req: any, res) => {
@@ -75,14 +105,14 @@ export const getInventory = handle(async (req: any, res) => {
   if (!shopId) throw new NotFoundError('Shop not found');
   const threshold = Math.max(1, Math.min(1000, Number(req.query.threshold) || 5));
   const [products, history] = await Promise.all([
-    prisma.products.findMany({ where: { shopId, isDeleted: false, ...(req.query.low === 'true' ? { stock: { lt: threshold } } : {}) }, orderBy: { stock: 'asc' }, include: { images: true } }),
+    prisma.products.findMany({ where: { shopId, isDeleted: false, ...(req.query.low === 'true' ? { stock: { lte: threshold } } : {}) }, orderBy: { stock: 'asc' }, include: { images: true } }),
     prisma.inventoryHistory.findMany({ where: { shopId }, ...pageArgs(req.query), orderBy: { createdAt: 'desc' }, include: { product: { select: { title: true } } } }),
   ]);
   res.json({ products, history, threshold });
 });
 export const createReview = handle(async (req, res) => {
   const productId = objectId(req.body.productId);
-  const userId = req.user.id;
+  const userId = req.user!.id;
   const rating = req.body.rating;
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new ValidationError('Rating must be 1–5');
   const comment = textField(req.body.comment, 'comment', 3000);

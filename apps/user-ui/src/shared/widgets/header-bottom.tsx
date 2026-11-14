@@ -1,4 +1,6 @@
 "use client";
+import { useStorefrontText } from '@packages/components/storefront-language';
+
 import {
   AlignLeft,
   ChevronDown,
@@ -11,10 +13,15 @@ import React, { useEffect, useState } from "react";
 import { navItems } from "../../config/constants";
 import useUser from "../../hooks/useUser";
 import { useStore } from "../../store";
+import { useQuery } from '@tanstack/react-query';
+import axios from '@/utils/axioInstance';
+import { NotificationBadge } from '../components/account-tools';
 
 const HeaderBottom = () => {
+  const { t } = useStorefrontText();
   const [show, setShow] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
+  const categories = useQuery({ queryKey: ['categories'], queryFn: async () => (await axios.get('/product/api/get-categories')).data });
   const { user, isLoading } = useUser();
   const wishList = useStore((state: any) => state.wishlist);
   const cart = useStore((state: any) => state.cart);
@@ -37,44 +44,44 @@ const HeaderBottom = () => {
       className={`w-full transition-all duration-300 ${isSticky ? "fixed top-0 left-0 z-[100] bg-white shadow-lg" : ""}`}
     >
       <div
-        className={`w-[80%] relative m-auto flex items-center justify-between ${isSticky ? "pt-3" : "py-0"}`}
+        className={`relative m-auto flex items-center justify-between gap-4 ${isSticky ? "w-[94%] max-w-[1440px] py-2" : "w-[94%] xl:w-[80%] py-0"}`}
       >
         {/* All Dropdown */}
-        <div
-          className={`w-[260px] ${isSticky && "-mb-2"} cursor-pointer flex items-center justify-between px-5 h-[50px] bg-[#3489FF]`}
+        <button type="button" aria-expanded={show} aria-controls="header-categories"
+          className={`${isSticky ? "w-[220px]" : "w-[220px] xl:w-[260px]"} hidden shrink-0 cursor-pointer items-center justify-between px-5 h-[50px] bg-[#3489FF] lg:flex`}
           onClick={() => setShow(!show)}
         >
           <div className="flex items-center gap-2">
             <AlignLeft color="white" />
-            <span className="text-white font-medium">All Departments</span>
+            <span className="text-white font-medium">{t("Tất cả danh mục")}</span>
           </div>
           <ChevronDown color="white" />
-        </div>
+        </button>
 
         {/* Dropdown menu */}
         {show && (
           <div
-            className={`absolute left-0 ${isSticky ? "top-[70px]" : "top-[50px]"} w-[260px] h-[400px] bg-[#f5f5f5]`}
-          ></div>
+            id="header-categories" className={`absolute z-50 left-0 hidden lg:block ${isSticky ? "top-[66px]" : "top-[50px]"} w-[260px] max-h-96 overflow-y-auto border border-slate-200 bg-white shadow-lg`}
+          >{categories.isLoading ? <p className="p-3">{t("Đang tải…")}</p> : categories.isError ? <button className="p-3" onClick={()=>categories.refetch()}>{t("Tải lại danh mục")}</button> : categories.data?.categories?.map((category:string)=><Link className="block p-3 hover:bg-blue-50" key={category} href={`/products?categories=${encodeURIComponent(category)}`} onClick={()=>setShow(false)}>{category}</Link>)}<Link href="/products" className="block p-3 text-blue-600" onClick={()=>setShow(false)}>{t("Xem tất cả sản phẩm")}</Link></div>
         )}
 
         {/* Navigation Links*/}
-        <div className="flex items-center">
+        <div className="flex min-w-0 flex-1 items-center justify-center">
           {navItems.map((i: NavItemsTypes, index: number) => (
             <Link
-              className="px-5 font-medium text-lg"
+              className={`shrink-0 whitespace-nowrap font-medium ${isSticky ? 'px-2 lg:px-3 text-sm' : 'px-2 lg:px-3 xl:px-5 text-sm xl:text-lg'}`}
               href={i.href}
               key={index}
             >
-              {i.title}
+              {t(i.title)}
             </Link>
           ))}
         </div>
 
-        <div>
+        <div className="shrink-0">
           {isSticky && (
-            <div className="flex items-center gap-8">
-              <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-4">
+              <div className="hidden items-center gap-2 xl:flex">
                 {!isLoading && user ? (
                   <>
                     <Link
@@ -84,7 +91,7 @@ const HeaderBottom = () => {
                       <User />
                     </Link>
                     <Link href={"/profile"}>
-                      <span className="block font-medium">Hello</span>
+                      <span className="block font-medium">{t("Xin chào")}</span>
                       <span className="block font-medium">
                         {user?.name?.split(" ")[0]}
                       </span>
@@ -99,25 +106,26 @@ const HeaderBottom = () => {
                       <User />
                     </Link>
                     <Link href={"/login"}>
-                      <span className="block font-medium">Hello</span>
+                      <span className="block font-medium">{t("Xin chào")}</span>
                       <span className="block font-medium">
-                        {isLoading ? "..." : "Sign in"}
+                        {isLoading ? "..." : t("Đăng nhập")}
                       </span>
                     </Link>
                   </>
                 )}
               </div>
-              <div className="flex items-center gap-5">
-                <Link href={"/wishlist"} className="relative">
-                  <HeartIcon />
+              <div className="flex shrink-0 items-center gap-5 py-1">
+                <NotificationBadge />
+                <Link href={"/wishlist"} aria-label={`${t("Yêu thích")}: ${wishList?.length ?? 0}`} className="relative inline-flex h-6 w-6 shrink-0 items-center justify-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600">
+                  <HeartIcon size={24} aria-hidden="true" />
                   <div className="w-6 h-6 border-2 border-white bg-red-500 rounded-full flex items-center justify-center absolute top-[-10px] right-[-10px]">
                     <span className="text-white font-medium text-sm">
                       {wishList?.length}
                     </span>
                   </div>
                 </Link>
-                <Link href={"/cart"} className="relative">
-                  <ShoppingCart />
+                <Link href={"/cart"} aria-label={`${t("Giỏ hàng")}: ${cart?.length ?? 0}`} className="relative inline-flex h-6 w-6 shrink-0 items-center justify-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600">
+                  <ShoppingCart size={24} aria-hidden="true" />
                   <div className="w-6 h-6 border-2 border-white bg-red-500 rounded-full flex items-center justify-center absolute top-[-10px] right-[-10px]">
                     <span className="text-white font-medium text-sm">
                       {cart?.length}

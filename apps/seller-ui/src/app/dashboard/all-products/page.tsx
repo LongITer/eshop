@@ -1,298 +1,59 @@
 "use client";
 import toast from "react-hot-toast";
-import React, { useMemo, useState } from "react";
-import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
-  getFilteredRowModel,
-} from "@tanstack/react-table";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import axiosInstance from "apps/seller-ui/src/utils/axioInstance";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Image from "next/image";
-import {
-  BarChart,
-  ChevronRight,
-  Eye,
-  Pencil,
-  Plus,
-  Search,
-  Star,
-  Trash,
-} from "lucide-react";
+import { AlertCircle, ArrowUpRight, ChevronLeft, ChevronRight, Eye, Package, Pencil, Plus, RotateCcw, Search, Star, Trash2 } from "lucide-react";
 import DeleteConfirmationModel from "apps/seller-ui/src/shared/components/modals/delete.confirmation-modal";
+import useSeller from "apps/seller-ui/src/hooks/useSeller";
 
-const fetchProducts = async () => {
-  const res = await axiosInstance.get("/product/api/get-shop-products");
-  return res?.data?.products;
-};
-
-const deleteProduct = async (productId: string) => {
-  const res = await axiosInstance.post(
-    `/product/api/delete-product/${productId}`,
-  );
-  return res?.data;
-};
-
-const restoreProduct = async (productId: string) => {
-  const res = await axiosInstance.post(
-    `/product/api/restore-product/${productId}`,
-  );
-  return res?.data;
-};
-
-const ProductList = () => {
-  const [globalFilter, setGlobalFilter] = useState("");
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>();
-  const queryClient = useQueryClient();
-
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ["products"],
-    queryFn: fetchProducts,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Delete Product Mutation
-  const deleteMutation = useMutation({
-    mutationFn: deleteProduct,
-    onError: () => toast.error("Could not delete product"),
-    onSuccess: () => {
-      toast.success("Product deleted");
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      setShowDeleteModal(false);
-    },
-  });
-
-  // Restore Product Mutation
-  const restoreMutation = useMutation({
-    mutationFn: restoreProduct,
-    onError: () => toast.error("Could not restore product"),
-    onSuccess: () => {
-      toast.success("Product restored");
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      setShowDeleteModal(false);
-    },
-  });
-
-  const columns = useMemo(
-    () => [
-      {
-        accessorKey: "image",
-        header: "Image",
-        cell: ({ row }: any) => {
-          const imageUrl = row.original.images[0]?.url;
-
-          if (!imageUrl) {
-            return (
-              <div className="w-12 h-12 rounded-md bg-gray-800 flex items-center justify-center text-gray-500 text-xs">
-                No Image
-              </div>
-            );
-          }
-
-          return (
-            <Image
-              src={imageUrl}
-              alt={row.original.title || "Product image"}
-              width={200}
-              height={200}
-              className="w-12 h-12 rounded-md object-cover"
-            />
-          );
-        },
-      },
-      {
-        accessorKey: "title",
-        header: "Product Name",
-        cell: ({ row }: any) => {
-          const title = row.original.title || "";
-          const truncatedTitle =
-            title.length > 25 ? `${title.substring(0, 25)}...` : title;
-
-          return (
-            <Link
-              href={`${process.env.NEXT_PUBLIC_USER_UI_LINK}/product/${row.original.slug}`}
-              className="font-medium text-blue-400 hover:underline"
-              title={row.original.title}
-            >
-              {truncatedTitle}
-            </Link>
-          );
-        },
-      },
-      {
-        accessorKey: "price",
-        header: "Price",
-        cell: ({ row }: any) => <span>${row.original.sale_price}</span>,
-      },
-      {
-        accessorKey: "stock",
-        header: "Stock",
-        cell: ({ row }: any) => (
-          <span
-            className={row.original.stock < 10 ? "text-red-500" : "text-white"}
-          >
-            {row.original.stock} left
-          </span>
-        ),
-      },
-      {
-        accessorKey: "rating",
-        header: "Rating",
-        cell: ({ row }: any) => (
-          <div className="flex items-center gap-1 text-yellow-400">
-            <Star fill="#fde047" size={18} />{" "}
-            <span className="text-white">{row.original.ratings || 5}</span>
-          </div>
-        ),
-      },
-      {
-        accessorKey: "actions",
-        header: "Actions",
-        cell: ({ row }: any) => (
-          <div className="flex gap-3">
-            <Link
-              href={`/product/${row.original.id}`}
-              className="text-blue-400 hover:text-blue-300 transition"
-            >
-              <Eye size={18} />
-            </Link>
-
-            <Link
-              href={`/dashboard/edit-product/${row.original.id}`}
-              className="text-yellow-400 hover:text-yellow-300 transition"
-            >
-              <Pencil size={18} />
-            </Link>
-
-            <button
-              className="text-green-400 hover:text-green-300 transition"
-              // onClick={() => openAnalytics(row.original)}
-            >
-              <BarChart size={18} />
-            </button>
-
-            <button
-              className="text-red-400 hover:text-red-300 transition"
-              onClick={() => openDeleteModal(row.original)}
-            >
-              <Trash size={18} />
-            </button>
-          </div>
-        ),
-      },
-    ],
-    [],
-  );
-
-  const table = useReactTable({
-    data: products,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    state: {
-      globalFilter,
-    },
-    onGlobalFilterChange: setGlobalFilter,
-  });
-
-  const openDeleteModal = (product: any) => {
-    setSelectedProduct(product);
-    setShowDeleteModal(true);
-  };
-
-  return (
-    <div className="w-full min-h-screen p-8">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-1">
-        <h2 className="text-2xl text-white font-semibold">All Products</h2>
-        <Link
-          href="/dashboard/create-product"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex gap-2 items-center"
-        >
-          <Plus size={18} /> Add Product
-        </Link>
-      </div>
-
-      {/* Breadcrums */}
-      <div className="flex items-center mb-4">
-        <Link href={"/dashboard"} className="text-blue-400 cursor-pointer">
-          Dashboard
-        </Link>
-        <ChevronRight size={20} className="text-white " />
-        <span className="text-white">All Products</span>
-      </div>
-
-      {/* Search bar */}
-      <div className="mb-4 flex items-center bg-gray-900 p-2 rounded-md flex-1">
-        <Search size={20} className="text-gray-400 mr-2" />
-        <input
-          type="text"
-          placeholder="Search products ..."
-          className="w-full bg-transparent text-white outline-none"
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-        />
-      </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto bg-gray-900 rounded-lg p-4">
-        {isLoading ? (
-          <p className="text-center text-white">Loading products ...</p>
-        ) : (
-          <table className="w-full text-white">
-            <thead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id} className="border-b border-gray-800">
-                  {headerGroup.headers.map((header) => (
-                    <th key={header.id} className="p-3 text-left">
-                      {header?.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-b border-gray-800 hover:border-gray-900 transition"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="p-3">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {showDeleteModal && (
-          <DeleteConfirmationModel
-            product={selectedProduct}
-            onClose={() => setShowDeleteModal(false)}
-            onConfirm={() => deleteMutation.mutate(selectedProduct?.id)}
-            onRestore={() => restoreMutation.mutate(selectedProduct?.id)}
-          />
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default ProductList;
-
-
+const money = (value: unknown) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value) || 0);
+const pageSize = 12;
+type ProductFilter = "all" | "active" | "low" | "deleted";
+export default function ProductList() {
+  const { seller } = useSeller();
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<ProductFilter>("all");
+  const [category, setCategory] = useState("");
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<any>(null);
+  const client = useQueryClient();
+  const query = useQuery({ queryKey: ["products", seller?.id], enabled: !!seller?.id, queryFn: async () => {
+    const { data } = await axiosInstance.get("/product/api/get-shop-products");
+    if (!Array.isArray(data?.products)) throw new Error("Invalid product response");
+    return data.products;
+  }, staleTime: 60_000 });
+  const products: any[] = query.data || [];
+  const counts = { all: products.filter(p => !p.isDeleted).length, active: products.filter(p => !p.isDeleted && p.status === "Active").length, low: products.filter(p => !p.isDeleted && p.stock <= 5).length, deleted: products.filter(p => p.isDeleted).length };
+  const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort() as string[];
+  const filtered = useMemo(() => products.filter(p => {
+    if (filter === "deleted" ? !p.isDeleted : p.isDeleted) return false;
+    if (filter === "active" && p.status !== "Active") return false;
+    if (filter === "low" && p.stock > 5) return false;
+    if (category && p.category !== category) return false;
+    return [p.title, p.slug, p.category, p.subCategory, p.brand, ...(p.tags || [])].join(" ").toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
+  }), [products, filter, category, search]);
+  const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, pages);
+  const rows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const action = useMutation({ mutationFn: async (product: any) => axiosInstance.post(`/product/api/${product.isDeleted ? "restore-product" : "delete-product"}/${product.id}`), onError: (error: any) => toast.error(error.response?.data?.message || "Could not update product. Please try again."), onSuccess: async (_, product) => {
+    toast.success(product.isDeleted ? "Product restored" : "Product scheduled for deletion");
+    setSelected(null);
+    await Promise.all(["products", "seller-stats", "inventory", "seller-product", "variant-product"].map(key => client.invalidateQueries({ queryKey: [key] })));
+  } });
+  const storefront = (product: any) => `${(process.env.NEXT_PUBLIC_USER_UI_LINK || "http://localhost:3000").replace(/\/$/, "")}/product/${encodeURIComponent(product.slug)}`;
+  return <main className="mx-auto w-full max-w-[1440px] space-y-6 p-4 text-slate-100 sm:p-6 lg:p-8">
+    <header className="flex flex-wrap items-start justify-between gap-4"><div><p className="mb-2 text-xs font-medium uppercase tracking-[.18em] text-slate-500">Catalog management</p><h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Products</h1><p className="mt-2 text-sm text-slate-400">Manage your listings, pricing and availability in one place.</p></div><Link href="/dashboard/create-product" className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"><Plus size={18} />Add product</Link></header>
+    <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60">
+      <div className="flex flex-wrap gap-1 border-b border-slate-800 p-3" aria-label="Product status filters">{([["all", "All products"], ["active", "Active"], ["low", "Low stock (≤5)"], ["deleted", "Deleted"]] as const).map(([key, label]) => <button key={key} onClick={() => { setFilter(key); setPage(1); }} aria-pressed={filter === key} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${filter === key ? "bg-blue-500/15 text-blue-300" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"}`}>{label}<span className={`rounded-md px-1.5 py-0.5 text-xs ${filter === key ? "bg-blue-500/15" : "bg-slate-800 text-slate-400"}`}>{query.isLoading ? "—" : counts[key]}</span></button>)}</div>
+      <div className="flex flex-col gap-3 p-4 sm:flex-row"><label className="relative flex-1"><Search size={18} className="pointer-events-none absolute left-3.5 top-3 text-slate-500"/><input aria-label="Search products" placeholder="Search by name, brand or category…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="w-full rounded-xl border border-slate-700/70 bg-slate-950/60 py-2.5 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10" /></label><select aria-label="Filter by category" value={category} onChange={e => { setCategory(e.target.value); setPage(1); }} className="max-w-full rounded-xl border border-slate-700/70 bg-slate-950 px-3 py-2.5 text-sm text-slate-300 sm:max-w-56"><option value="">All categories</option>{categories.map(value => <option key={value}>{value}</option>)}</select></div>
+      {query.isError ? <div role="alert" className="flex flex-col items-center gap-3 px-5 py-16 text-center"><AlertCircle className="text-rose-400" size={30}/><h2 className="font-semibold">Products could not be loaded</h2><p className="text-sm text-slate-400">Check your connection and try again.</p><button onClick={() => query.refetch()} className="rounded-lg border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800">Try again</button></div> : query.isLoading ? <div className="space-y-4 p-5" role="status" aria-label="Loading products">{[1, 2, 3, 4, 5].map(i => <div key={i} className="h-16 rounded-xl bg-slate-800/60"/>)}</div> : !rows.length ? <div className="flex flex-col items-center px-5 py-16 text-center"><div className="mb-4 rounded-2xl bg-slate-800 p-4 text-slate-400"><Package size={30}/></div><h2 className="font-semibold">{search || category ? "No matching products" : filter === "deleted" ? "No deleted products" : filter === "low" ? "No products running low" : "No products here yet"}</h2><p className="mt-2 max-w-sm text-sm leading-6 text-slate-400">{search || category ? "Try another search or clear your filters." : filter === "all" ? "Add your first product with photos, specifications and pricing to start selling." : "Products matching this status will appear here."}</p>{search || category ? <button onClick={() => { setSearch(""); setCategory(""); setPage(1); }} className="mt-4 text-sm font-medium text-blue-400">Clear filters</button> : filter === "all" ? <Link href="/dashboard/create-product" className="mt-5 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium"><Plus size={16}/>Add product</Link> : null}</div> : <>
+        <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-sm"><thead><tr className="border-y border-slate-800 bg-slate-950/40 text-left text-xs uppercase tracking-wider text-slate-500">{["Product", "Status", "Price", "Inventory", "Rating", "Actions"].map(title => <th key={title} className="px-5 py-3 font-medium">{title}</th>)}</tr></thead><tbody className="divide-y divide-slate-800/80">{rows.map(product => <tr key={product.id} className="transition hover:bg-slate-800/25"><td className="px-5 py-4"><div className="flex max-w-sm items-center gap-3"><div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-700/60 bg-slate-950">{product.images?.[0]?.url ? <img src={product.images[0].url} alt="" className="h-full w-full object-cover" /> : <Package size={23} className="text-slate-600"/>}</div><div className="min-w-0"><p className="line-clamp-2 font-medium text-slate-100">{product.title}</p><p className="mt-1 truncate text-xs text-slate-500">{product.category}{product.subCategory ? ` / ${product.subCategory}` : ""}</p></div></div></td><td className="px-5 py-4"><span className={`inline-block rounded-full border px-2.5 py-1 text-xs font-medium ${product.isDeleted ? "border-rose-500/20 bg-rose-500/10 text-rose-300" : product.status === "Active" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300" : "border-slate-700 bg-slate-800 text-slate-400"}`}>{product.isDeleted ? "Deleted" : product.status || "Inactive"}</span></td><td className="px-5 py-4 font-medium tabular-nums">{money(product.sale_price)}{Number(product.regular_price) > Number(product.sale_price) && <p className="mt-1 text-xs text-slate-500 line-through">{money(product.regular_price)}</p>}</td><td className="px-5 py-4"><p className={`font-medium tabular-nums ${product.stock < 1 ? "text-rose-400" : product.stock <= 5 ? "text-amber-400" : "text-slate-200"}`}>{product.stock} units</p><p className="mt-1 text-xs text-slate-500">{product.stock < 1 ? "Out of stock" : product.stock <= 5 ? "Restock soon" : "In stock"}</p></td><td className="px-5 py-4">{product._count?.reviews > 0 && Number.isFinite(Number(product.rating)) ? <span className="inline-flex items-center gap-1.5"><Star size={14} className="fill-amber-400 text-amber-400"/>{Number(product.rating).toFixed(1)}<span className="text-xs text-slate-500">({product._count.reviews})</span></span> : <span className="text-xs text-slate-500">{product._count?.reviews === 0 ? "No reviews" : "—"}</span>}</td><td className="px-5 py-4"><div className="flex items-center gap-1">{!product.isDeleted && <><a href={storefront(product)} target="_blank" rel="noreferrer" title="View in storefront" aria-label={`View ${product.title} in storefront`} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-blue-300"><Eye size={17}/></a><Link href={`/dashboard/edit-product/${product.id}`} title="Edit product" aria-label={`Edit ${product.title}`} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-blue-300"><Pencil size={17}/></Link></>}<button onClick={() => setSelected(product)} title={product.isDeleted ? "Restore product" : "Delete product"} aria-label={`${product.isDeleted ? "Restore" : "Delete"} ${product.title}`} className={`rounded-lg p-2 hover:bg-slate-800 ${product.isDeleted ? "text-emerald-400" : "text-slate-400 hover:text-rose-400"}`}>{product.isDeleted ? <RotateCcw size={17}/> : <Trash2 size={17}/>}</button></div></td></tr>)}</tbody></table></div>
+        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 px-5 py-4 text-sm text-slate-400"><p>Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filtered.length)} of {filtered.length} products</p><div className="flex items-center gap-3"><button aria-label="Previous page" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)} className="rounded-lg border border-slate-700 p-1.5 enabled:hover:bg-slate-800 disabled:opacity-30"><ChevronLeft size={18}/></button><span className="text-xs">Page {currentPage} of {pages}</span><button aria-label="Next page" disabled={currentPage === pages} onClick={() => setPage(currentPage + 1)} className="rounded-lg border border-slate-700 p-1.5 enabled:hover:bg-slate-800 disabled:opacity-30"><ChevronRight size={18}/></button></div></footer>
+      </>}
+    </section>
+    <p className="flex items-center gap-2 text-xs leading-5 text-slate-500"><ArrowUpRight size={14}/>Product prices are shown in USD. Deleted products can be restored during the 24-hour recovery period.</p>
+    {selected && <DeleteConfirmationModel product={selected} pending={action.isPending} onClose={() => { if (!action.isPending) setSelected(null); }} onConfirm={() => action.mutate(selected)} onRestore={() => action.mutate(selected)}/>}
+  </main>;
+}
