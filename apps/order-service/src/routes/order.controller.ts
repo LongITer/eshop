@@ -3,7 +3,7 @@ import { trustedCartItems, trustedDiscount, shippingQuote } from './checkout-quo
 import { STORE_CURRENCY, usdCents } from '@packages/utils/money';
 import { NotFoundError, ValidationError } from "@packages/error-handler";
 import prisma from "@packages/libs/prisma";
-import redis from "@packages/libs/redis";
+import { transaction } from '@packages/utils/transaction';
 import crypto from "crypto";
 import { NextFunction, Request, Response } from "express";
 import Stripe from "stripe";
@@ -26,17 +26,18 @@ export const createPaymentIntent = async (
       return next(new ValidationError("Payment session is required."));
     }
 
-    const sessionData = await redis.get(`payment-session:${sessionId}`);
-    if (!sessionData) {
+    const savedSession = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
+    if (!savedSession || savedSession.expiresAt.getTime() <= Date.now()) {
       return next(new ValidationError("Payment session has expired."));
     }
 
-    const session = JSON.parse(sessionData);
-    if (session.userId !== req.user!.id) {
+    const session = savedSession.payload as any;
+    if (savedSession.userId !== req.user!.id) {
       return next(
         new ValidationError("Payment session does not belong to you."),
       );
     }
+    if (await prisma.paymentReceipt.findFirst({ where: { sessionId } })) throw new ValidationError('This checkout has already been paid.');
 
     const customerAmount = usdCents(session.totalAmount);
     if (!Number.isSafeInteger(customerAmount) || customerAmount <= 0) {
@@ -67,9 +68,12 @@ export const createPaymentIntent = async (
     }
 
     const paymentIntent = await stripe.paymentIntents.create(intentData, { idempotencyKey: `checkout-${sessionId}` });
-    const savedSession = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
-    if (!savedSession || savedSession.userId !== req.user!.id) throw new ValidationError('Payment session unavailable');
-    await prisma.paymentSession.update({ where: { id: sessionId }, data: { payload: { ...(savedSession.payload as any), paymentIntentId: paymentIntent.id } } });
+    await transaction(async tx => {
+      const current = await tx.paymentSession.findUniqueOrThrow({ where: { id: sessionId } });
+      const payload = current.payload as any;
+      if (payload.paymentIntentId && payload.paymentIntentId !== paymentIntent.id) throw new ValidationError('Payment session already has a different payment.');
+      await tx.paymentSession.update({ where: { id: sessionId }, data: { payload: { ...payload, paymentIntentId: paymentIntent.id } } });
+    });
     await sendBehaviorLog("paymentAttempt", {
       type: "info",
       source: "order-service",
@@ -162,11 +166,6 @@ export const createPaymentSession = async (
     };
 
     await prisma.paymentSession.create({ data: { id: sessionId, userId, payload: sessionData, expiresAt: new Date(Date.now() + 600000) } });
-    await redis.setex(
-      `payment-session:${sessionId}`,
-      600, // 10 minutes
-      JSON.stringify(sessionData),
-    );
 
     return res.status(200).json({ sessionId });
   } catch (error) {
@@ -187,16 +186,14 @@ export const verifyPaymentSession = async (
       return res.status(404).json({ error: "Session ID is required!" });
     }
 
-    // Fetch session from redis
-    const sessionKey = `payment-session:${sessionId}`;
-    const sessionData = await redis.get(sessionKey);
-
-    if (!sessionData) {
+    const savedSession = await prisma.paymentSession.findUnique({ where: { id: sessionId } });
+    if (!savedSession || savedSession.expiresAt.getTime() <= Date.now()) {
       return res.status(404).json({ error: "Session not found!" });
     }
 
-    const session = JSON.parse(sessionData);
-    if (session.userId !== req.user!.id) return res.status(403).json({ message: "Session does not belong to you" });
+    const session = savedSession.payload;
+    if (savedSession.userId !== req.user!.id) return res.status(403).json({ message: "Session does not belong to you" });
+    res.setHeader('Cache-Control', 'no-store');
 
     return res.status(200).json({
       success: true,

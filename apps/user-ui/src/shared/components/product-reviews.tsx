@@ -47,7 +47,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
           <p className="flex max-w-sm items-start gap-2 text-xs leading-5 text-slate-500"><ShieldCheck size={17} className="mt-0.5 shrink-0 text-slate-400" aria-hidden="true" />{t("You can add or update one review per product after your order has been delivered.")}</p>
           <button type="submit" disabled={save.isPending || !comment.trim()} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none">{save.isPending ? <Loader2 size={17} className="animate-spin" aria-hidden="true" /> : <Send size={17} aria-hidden="true" />}{save.isPending ? t('Submitting…') : t('Submit review')}</button>
         </div>
-        {save.isError && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{(save.error as any).response?.data?.message || t('Could not save review. Please try again.')}</p>}
+        {save.isError && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{t((save.error as any).response?.data?.message || 'Could not save review. Please try again.')}</p>}
         {save.isSuccess && <p role="status" className="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700"><CheckCircle2 size={18} aria-hidden="true" />{t("Thank you! Your review has been saved.")}</p>}
       </div>
     </form>}</section>;

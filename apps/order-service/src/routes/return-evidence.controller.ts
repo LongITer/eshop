@@ -2,21 +2,38 @@ import prisma from '@packages/libs/prisma';
 import { handle, objectId, textField } from '@packages/utils/api';
 import { transaction } from '@packages/utils/transaction';
 import { imageKit } from '@packages/libs/imagekit';
-import { ValidationError, NotFoundError } from '@packages/error-handler';
+import { AppError, ValidationError, NotFoundError } from '@packages/error-handler';
+
+export function evidenceImage(file: unknown) {
+  if (typeof file !== 'string') throw new ValidationError('Choose a PNG, JPEG or WebP image');
+  // Reject an oversized payload before allocating the decoded buffer.
+  if (file.length > 4 * Math.ceil(5 * 1024 * 1024 / 3) + 32) throw new ValidationError('Image must be under 5 MB');
+  const match = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(file);
+  if (!match) throw new ValidationError('Choose a PNG, JPEG or WebP image');
+  const bytes = Buffer.from(match[2], 'base64');
+  if (bytes.length > 5 * 1024 * 1024 || bytes.length < 12) throw new ValidationError('Image must be under 5 MB');
+  if (bytes.toString('base64') !== match[2]) throw new ValidationError('Invalid image contents');
+  const format = bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])) ? 'png'
+    : bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255 ? 'jpeg'
+    : bytes.toString('ascii',0,4) === 'RIFF' && bytes.toString('ascii',8,12) === 'WEBP' ? 'webp' : null;
+  if (!format) throw new ValidationError('Invalid image contents');
+  if (format !== match[1]) throw new ValidationError('Image format does not match its contents');
+  return { file, format };
+}
 
 export const uploadEvidence = handle(async (req,res) => {
   const orderId=objectId(req.params.orderId);
   if(!await prisma.orders.findFirst({where:{id:orderId,userId:req.user!.id,status:'Delivered',paymentStatus:'Paid'}})) throw new NotFoundError();
-  const file=req.body.file;
-  if(typeof file!=='string'||!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(file))throw new ValidationError('Choose a PNG, JPEG or WebP image');
-  const bytes=Buffer.from(file.split(',')[1],'base64');
-  if(bytes.length>5*1024*1024||bytes.length<12)throw new ValidationError('Image must be under 5 MB');
-  const png=bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
-  const jpg=bytes[0]===255&&bytes[1]===216&&bytes[2]===255;
-  const webp=bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WEBP';
-  if(!png&&!jpg&&!webp)throw new ValidationError('Invalid image contents');
-  const uploaded=await imageKit.upload({file,fileName:`evidence-${Date.now()}`,folder:`/returns/${orderId}`});
-  res.status(201).json({url:uploaded.url});
+  if (await prisma.returnRequest.findUnique({ where: { orderId } })) throw new ValidationError('The return request has already been submitted');
+  const { file, format } = evidenceImage(req.body.file);
+  try {
+    const uploaded = await imageKit.upload({ file, fileName: `evidence-${Date.now()}.${format}`, folder: `/returns/${orderId}` });
+    const url = new URL(uploaded.url);
+    if (url.protocol !== 'https:' || url.username || url.password) throw new Error('Invalid upload response');
+    res.status(201).json({url: url.toString()});
+  } catch {
+    throw new AppError('Image upload is temporarily unavailable. Successfully uploaded images are retained; retry the remaining files.', 503);
+  }
 });
 export const escalateReturn = handle(async(req,res)=>{
   const orderId=objectId(req.params.orderId),reason=textField(req.body.reason,'reason',2000);

@@ -12,6 +12,7 @@
         "target": "node",
         "compiler": "tsc",
         "outputPath": "apps/logger-service/dist",
+        "deleteOutputPath": false,
         "main": "apps/logger-service/src/main.ts",
         "tsConfig": "apps/logger-service/tsconfig.app.json",
         "webpackConfig": "apps/logger-service/webpack.config.js"

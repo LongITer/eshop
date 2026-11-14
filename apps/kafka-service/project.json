@@ -12,6 +12,7 @@
         "target": "node",
         "compiler": "tsc",
         "outputPath": "apps/kafka-service/dist",
+        "deleteOutputPath": false,
         "main": "apps/kafka-service/src/main.ts",
         "tsConfig": "apps/kafka-service/tsconfig.app.json",
         "webpackConfig": "apps/kafka-service/webpack.config.js"

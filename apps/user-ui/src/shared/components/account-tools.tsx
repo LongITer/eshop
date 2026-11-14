@@ -3,17 +3,15 @@ import { useStorefrontText } from '@packages/components/storefront-language';
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Bell } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from '@/utils/axioInstance';
 import useUser from '@/hooks/useUser';
-import { UnreadMessages } from '@packages/components/chat';
+import { HeaderMessageButton } from './header-chat';
+import { HeaderNotificationButton } from './header-notifications';
 
 export function NotificationBadge() {
-  const { t } = useStorefrontText();
   const { user } = useUser();
-  const { data } = useQuery({ queryKey: ['user-notifications', 'badge'], queryFn: async () => (await axios.get('/api/user-notifications?limit=1')).data, enabled: !!user, refetchInterval: 30000 });
-  return user ? <><UnreadMessages api={axios} href="/inbox" /><Link href="/notifications" aria-label={`${t("Notifications")}: ${data?.unreadCount ?? 0} ${t("unread")}`} className="relative p-3"><Bell size={22} />{!!data?.unreadCount && <span className="absolute right-0 top-0 rounded-full bg-red-600 px-1 text-xs text-white">{data.unreadCount}</span>}</Link></> : null;
+  return user ? <><HeaderMessageButton userId={user.id} /><HeaderNotificationButton userId={user.id} /></> : null;
 }
 export function ProfileEditor({ user }: { user: any }) {
   const { t } = useStorefrontText();

@@ -35,7 +35,7 @@ For nonzero shipping, set e.g. `SHIPPING_FEE_USD=2.50` in the order service envi
 
 ## PC specifications
 
-Use `custom_specification` as either an object or an array of `{ name, value }` entries:
+Use `custom_specification` as either an object or an array of `{ name, value }` entries (`key` and `label` legacy labels also work):
 
 | Component | Field | Example |
 |---|---|---|
@@ -44,7 +44,13 @@ Use `custom_specification` as either an object or an array of `{ name, value }` 
 | PSU | `wattage` | `750` |
 | GPU | `recommendedPsuWatts` | `650` |
 
-BIOS support, dimensions, connectors and cooler fit still need checking. A partial selection can be added; the builder does not claim it is a complete bootable PC.
+The checker normalizes Vietnamese/English labels such as `CPU Socket`, `Socket CPU`, `Loại RAM`, and `Loại bộ nhớ`, and explicit values such as `LGA 1700`, `DDR 5` and `750 W`. It reads specifications supplied by the seller; it does not infer hardware from product titles. Missing, unrecognized, negated or contradictory values stay unverified and identify the component/field to complete. A family listing several sockets or DDR generations needs specifications for the selected model.
+
+Seller **Create product** and **Edit product → Product specifications** provide component-specific field suggestions. Adding suggestions inserts empty field names only; the seller must supply the selected model's manufacturer specifications. Existing object/array data and metadata are preserved while editing.
+
+Quote responses include `compatibility.checks` with `passed`, `unknown` or `conflict` status and a separate neutral `compatibility.notes` reminder. The manual reminder is not counted as a warning. Confirmed conflicts and exhausted stock block adding the configuration; incomplete specifications remain visible without claiming compatibility.
+
+BIOS support, dimensions, connectors and cooler fit still need checking. A partial selection can be added; the builder does not claim it is a complete bootable PC. The PSU check compares only the supplied GPU recommendation with the rated PSU power; it is not a calculation of the whole system's consumption.
 
 ## Verification
 
@@ -67,4 +73,12 @@ Provide the carrier name and configure its test credentials, shop/account identi
 
 ## Follow-up scope
 
-Account-synced carts/wishlists, carrier APIs, local payment providers, partial returns, warranty cases, advanced coupon limits and product-comparison pages are separate follow-ups. Stock is checked again during paid fulfillment; inventory reservation and automated compensation for stock lost during payment remain future work.
+Account-synced carts/wishlists, component comparison and account-saved PC builds are now implemented; see `user-improvements.md`. Carrier APIs, local payment providers, partial returns, warranty cases, advanced coupon limits and broader product-comparison pages remain follow-ups. Stock is checked again during paid fulfillment; inventory reservation and automated compensation for stock lost during payment remain future work.
+
+## Payment reliability update — 2026-10-16
+
+Checkout now uses its durable MongoDB snapshot for initialization and verification, binds the saved PaymentIntent when present, and serializes fulfillment on the checkout document. Legacy snapshots remain supported. One checkout cannot produce duplicate orders from distinct payment intents; a paid stock conflict rolls back all shops and can be replayed after stock is restored.
+
+Refunds must match the whole shop order's payment, amount, currency and verified attempt history. Failed/canceled refunds can be retried with a deterministic idempotency key and `previousRefundId` metadata; a lost database response can be recovered from provider records. Old webhook/admin responses cannot replace a newer attempt or regress a completed refund. Partial or unrelated refunds require review instead of marking the whole order refunded.
+
+`tests/integration/commerce-lifecycle.test.ts` exercises real handlers, MongoDB replica transactions and Stripe SDK HMAC signatures. Only the provider API, email and behavior logging are doubled. It covers checkout→paid fulfillment→seller shipping/delivery→return→refund, invalid signatures, concurrent replay, mismatched metadata/amount/currency/intent, shared-payment allocation, failed-refund retry chains and stock rollback/recovery. This is separate from the historical provider API evidence above; rerun provider/browser verification for the new release before deployment.

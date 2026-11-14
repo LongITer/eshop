@@ -5,13 +5,15 @@ import { handle, objectId, pageArgs, textField } from '@packages/utils/api';
 import { NotFoundError, ValidationError } from '@packages/error-handler';
 
 export const getNotifications = handle(async (req, res) => {
-  const where = { userId: req.user!.id };
-  const [notifications, unreadCount, total] = await Promise.all([
+  const owner = { userId: req.user!.id };
+  const unreadOnly = req.query.unread === 'true';
+  const where = unreadOnly ? { ...owner, isRead: false } : owner;
+  const [notifications, unreadCount, totalCount] = await Promise.all([
     prisma.notifications.findMany({ where, ...pageArgs(req.query), orderBy: { createdAt: 'desc' } }),
-    prisma.notifications.count({ where: { ...where, isRead: false } }),
-    prisma.notifications.count({ where }),
+    prisma.notifications.count({ where: { ...owner, isRead: false } }),
+    prisma.notifications.count({ where: owner }),
   ]);
-  res.json({ notifications, unreadCount, total });
+  res.json({ notifications, unreadCount, total: unreadOnly ? unreadCount : totalCount, totalCount });
 });
 export const readNotification = handle(async (req, res) => {
   const result = await prisma.notifications.updateMany({ where: { id: objectId(req.params.id), userId: req.user!.id }, data: { isRead: true } });

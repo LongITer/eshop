@@ -9,6 +9,7 @@ import { ArrowLeft, ArrowRight, CheckCircle, CreditCard, Loader2, LockKeyhole, M
 import Link from "next/link";
 import { formatUSD } from "@packages/utils/money";
 import { cartLineKey } from "@packages/utils/cart";
+import { paymentErrorMessage } from '@packages/utils/payment-error';
 import React, { useState } from "react";
 
 const CheckoutForm = ({
@@ -57,14 +58,13 @@ const CheckoutForm = ({
 
       if (result.error) {
         setStatus("failed");
-        setErrorMsg(result.error.message || "Không thanh toán được.");
+        setErrorMsg(paymentErrorMessage(result.error));
       } else {
         setStatus("success");
       }
     } catch (error) {
-      console.error(error);
       setStatus("failed");
-      setErrorMsg("Không gửi được thanh toán. Vui lòng tải lại và thử lại.");
+      setErrorMsg(paymentErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -141,7 +141,7 @@ const CheckoutForm = ({
               onLoadError={event => {
                 setPaymentElementReady(false);
                 setStatus("failed");
-                setErrorMsg(event.error.message || "Không tải được biểu mẫu thanh toán. Vui lòng thử lại sau.");
+                setErrorMsg(paymentErrorMessage(event.error, 'load'));
               }}
             />
           ) : (
@@ -149,6 +149,7 @@ const CheckoutForm = ({
           )}
 
           {(errorMsg || status === 'failed') && <div role="alert" className="mt-5 flex items-start gap-2 rounded-lg border border-red-100 bg-red-50 p-3 text-sm leading-5 text-red-700"><XCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><p>{t(errorMsg || "Thanh toán thất bại. Vui lòng thử lại.")}</p></div>}
+          {status === 'failed' && !paymentElementReady && <button type="button" className="mt-3 text-sm font-medium text-blue-600 underline underline-offset-4" onClick={() => window.location.reload()}>{t('Reload payment form')}</button>}
           {status === 'success' && <div role="status" className="mt-5 flex items-start gap-2 rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm leading-5 text-emerald-700"><CheckCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><p>{t("Đã gửi thanh toán. Đang chờ xác nhận.")}</p></div>}
 
           <button type="submit" disabled={!stripe || !paymentElementReady || loading || status === 'success'} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-3 text-sm font-medium text-white shadow-md transition hover:from-blue-700 hover:to-blue-600 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none">

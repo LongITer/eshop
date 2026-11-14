@@ -9,6 +9,8 @@ import HeaderBottom from "./header-bottom";
 import useUser from "../../hooks/useUser";
 import { useStore } from "../../store";
 import { NotificationBadge } from '../components/account-tools';
+import { HeaderChatProvider } from '../components/header-chat';
+import { HeaderNotificationsProvider } from '../components/header-notifications';
 import MobileNav from '@packages/components/mobile-nav';
 
 const Header = () => {
@@ -18,6 +20,8 @@ const Header = () => {
   const cart = useStore((state: any) => state.cart);
 
   return (
+    <HeaderChatProvider>
+    <HeaderNotificationsProvider>
     <div className="w-full bg-white">
       <div className="w-[94%] xl:w-[80%] py-5 m-auto flex flex-wrap gap-4 items-center justify-between">
         <div>
@@ -72,18 +76,18 @@ const Header = () => {
               </>
             )}
           </div>
-          <div className="flex items-center gap-5">
+          <div className="flex shrink-0 items-center gap-4 py-1 sm:gap-5">
             <NotificationBadge />
-            <Link href={"/wishlist"} className="relative">
-              <HeartIcon />
+            <Link href={"/wishlist"} aria-label={`${t("Yêu thích")}: ${wishList?.length ?? 0}`} className="relative inline-flex h-6 w-6 shrink-0 items-center justify-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600">
+              <HeartIcon size={24} aria-hidden="true" />
               <div className="w-6 h-6 border-2 border-white bg-red-500 rounded-full flex items-center justify-center absolute top-[-10px] right-[-10px]">
                 <span className="text-white font-medium text-sm">
                   {wishList?.length}
                 </span>
               </div>
             </Link>
-            <Link href={"/cart"} className="relative">
-              <ShoppingCart />
+            <Link href={"/cart"} aria-label={`${t("Giỏ hàng")}: ${cart?.length ?? 0}`} className="relative inline-flex h-6 w-6 shrink-0 items-center justify-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600">
+              <ShoppingCart size={24} aria-hidden="true" />
               <div className="w-6 h-6 border-2 border-white bg-red-500 rounded-full flex items-center justify-center absolute top-[-10px] right-[-10px]">
                 <span className="text-white font-medium text-sm">
                   {cart?.length}
@@ -97,6 +101,8 @@ const Header = () => {
       <MobileNav links={[{ label: 'Trang chủ', href: '/' }, { label: 'Sản phẩm', href: '/products' }, { label: 'Lắp PC', href: '/pc-builder' }, { label: 'Cửa hàng', href: '/shop' }, { label: 'Ưu đãi', href: '/offers' }, { label: 'Yêu thích', href: '/wishlist' }, { label: 'Giỏ hàng', href: '/cart' }, { label: 'Tin nhắn', href: '/inbox' }, { label: 'Tài khoản', href: '/profile' }].map(link => ({ ...link, label: t(link.label) }))} />
       <div className="hidden md:block"><HeaderBottom /></div>
     </div>
+    </HeaderNotificationsProvider>
+    </HeaderChatProvider>
   );
 };
 

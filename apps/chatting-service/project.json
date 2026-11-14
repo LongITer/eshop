@@ -12,6 +12,7 @@
         "target": "node",
         "compiler": "tsc",
         "outputPath": "apps/chatting-service/dist",
+        "deleteOutputPath": false,
         "main": "apps/chatting-service/src/main.ts",
         "tsConfig": "apps/chatting-service/tsconfig.app.json",
         "webpackConfig": "apps/chatting-service/webpack.config.js"

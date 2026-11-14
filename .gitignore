@@ -39,6 +39,7 @@ testem.log
 Thumbs.db
 
 .nx/cache
+.nx/native-cache
 .nx/workspace-data
 .nx/workspace-data-*
 

@@ -1,10 +1,11 @@
 "use client";
 import { Download, Printer, DollarSign, ShoppingBag, TrendingUp, Ticket, CalendarDays, BarChart3 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import axios from "apps/seller-ui/src/utils/axioInstance";
 import RevenueChart, { RevenuePoint } from "./revenue-chart";
+import useSeller from "apps/seller-ui/src/hooks/useSeller";
 
 interface Report {
   timeline: RevenuePoint[];
@@ -17,8 +18,18 @@ const money = (value: number) => new Intl.NumberFormat('en-US', { style: 'curren
 const card = 'rounded-2xl bg-slate-900/80 p-5 shadow-sm ring-1 ring-white/10 sm:p-6 print:bg-white print:ring-slate-200';
 const input = 'mt-2 block w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 [color-scheme:dark]';
 const action = 'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed';
+function validatePeriod(from: string, to: string) {
+  if (!from || !to) return 'Choose both a start date and an end date.';
+  const start = new Date(`${from}T00:00:00.000Z`);
+  const end = new Date(`${to}T23:59:59.999Z`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || !Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start.toISOString().slice(0, 10) !== from || end.toISOString().slice(0, 10) !== to) return 'Choose valid calendar dates.';
+  if (start > end) return 'The start date must be on or before the end date.';
+  if (end.getTime() - start.getTime() > 366 * 86400000) return 'Choose a reporting period of at most 366 days.';
+  return '';
+}
 export default function SellerRevenue({ detailed = false }: { detailed?: boolean }) {
-  const [year, setYear] = useState(() => new Date().getFullYear());
+  const { seller } = useSeller();
+  const [year, setYear] = useState(() => new Date().getUTCFullYear());
   const [month, setMonth] = useState("");
   const [exporting, setExporting] = useState(false);
   const [custom, setCustom] = useState(false);
@@ -28,18 +39,36 @@ export default function SellerRevenue({ detailed = false }: { detailed?: boolean
   const from = custom ? customFrom : month ? `${year}-${month}-01` : `${year}-01-01`;
   const to = custom ? customTo : month ? `${year}-${month}-${new Date(Date.UTC(year, Number(month), 0)).getUTCDate()}` : `${year}-12-31`;
   const grouping = custom ? interval : month ? "day" : "month";
+  const periodError = validatePeriod(from, to);
+  const reportEnabled = !!seller?.id && !periodError;
   const params = new URLSearchParams({ ...(from ? { from } : {}), ...(to ? { to } : {}), interval: grouping }).toString();
+  const exportController = useRef<AbortController | null>(null);
+  const requestKey = `${seller?.id ?? ''}:${params}:${reportEnabled}`;
+  const currentRequest = useRef(requestKey);
+  currentRequest.current = requestKey;
   const query = useQuery<Report>({
-    queryKey: ["revenue-report", params],
-    queryFn: async () => (await axios.get(`/product/api/seller-reports?${params}`)).data,
+    queryKey: ["revenue-report", seller?.id, params],
+    enabled: reportEnabled,
+    queryFn: async ({ signal }) => (await axios.get(`/product/api/seller-reports?${params}`, { signal })).data,
   });
   useEffect(() => {
-    if (query.isError) toast.error("Unable to load revenue report", { id: "revenue-report-error" });
-  }, [query.isError, query.errorUpdatedAt]);
+    if (reportEnabled && query.isError) toast.error("Unable to load revenue report", { id: "revenue-report-error" });
+  }, [reportEnabled, query.isError, query.errorUpdatedAt]);
+  useEffect(() => {
+    exportController.current?.abort();
+    setExporting(false);
+    return () => exportController.current?.abort();
+  }, [requestKey]);
+  const report = reportEnabled && !query.isError && !query.isFetching ? query.data : undefined;
   const download = async () => {
+    if (!reportEnabled || !report || exporting) return;
+    const controller = new AbortController();
+    exportController.current = controller;
+    const exportedRequest = requestKey;
     setExporting(true);
     try {
-      const { data } = await axios.get(`/product/api/seller-reports?${params}&format=csv`, { responseType: "blob" });
+      const { data } = await axios.get(`/product/api/seller-reports?${params}&format=csv`, { responseType: "blob", signal: controller.signal });
+      if (controller.signal.aborted || currentRequest.current !== exportedRequest) return;
       const url = URL.createObjectURL(data);
       const link = document.createElement("a");
       link.href = url;
@@ -49,24 +78,24 @@ export default function SellerRevenue({ detailed = false }: { detailed?: boolean
       link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       toast.success("Revenue report exported");
-    } catch { toast.error("Export failed"); }
-    finally { setExporting(false); }
+    } catch { if (!controller.signal.aborted) toast.error("Export failed"); }
+    finally { if (exportController.current === controller) setExporting(false); }
   };
-  const report = query.data;
   return <section className="min-w-0 space-y-6 text-slate-100 print:text-black">
     <div className="flex flex-wrap items-center justify-between gap-4">
-      <div><h2 className="text-lg font-semibold">{detailed ? 'Sales overview' : 'Revenue overview'}</h2><p className="mt-1 text-sm text-slate-400">{custom ? 'Custom reporting period' : month ? new Date(year, Number(month) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : `Year ${year}`} · USD · UTC</p></div>
-      {detailed && <div className="flex flex-wrap gap-2 print:hidden"><button className={`${action} bg-slate-800 text-slate-300 hover:bg-slate-700`} onClick={() => window.print()}><Printer size={16} /> Print / PDF</button><button className={`${action} bg-blue-600 text-white hover:bg-blue-500`} disabled={exporting || !report || query.isError} onClick={download}><Download size={16} />{exporting ? 'Exporting…' : 'Export CSV'}</button></div>}
+      <div><h2 className="text-lg font-semibold">{detailed ? 'Sales overview' : 'Revenue overview'}</h2><p className="mt-1 text-sm text-slate-400">{custom ? periodError ? 'Custom reporting period' : `${customFrom} – ${customTo}` : month ? new Date(Date.UTC(year, Number(month) - 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) : `Year ${year}`} · USD · UTC</p></div>
+      {detailed && <div className="flex flex-wrap gap-2 print:hidden"><button className={`${action} bg-slate-800 text-slate-300 hover:bg-slate-700`} disabled={!report} onClick={() => { if (report) window.print(); }}><Printer size={16} /> Print / PDF</button><button className={`${action} bg-blue-600 text-white hover:bg-blue-500`} disabled={exporting || !report} onClick={download}><Download size={16} />{exporting ? 'Exporting…' : 'Export CSV'}</button></div>}
     </div>
     <div className={`${card} print:hidden`}>
       <div className="mb-4 flex items-center gap-2 text-sm font-medium"><CalendarDays size={16} className="text-blue-400" /> Reporting period</div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {detailed && <label className="text-xs font-medium text-slate-400">Period<select aria-label="Revenue period" className={input} value={custom ? 'custom' : 'monthly'} onChange={e => setCustom(e.target.value === 'custom')}><option value="monthly">Month / year</option><option value="custom">Custom dates</option></select></label>}
-        {!custom ? <><label className="text-xs font-medium text-slate-400">Year<select aria-label="Revenue year" className={input} value={year} onChange={e => setYear(Number(e.target.value))}>{Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i).map(value => <option key={value}>{value}</option>)}</select></label><label className="text-xs font-medium text-slate-400">Month<select aria-label="Revenue month" className={input} value={month} onChange={e => setMonth(e.target.value)}><option value="">All months</option>{Array.from({ length: 12 }, (_, i) => <option key={i} value={String(i + 1).padStart(2, '0')}>{new Date(2000, i, 1).toLocaleDateString('en-US', { month: 'long' })}</option>)}</select></label></> : <><label className="text-xs font-medium text-slate-400">From<input aria-label="From" className={input} type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} /></label><label className="text-xs font-medium text-slate-400">To<input aria-label="To" className={input} type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} /></label><label className="text-xs font-medium text-slate-400">Group by<select aria-label="Interval" className={input} value={interval} onChange={e => setInterval(e.target.value)}>{['day', 'week', 'month'].map(value => <option key={value}>{value}</option>)}</select></label></>}
+        {!custom ? <><label className="text-xs font-medium text-slate-400">Year<select aria-label="Revenue year" className={input} value={year} onChange={e => setYear(Number(e.target.value))}>{Array.from({ length: 100 }, (_, i) => new Date().getUTCFullYear() - i).map(value => <option key={value}>{value}</option>)}</select></label><label className="text-xs font-medium text-slate-400">Month<select aria-label="Revenue month" className={input} value={month} onChange={e => setMonth(e.target.value)}><option value="">All months</option>{Array.from({ length: 12 }, (_, i) => <option key={i} value={String(i + 1).padStart(2, '0')}>{new Date(Date.UTC(2000, i, 1)).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' })}</option>)}</select></label></> : <><label className="text-xs font-medium text-slate-400">From<input aria-label="From" required aria-invalid={!!periodError} aria-describedby="revenue-period-help" className={input} type="date" min="0001-01-01" max={customTo || '9999-12-31'} value={customFrom} onChange={e => setCustomFrom(e.target.value)} /></label><label className="text-xs font-medium text-slate-400">To<input aria-label="To" required aria-invalid={!!periodError} aria-describedby="revenue-period-help" className={input} type="date" min={customFrom || '0001-01-01'} max="9999-12-31" value={customTo} onChange={e => setCustomTo(e.target.value)} /></label><label className="text-xs font-medium text-slate-400">Group by<select aria-label="Interval" className={input} value={interval} onChange={e => setInterval(e.target.value)}>{['day', 'week', 'month'].map(value => <option key={value}>{value}</option>)}</select></label></>}
       </div>
+      {custom && <p id="revenue-period-help" role={periodError ? 'alert' : undefined} className={`mt-4 text-xs leading-6 ${periodError ? 'text-amber-300' : 'text-slate-500'}`}>{periodError || 'Dates include the full UTC day. Choose a period of up to 366 days.'}</p>}
     </div>
-    {query.isLoading && <div role="status" className="grid animate-pulse gap-4 sm:grid-cols-3">{[0, 1, 2].map(i => <div key={i} className="h-32 rounded-2xl bg-slate-800" />)}<span className="sr-only">Loading revenue…</span></div>}
-    {query.isError && <div role="alert" className="rounded-xl bg-rose-500/10 p-4 text-sm text-rose-300">Unable to load this report. <button className="ml-2 underline underline-offset-4" onClick={() => query.refetch()}>Retry revenue report</button></div>}
+    {reportEnabled && query.isFetching && <div role="status" className="grid gap-4 sm:grid-cols-3">{[0, 1, 2].map(i => <div key={i} className="h-32 rounded-2xl bg-slate-800" />)}<span className="sr-only">Loading revenue…</span></div>}
+    {reportEnabled && query.isError && !query.isFetching && <div role="alert" className="rounded-xl bg-rose-500/10 p-4 text-sm text-rose-300">Unable to load this report. <button className="ml-2 underline underline-offset-4" onClick={() => query.refetch()}>Retry revenue report</button></div>}
     {report && !query.isError && <>
       <div className="grid gap-4 sm:grid-cols-3">
         {[{ label: 'Total revenue', value: money(report.totalRevenue), note: 'Revenue from paid orders', Icon: DollarSign, tone: 'bg-blue-500/15 text-blue-400' }, { label: 'Paid orders', value: report.totalOrders.toLocaleString(), note: 'Orders in the selected period', Icon: ShoppingBag, tone: 'bg-violet-500/15 text-violet-400' }, { label: 'Average order value', value: money(report.totalOrders ? report.totalRevenue / report.totalOrders : 0), note: 'Revenue per paid order', Icon: TrendingUp, tone: 'bg-emerald-500/15 text-emerald-400' }].map(({ label, value, note, Icon, tone }) => <div key={label} className={card}><div className="flex items-center justify-between gap-2"><p className="text-sm text-slate-400">{label}</p><span className={`rounded-xl p-2 ${tone}`}><Icon size={18} /></span></div><p className="mt-4 break-words text-2xl font-semibold tracking-tight tabular-nums">{value}</p><p className="mt-2 text-xs text-slate-500">{note}</p></div>)}

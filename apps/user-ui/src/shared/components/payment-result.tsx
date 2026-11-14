@@ -13,6 +13,7 @@ import { CheckCircle, Truck, Loader2, Clock3, AlertCircle, ArrowRight } from 'lu
 
 export default function PaymentResult() {
   const { t } = useStorefrontText();
+  const ownerId = useStore(state => state.ownerId);
   const params = useSearchParams();
   const sessionId = params.get('sessionId');
   const paymentIntentId = params.get('payment_intent');
@@ -23,24 +24,24 @@ export default function PaymentResult() {
     cleared.current = false;
     const timer = setTimeout(() => setTimedOut(true), 60000);
     return () => clearTimeout(timer);
-  }, [sessionId]);
-  const result = useQuery({ queryKey: ['payment-result', sessionId], enabled: !!sessionId,
-    queryFn: async () => (await axios.get('/order/api/payment-result', { params: { sessionId, paymentIntentId } })).data,
+  }, [ownerId, sessionId]);
+  const result = useQuery({ queryKey: ['payment-result', ownerId, sessionId, paymentIntentId], enabled: !!ownerId && !!sessionId,
+    queryFn: async ({ signal }) => (await axios.get('/order/api/payment-result', { params: { sessionId, paymentIntentId }, signal })).data,
     refetchInterval: query => timedOut || query.state.data?.complete || ['needs_review', 'canceled', 'requires_payment_method', 'expired'].includes(query.state.data?.status) || query.state.error ? false : 3000,
     retry: 2,
   });
   useEffect(() => {
-    if (!result.data?.complete || cleared.current) return;
+    if (!result.data?.complete || !ownerId || useStore.getState().ownerId !== ownerId || cleared.current) return;
     cleared.current = true;
-    const marker = `checkout-cleared:${sessionId}`;
-    if (localStorage.getItem(marker)) return;
+    const marker = `checkout-cleared:${ownerId}:${sessionId}`;
+    try { if (localStorage.getItem(marker) || localStorage.getItem(`checkout-cleared:${sessionId}`)) return; } catch { /* The in-memory flag still guards this mounted session. */ }
     const purchased = new Map<string, number>(result.data.cart.map((item: any) => [cartLineKey(item), item.quantity]));
-    useStore.setState(state => ({ cart: state.cart.flatMap(item => {
+    useStore.setState(state => state.ownerId !== ownerId ? state : ({ cart: state.cart.flatMap(item => {
       const quantity = (item.quantity || 1) - (purchased.get(cartLineKey(item)) || 0);
       return quantity > 0 ? [{ ...item, quantity }] : [];
     }) }));
-    localStorage.setItem(marker, '1');
-  }, [result.data, sessionId]);
+    try { localStorage.setItem(marker, '1'); } catch { /* Storage can be disabled without breaking order confirmation. */ }
+  }, [result.data, ownerId, sessionId]);
   const celebrated = useRef<string | null>(null);
   useEffect(() => {
     if (!result.data?.complete || !sessionId || celebrated.current === sessionId) return;

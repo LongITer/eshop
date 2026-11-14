@@ -11,6 +11,8 @@ Multi-vendor PC ecommerce application built with an Nx/TypeScript monorepo, Next
 - `packages`: shared middleware, components and business rules.
 - `prisma/schema.prisma`: database models. MongoDB must run as a replica set for transactions.
 
+Seller workspace changes and validation are documented in [seller improvements](docs/seller-improvements.md).
+
 ## Local setup
 
 Use Node.js 22 (matching CI).
@@ -28,6 +30,8 @@ npm run admin-ui
 
 The native local UI ports are 3000 (buyer), 3002 (seller) and 3001 (admin); the gateway uses 8080. Docker port mappings are defined separately in the compose file.
 
+`npm run seller-ui` starts Next.js directly on port 3002. This avoids repeated Nx project-graph initialization, which can leave the Windows dev server at `Starting…` when Nx's daemon or graph workers stall. If an old instance is still running, stop that terminal with Ctrl+C before restarting the command.
+
 The Docker alternative is `docker compose up --build` after configuring `.env`. External providers still require valid credentials.
 
 ## Verification
@@ -43,6 +47,8 @@ npx next build apps/admin-ui
 ```
 
 Integration tests start a disposable MongoDB replica set. `npm run test:acceptance:serve` starts a separate fixture API using disposable MongoDB and Stripe/Redis/logging doubles. Set `ACCEPTANCE_PORT` to avoid an existing gateway and point UI `GATEWAY_INTERNAL_URL` at that port. `NEXT_DIST_DIR` lets user/seller UI build output stay separate from a running dev server.
+
+For release preparation, see the [staging, backup and rollback runbook](docs/deployment-runbook.md). `node scripts/deployment-preflight.cjs --env-file tmp/staging.env --mode staging` validates configuration offline without printing credentials or contacting providers. `node scripts/local-load-smoke.cjs --base http://127.0.0.1:8185` checks a bounded set of read-only local API requests; it is not a production capacity benchmark.
 
 ### Stripe provider verification (test mode)
 

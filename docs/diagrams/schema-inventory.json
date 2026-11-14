@@ -1,0 +1,3046 @@
+{
+  "source": "prisma/schema.prisma",
+  "sha256": "ccafe29a3bb0af0a99705f4ec8cac67d9ee8e3a9535cc3706eb5eb845567844b",
+  "modelCount": 37,
+  "declaredRelationCount": 19,
+  "enums": [
+    {
+      "name": "productStatus",
+      "values": [
+        "Active",
+        "Inactive",
+        "Draft",
+        "Suspended"
+      ]
+    },
+    {
+      "name": "orderStatus",
+      "values": [
+        "Pending",
+        "Confirmed",
+        "Processing",
+        "Shipped",
+        "Delivered",
+        "Cancelled",
+        "Returned",
+        "Refunded"
+      ]
+    },
+    {
+      "name": "paymentStatus",
+      "values": [
+        "Pending",
+        "Paid",
+        "Failed",
+        "Refunded"
+      ]
+    },
+    {
+      "name": "notificationType",
+      "values": [
+        "NewOrder",
+        "OrderConfirmed",
+        "OrderShipped",
+        "OrderDelivered",
+        "OrderCancelled",
+        "OrderRefunded",
+        "Promotion",
+        "NewReview",
+        "LowStock",
+        "System"
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "id": "accounts",
+      "title": "Tài khoản và cửa hàng",
+      "names": [
+        "users",
+        "sellers",
+        "shops",
+        "address",
+        "images",
+        "shopReviews",
+        "oauthIdentity",
+        "shoppingState"
+      ]
+    },
+    {
+      "id": "catalog",
+      "title": "Sản phẩm và tồn kho",
+      "names": [
+        "products",
+        "productVariant",
+        "productReviews",
+        "inventoryHistory",
+        "discountCodes",
+        "productAnalytics",
+        "site_config"
+      ]
+    },
+    {
+      "id": "orders",
+      "title": "Đơn hàng và thanh toán",
+      "names": [
+        "orders",
+        "orderItems",
+        "paymentSession",
+        "paymentReceipt",
+        "orderEvent",
+        "returnRequest"
+      ]
+    },
+    {
+      "id": "chat",
+      "title": "Tin nhắn và thông báo",
+      "names": [
+        "conversationGroup",
+        "Participant",
+        "message",
+        "chatAttachment",
+        "pushSubscription",
+        "notifications"
+      ]
+    },
+    {
+      "id": "pc-builder",
+      "title": "PC Builder và chatbot",
+      "names": [
+        "pcBuildTemplate",
+        "savedPcBuild",
+        "chatbotConversation",
+        "chatbotMessage"
+      ]
+    },
+    {
+      "id": "operations",
+      "title": "Quản trị và phân tích",
+      "names": [
+        "adminAudit",
+        "adminGuard",
+        "notificationJob",
+        "behaviorLog",
+        "log_config",
+        "userAnalytics"
+      ]
+    }
+  ],
+  "models": [
+    {
+      "name": "images",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "file_id",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "url",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "userId",
+          "type": "String?",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "shopId",
+          "type": "String?",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "productId",
+          "type": "String?",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "users",
+          "type": "users?",
+          "attributes": "@relation(fields: [userId], references: [id])"
+        },
+        {
+          "name": "shops",
+          "type": "shops?",
+          "attributes": "@relation(fields: [shopId], references: [id])"
+        },
+        {
+          "name": "products",
+          "type": "products?",
+          "attributes": "@relation(fields: [productId], references: [id])"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "oauthIdentity",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "subject",
+          "type": "String",
+          "attributes": "@unique"
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "pushSubscription",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "endpoint",
+          "type": "String",
+          "attributes": "@unique"
+        },
+        {
+          "name": "actorId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "actorType",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "subscription",
+          "type": "Json",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "chatAttachment",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "url",
+          "type": "String",
+          "attributes": "@unique"
+        },
+        {
+          "name": "actorId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "conversationId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "paymentSession",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @map(\"_id\")"
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "payload",
+          "type": "Json",
+          "attributes": ""
+        },
+        {
+          "name": "expiresAt",
+          "type": "DateTime",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "paymentReceipt",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @map(\"_id\")"
+        },
+        {
+          "name": "sessionId",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "orderIds",
+          "type": "String[]",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        }
+      ],
+      "constraints": [
+        "@@index([sessionId, userId])"
+      ]
+    },
+    {
+      "name": "users",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "email",
+          "type": "String",
+          "attributes": "@unique"
+        },
+        {
+          "name": "password",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "role",
+          "type": "String",
+          "attributes": "@default(\"user\")"
+        },
+        {
+          "name": "adminRole",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "suspendedAt",
+          "type": "DateTime?",
+          "attributes": ""
+        },
+        {
+          "name": "suspendedUntil",
+          "type": "DateTime?",
+          "attributes": ""
+        },
+        {
+          "name": "suspensionReason",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "following",
+          "type": "String[]",
+          "attributes": ""
+        },
+        {
+          "name": "avatar",
+          "type": "images[]",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        },
+        {
+          "name": "shopReviews",
+          "type": "shopReviews[]",
+          "attributes": ""
+        },
+        {
+          "name": "orders",
+          "type": "orders[]",
+          "attributes": ""
+        },
+        {
+          "name": "addresses",
+          "type": "address[]",
+          "attributes": ""
+        },
+        {
+          "name": "notifications",
+          "type": "notifications[]",
+          "attributes": ""
+        },
+        {
+          "name": "productReviews",
+          "type": "productReviews[]",
+          "attributes": ""
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "shopReviews",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "user",
+          "type": "users",
+          "attributes": "@relation(fields: [userId], references: [id])"
+        },
+        {
+          "name": "rating",
+          "type": "Float",
+          "attributes": ""
+        },
+        {
+          "name": "reviews",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        },
+        {
+          "name": "shopsId",
+          "type": "String?",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "shops",
+          "type": "shops?",
+          "attributes": "@relation(fields: [shopsId], references: [id])"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "shops",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "bio",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "category",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "avatar",
+          "type": "images[]",
+          "attributes": ""
+        },
+        {
+          "name": "coverBanner",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "address",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "opening_hours",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "website",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "socialLinks",
+          "type": "Json?",
+          "attributes": ""
+        },
+        {
+          "name": "ratings",
+          "type": "Float?",
+          "attributes": "@default(0.0)"
+        },
+        {
+          "name": "reviews",
+          "type": "shopReviews[]",
+          "attributes": ""
+        },
+        {
+          "name": "sellerId",
+          "type": "String",
+          "attributes": "@unique @db.ObjectId"
+        },
+        {
+          "name": "sellers",
+          "type": "sellers",
+          "attributes": "@relation(fields: [sellerId], references: [id])"
+        },
+        {
+          "name": "products",
+          "type": "products[]",
+          "attributes": ""
+        },
+        {
+          "name": "orders",
+          "type": "orders[]",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "sellers",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "email",
+          "type": "String",
+          "attributes": "@unique"
+        },
+        {
+          "name": "phone_number",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "country",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "password",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "stripe_id",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "suspendedAt",
+          "type": "DateTime?",
+          "attributes": ""
+        },
+        {
+          "name": "suspendedUntil",
+          "type": "DateTime?",
+          "attributes": ""
+        },
+        {
+          "name": "suspensionReason",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "shop",
+          "type": "shops?",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        },
+        {
+          "name": "notifications",
+          "type": "notifications[]",
+          "attributes": ""
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "site_config",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "categories",
+          "type": "String[]",
+          "attributes": ""
+        },
+        {
+          "name": "subCategories",
+          "type": "Json",
+          "attributes": ""
+        },
+        {
+          "name": "logo",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "banner",
+          "type": "String?",
+          "attributes": ""
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "discountCodes",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "public_name",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "discountType",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "discountValue",
+          "type": "Float",
+          "attributes": ""
+        },
+        {
+          "name": "discountCode",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "sellerId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "products",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "title",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "slug",
+          "type": "String",
+          "attributes": "@unique"
+        },
+        {
+          "name": "category",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "subCategory",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "short_description",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "detailed_description",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "images",
+          "type": "images[]",
+          "attributes": ""
+        },
+        {
+          "name": "video_url",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "tags",
+          "type": "String[]",
+          "attributes": ""
+        },
+        {
+          "name": "brand",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "colors",
+          "type": "String[]",
+          "attributes": ""
+        },
+        {
+          "name": "sizes",
+          "type": "String[]",
+          "attributes": ""
+        },
+        {
+          "name": "starting_date",
+          "type": "DateTime?",
+          "attributes": ""
+        },
+        {
+          "name": "ending_date",
+          "type": "DateTime?",
+          "attributes": ""
+        },
+        {
+          "name": "stock",
+          "type": "Int",
+          "attributes": ""
+        },
+        {
+          "name": "sale_price",
+          "type": "Float",
+          "attributes": ""
+        },
+        {
+          "name": "regular_price",
+          "type": "Float",
+          "attributes": ""
+        },
+        {
+          "name": "rating",
+          "type": "Float",
+          "attributes": "@default(5)"
+        },
+        {
+          "name": "totalSales",
+          "type": "Float",
+          "attributes": "@default(0.0)"
+        },
+        {
+          "name": "warranty",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "custom_specification",
+          "type": "Json?",
+          "attributes": ""
+        },
+        {
+          "name": "custom_properties",
+          "type": "Json?",
+          "attributes": ""
+        },
+        {
+          "name": "isDeleted",
+          "type": "Boolean",
+          "attributes": "@default(false)"
+        },
+        {
+          "name": "cash_on_delivery",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "discount_codes",
+          "type": "String[]",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "status",
+          "type": "productStatus",
+          "attributes": "@default(Active)"
+        },
+        {
+          "name": "moderationReason",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "deleteAt",
+          "type": "DateTime?",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        },
+        {
+          "name": "shopId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "shop",
+          "type": "shops",
+          "attributes": "@relation(fields: [shopId], references: [id])"
+        },
+        {
+          "name": "orderItems",
+          "type": "orderItems[]",
+          "attributes": ""
+        },
+        {
+          "name": "reviews",
+          "type": "productReviews[]",
+          "attributes": ""
+        },
+        {
+          "name": "inventoryHistory",
+          "type": "inventoryHistory[]",
+          "attributes": ""
+        },
+        {
+          "name": "variants",
+          "type": "productVariant[]",
+          "attributes": ""
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "productVariant",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "productId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "product",
+          "type": "products",
+          "attributes": "@relation(fields: [productId], references: [id])"
+        },
+        {
+          "name": "sku",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "color",
+          "type": "String",
+          "attributes": "@default(\"\")"
+        },
+        {
+          "name": "size",
+          "type": "String",
+          "attributes": "@default(\"\")"
+        },
+        {
+          "name": "price",
+          "type": "Float",
+          "attributes": ""
+        },
+        {
+          "name": "stock",
+          "type": "Int",
+          "attributes": ""
+        },
+        {
+          "name": "active",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        }
+      ],
+      "constraints": [
+        "@@unique([productId, sku])",
+        "@@unique([productId, color, size])"
+      ]
+    },
+    {
+      "name": "productReviews",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "productId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "product",
+          "type": "products",
+          "attributes": "@relation(fields: [productId], references: [id])"
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "user",
+          "type": "users",
+          "attributes": "@relation(fields: [userId], references: [id])"
+        },
+        {
+          "name": "rating",
+          "type": "Int",
+          "attributes": ""
+        },
+        {
+          "name": "comment",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": [
+        "@@unique([productId, userId])"
+      ]
+    },
+    {
+      "name": "inventoryHistory",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "productId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "product",
+          "type": "products",
+          "attributes": "@relation(fields: [productId], references: [id])"
+        },
+        {
+          "name": "shopId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "delta",
+          "type": "Int",
+          "attributes": ""
+        },
+        {
+          "name": "stockAfter",
+          "type": "Int",
+          "attributes": ""
+        },
+        {
+          "name": "reason",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "actorId",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        }
+      ],
+      "constraints": [
+        "@@index([shopId, createdAt])"
+      ]
+    },
+    {
+      "name": "behaviorLog",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "eventId",
+          "type": "String",
+          "attributes": "@unique"
+        },
+        {
+          "name": "action",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "userId",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "source",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "type",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "message",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "metadata",
+          "type": "Json?",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        }
+      ],
+      "constraints": [
+        "@@index([action, createdAt])",
+        "@@index([userId, createdAt])"
+      ]
+    },
+    {
+      "name": "orders",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "orderNumber",
+          "type": "String",
+          "attributes": "@unique"
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "user",
+          "type": "users",
+          "attributes": "@relation(fields: [userId], references: [id])"
+        },
+        {
+          "name": "shopId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "shop",
+          "type": "shops",
+          "attributes": "@relation(fields: [shopId], references: [id])"
+        },
+        {
+          "name": "items",
+          "type": "orderItems[]",
+          "attributes": ""
+        },
+        {
+          "name": "subTotal",
+          "type": "Float",
+          "attributes": ""
+        },
+        {
+          "name": "shippingFee",
+          "type": "Float",
+          "attributes": "@default(0)"
+        },
+        {
+          "name": "discount",
+          "type": "Float",
+          "attributes": "@default(0)"
+        },
+        {
+          "name": "discountCodeId",
+          "type": "String?",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "totalAmount",
+          "type": "Float",
+          "attributes": ""
+        },
+        {
+          "name": "status",
+          "type": "orderStatus",
+          "attributes": "@default(Pending)"
+        },
+        {
+          "name": "paymentStatus",
+          "type": "paymentStatus",
+          "attributes": "@default(Pending)"
+        },
+        {
+          "name": "paymentMethod",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "currency",
+          "type": "String",
+          "attributes": "@default(\"usd\")"
+        },
+        {
+          "name": "platformFeeCents",
+          "type": "Int?",
+          "attributes": ""
+        },
+        {
+          "name": "stripePaymentId",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "stripeRefundId",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "refundState",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "shippingAddress",
+          "type": "Json",
+          "attributes": ""
+        },
+        {
+          "name": "note",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "trackingNumber",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "estimatedDelivery",
+          "type": "DateTime?",
+          "attributes": ""
+        },
+        {
+          "name": "deliveredAt",
+          "type": "DateTime?",
+          "attributes": ""
+        },
+        {
+          "name": "cancelledAt",
+          "type": "DateTime?",
+          "attributes": ""
+        },
+        {
+          "name": "cancelReason",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": [
+        "@@index([createdAt])",
+        "@@index([status, createdAt])",
+        "@@index([shopId, createdAt])",
+        "@@index([paymentStatus, status, createdAt])"
+      ]
+    },
+    {
+      "name": "adminAudit",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "actorId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "action",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "targetId",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "reason",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "before",
+          "type": "Json?",
+          "attributes": ""
+        },
+        {
+          "name": "after",
+          "type": "Json?",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        }
+      ],
+      "constraints": [
+        "@@index([createdAt])",
+        "@@index([targetId, createdAt])"
+      ]
+    },
+    {
+      "name": "adminGuard",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @map(\"_id\")"
+        },
+        {
+          "name": "revision",
+          "type": "Int",
+          "attributes": "@default(0)"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "notificationJob",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "requestKey",
+          "type": "String",
+          "attributes": "@unique"
+        },
+        {
+          "name": "actorId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "title",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "message",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "audience",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "recipientId",
+          "type": "String?",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "attributes": "@default(\"Queued\")"
+        },
+        {
+          "name": "cursor",
+          "type": "String?",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "sent",
+          "type": "Int",
+          "attributes": "@default(0)"
+        },
+        {
+          "name": "error",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "leaseUntil",
+          "type": "DateTime?",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": [
+        "@@index([status, createdAt])"
+      ]
+    },
+    {
+      "name": "orderEvent",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "orderId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "actorId",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "from",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "to",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "reason",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        }
+      ],
+      "constraints": [
+        "@@index([orderId, createdAt])"
+      ]
+    },
+    {
+      "name": "returnRequest",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "orderId",
+          "type": "String",
+          "attributes": "@unique @db.ObjectId"
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "shopId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "reason",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "evidence",
+          "type": "String[]",
+          "attributes": ""
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "attributes": "@default(\"Requested\")"
+        },
+        {
+          "name": "sellerNote",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "escalatedAt",
+          "type": "DateTime?",
+          "attributes": ""
+        },
+        {
+          "name": "escalationReason",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": [
+        "@@index([shopId, status])"
+      ]
+    },
+    {
+      "name": "shoppingState",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "payload",
+          "type": "Json",
+          "attributes": ""
+        },
+        {
+          "name": "revision",
+          "type": "Int",
+          "attributes": "@default(0)"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "savedPcBuild",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "parts",
+          "type": "Json",
+          "attributes": ""
+        },
+        {
+          "name": "revision",
+          "type": "Int",
+          "attributes": "@default(0)"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "orderItems",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "orderId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "order",
+          "type": "orders",
+          "attributes": "@relation(fields: [orderId], references: [id])"
+        },
+        {
+          "name": "productId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "variantId",
+          "type": "String?",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "sku",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "product",
+          "type": "products",
+          "attributes": "@relation(fields: [productId], references: [id])"
+        },
+        {
+          "name": "title",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "image",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "color",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "size",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "quantity",
+          "type": "Int",
+          "attributes": ""
+        },
+        {
+          "name": "unitPrice",
+          "type": "Float",
+          "attributes": ""
+        },
+        {
+          "name": "totalPrice",
+          "type": "Float",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "userAnalytics",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "attributes": "@unique @db.ObjectId"
+        },
+        {
+          "name": "actions",
+          "type": "Json[]",
+          "attributes": ""
+        },
+        {
+          "name": "lastVisited",
+          "type": "DateTime",
+          "attributes": ""
+        },
+        {
+          "name": "country",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "city",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "productAnalytics",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "productId",
+          "type": "String",
+          "attributes": "@unique @db.ObjectId"
+        },
+        {
+          "name": "shopId",
+          "type": "String?",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "cartAdds",
+          "type": "Int",
+          "attributes": "@default(0)"
+        },
+        {
+          "name": "views",
+          "type": "Int",
+          "attributes": "@default(0)"
+        },
+        {
+          "name": "wishListAdds",
+          "type": "Int",
+          "attributes": "@default(0)"
+        },
+        {
+          "name": "purchases",
+          "type": "Int",
+          "attributes": "@default(0)"
+        },
+        {
+          "name": "lastViewedAt",
+          "type": "DateTime",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "address",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "userId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "user",
+          "type": "users",
+          "attributes": "@relation(fields: [userId], references: [id])"
+        },
+        {
+          "name": "label",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "street",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "city",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "zip",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "country",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "isDefault",
+          "type": "Boolean",
+          "attributes": "@default(false)"
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "pcBuildTemplate",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "purpose",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "budgetMin",
+          "type": "Float",
+          "attributes": ""
+        },
+        {
+          "name": "budgetMax",
+          "type": "Float",
+          "attributes": ""
+        },
+        {
+          "name": "components",
+          "type": "Json",
+          "attributes": ""
+        },
+        {
+          "name": "productIds",
+          "type": "String[]",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "description",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "isActive",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "chatbotConversation",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "userId",
+          "type": "String?",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "sessionId",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "attributes": "@default(\"active\")"
+        },
+        {
+          "name": "context",
+          "type": "Json?",
+          "attributes": ""
+        },
+        {
+          "name": "messages",
+          "type": "chatbotMessage[]",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "chatbotMessage",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "conversationId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "conversation",
+          "type": "chatbotConversation",
+          "attributes": "@relation(fields: [conversationId], references: [id])"
+        },
+        {
+          "name": "role",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "content",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "messageType",
+          "type": "String",
+          "attributes": "@default(\"text\")"
+        },
+        {
+          "name": "metadata",
+          "type": "Json?",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "notifications",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "title",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "message",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "type",
+          "type": "notificationType",
+          "attributes": ""
+        },
+        {
+          "name": "isRead",
+          "type": "Boolean",
+          "attributes": "@default(false)"
+        },
+        {
+          "name": "redirectUrl",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "userId",
+          "type": "String?",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "user",
+          "type": "users?",
+          "attributes": "@relation(fields: [userId], references: [id])"
+        },
+        {
+          "name": "sellerId",
+          "type": "String?",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "seller",
+          "type": "sellers?",
+          "attributes": "@relation(fields: [sellerId], references: [id])"
+        },
+        {
+          "name": "orderId",
+          "type": "String?",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "metadata",
+          "type": "Json?",
+          "attributes": ""
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "conversationGroup",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "isGroup",
+          "type": "Boolean",
+          "attributes": "@default(false)"
+        },
+        {
+          "name": "name",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "creatorId",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "participantIds",
+          "type": "String[]",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "Participant",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "conversationId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "userId",
+          "type": "String?",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "sellerId",
+          "type": "String?",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "lastSeenAt",
+          "type": "DateTime?",
+          "attributes": ""
+        },
+        {
+          "name": "isOnline",
+          "type": "Boolean",
+          "attributes": "@default(false)"
+        },
+        {
+          "name": "unreadCount",
+          "type": "Int",
+          "attributes": "@default(0)"
+        },
+        {
+          "name": "muted",
+          "type": "Boolean",
+          "attributes": "@default(false)"
+        },
+        {
+          "name": "joinedAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "name": "message",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "conversationId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "senderId",
+          "type": "String",
+          "attributes": "@db.ObjectId"
+        },
+        {
+          "name": "senderType",
+          "type": "String",
+          "attributes": ""
+        },
+        {
+          "name": "content",
+          "type": "String?",
+          "attributes": ""
+        },
+        {
+          "name": "attachments",
+          "type": "String[]",
+          "attributes": ""
+        },
+        {
+          "name": "status",
+          "type": "String",
+          "attributes": "@default(\"sent\")"
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        }
+      ],
+      "constraints": [
+        "@@unique([conversationId, senderId, content, createdAt])"
+      ]
+    },
+    {
+      "name": "log_config",
+      "fields": [
+        {
+          "name": "id",
+          "type": "String",
+          "attributes": "@id @default(auto()) @map(\"_id\") @db.ObjectId"
+        },
+        {
+          "name": "userLogin",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "userRegistration",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "userLogout",
+          "type": "Boolean",
+          "attributes": "@default(false)"
+        },
+        {
+          "name": "passwordChange",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "passwordReset",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "productView",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "productSearch",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "productFilter",
+          "type": "Boolean",
+          "attributes": "@default(false)"
+        },
+        {
+          "name": "addToCart",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "addToWishlist",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "orderCreated",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "orderCancelled",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "paymentAttempt",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "paymentSuccess",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "paymentFailed",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "couponUsed",
+          "type": "Boolean",
+          "attributes": "@default(false)"
+        },
+        {
+          "name": "sellerLogin",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "sellerRegistration",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "shopCreated",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "productCreated",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "productDeleted",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "orderStatusChange",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "apiErrors",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "rateLimitHit",
+          "type": "Boolean",
+          "attributes": "@default(true)"
+        },
+        {
+          "name": "webhookEvents",
+          "type": "Boolean",
+          "attributes": "@default(false)"
+        },
+        {
+          "name": "createdAt",
+          "type": "DateTime",
+          "attributes": "@default(now())"
+        },
+        {
+          "name": "updatedAt",
+          "type": "DateTime",
+          "attributes": "@updatedAt"
+        }
+      ],
+      "constraints": []
+    }
+  ],
+  "declaredRelations": [
+    {
+      "child": "images",
+      "parent": "users",
+      "fields": [
+        "userId"
+      ],
+      "optional": true,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "images",
+      "parent": "shops",
+      "fields": [
+        "shopId"
+      ],
+      "optional": true,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "images",
+      "parent": "products",
+      "fields": [
+        "productId"
+      ],
+      "optional": true,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "shopReviews",
+      "parent": "users",
+      "fields": [
+        "userId"
+      ],
+      "optional": false,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "shopReviews",
+      "parent": "shops",
+      "fields": [
+        "shopsId"
+      ],
+      "optional": true,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "shops",
+      "parent": "sellers",
+      "fields": [
+        "sellerId"
+      ],
+      "optional": false,
+      "unique": true,
+      "kind": "declared"
+    },
+    {
+      "child": "products",
+      "parent": "shops",
+      "fields": [
+        "shopId"
+      ],
+      "optional": false,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "productVariant",
+      "parent": "products",
+      "fields": [
+        "productId"
+      ],
+      "optional": false,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "productReviews",
+      "parent": "products",
+      "fields": [
+        "productId"
+      ],
+      "optional": false,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "productReviews",
+      "parent": "users",
+      "fields": [
+        "userId"
+      ],
+      "optional": false,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "inventoryHistory",
+      "parent": "products",
+      "fields": [
+        "productId"
+      ],
+      "optional": false,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "orders",
+      "parent": "users",
+      "fields": [
+        "userId"
+      ],
+      "optional": false,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "orders",
+      "parent": "shops",
+      "fields": [
+        "shopId"
+      ],
+      "optional": false,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "orderItems",
+      "parent": "orders",
+      "fields": [
+        "orderId"
+      ],
+      "optional": false,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "orderItems",
+      "parent": "products",
+      "fields": [
+        "productId"
+      ],
+      "optional": false,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "address",
+      "parent": "users",
+      "fields": [
+        "userId"
+      ],
+      "optional": false,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "chatbotMessage",
+      "parent": "chatbotConversation",
+      "fields": [
+        "conversationId"
+      ],
+      "optional": false,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "notifications",
+      "parent": "users",
+      "fields": [
+        "userId"
+      ],
+      "optional": true,
+      "unique": false,
+      "kind": "declared"
+    },
+    {
+      "child": "notifications",
+      "parent": "sellers",
+      "fields": [
+        "sellerId"
+      ],
+      "optional": true,
+      "unique": false,
+      "kind": "declared"
+    }
+  ],
+  "logicalReferences": [
+    {
+      "child": "oauthIdentity",
+      "parent": "users",
+      "fields": [
+        "userId"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "shoppingState",
+      "parent": "users",
+      "fields": [
+        "id"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": true,
+      "array": false
+    },
+    {
+      "child": "savedPcBuild",
+      "parent": "users",
+      "fields": [
+        "id"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": true,
+      "array": false
+    },
+    {
+      "child": "paymentSession",
+      "parent": "users",
+      "fields": [
+        "userId"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "paymentReceipt",
+      "parent": "users",
+      "fields": [
+        "userId"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "paymentReceipt",
+      "parent": "paymentSession",
+      "fields": [
+        "sessionId"
+      ],
+      "kind": "logical",
+      "optional": true,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "paymentReceipt",
+      "parent": "orders",
+      "fields": [
+        "orderIds"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": false,
+      "array": true
+    },
+    {
+      "child": "users",
+      "parent": "shops",
+      "fields": [
+        "following"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": false,
+      "array": true
+    },
+    {
+      "child": "discountCodes",
+      "parent": "sellers",
+      "fields": [
+        "sellerId"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "products",
+      "parent": "discountCodes",
+      "fields": [
+        "discount_codes"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": false,
+      "array": true
+    },
+    {
+      "child": "orders",
+      "parent": "discountCodes",
+      "fields": [
+        "discountCodeId"
+      ],
+      "kind": "logical",
+      "optional": true,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "orderItems",
+      "parent": "productVariant",
+      "fields": [
+        "variantId"
+      ],
+      "kind": "logical",
+      "optional": true,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "inventoryHistory",
+      "parent": "shops",
+      "fields": [
+        "shopId"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "orderEvent",
+      "parent": "orders",
+      "fields": [
+        "orderId"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "returnRequest",
+      "parent": "orders",
+      "fields": [
+        "orderId"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": true,
+      "array": false
+    },
+    {
+      "child": "returnRequest",
+      "parent": "users",
+      "fields": [
+        "userId"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "returnRequest",
+      "parent": "shops",
+      "fields": [
+        "shopId"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "userAnalytics",
+      "parent": "users",
+      "fields": [
+        "userId"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": true,
+      "array": false
+    },
+    {
+      "child": "productAnalytics",
+      "parent": "products",
+      "fields": [
+        "productId"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": true,
+      "array": false
+    },
+    {
+      "child": "productAnalytics",
+      "parent": "shops",
+      "fields": [
+        "shopId"
+      ],
+      "kind": "logical",
+      "optional": true,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "pcBuildTemplate",
+      "parent": "products",
+      "fields": [
+        "productIds"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": false,
+      "array": true
+    },
+    {
+      "child": "chatbotConversation",
+      "parent": "users",
+      "fields": [
+        "userId"
+      ],
+      "kind": "logical",
+      "optional": true,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "notifications",
+      "parent": "orders",
+      "fields": [
+        "orderId"
+      ],
+      "kind": "logical",
+      "optional": true,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "Participant",
+      "parent": "conversationGroup",
+      "fields": [
+        "conversationId"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "Participant",
+      "parent": "users",
+      "fields": [
+        "userId"
+      ],
+      "kind": "logical",
+      "optional": true,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "Participant",
+      "parent": "sellers",
+      "fields": [
+        "sellerId"
+      ],
+      "kind": "logical",
+      "optional": true,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "message",
+      "parent": "conversationGroup",
+      "fields": [
+        "conversationId"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": false,
+      "array": false
+    },
+    {
+      "child": "chatAttachment",
+      "parent": "conversationGroup",
+      "fields": [
+        "conversationId"
+      ],
+      "kind": "logical",
+      "optional": false,
+      "unique": false,
+      "array": false
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "database-overview",
+      "title": "Quan hệ chính của Eshop",
+      "models": [
+        "users",
+        "sellers",
+        "shops",
+        "products",
+        "productVariant",
+        "orders",
+        "orderItems",
+        "address",
+        "productReviews",
+        "shopReviews",
+        "images",
+        "notifications",
+        "inventoryHistory"
+      ],
+      "declaredEdges": 18,
+      "logicalEdges": 0
+    },
+    {
+      "id": "database-full",
+      "title": "Toàn bộ schema Prisma — 37 collection",
+      "models": [
+        "images",
+        "oauthIdentity",
+        "pushSubscription",
+        "chatAttachment",
+        "paymentSession",
+        "paymentReceipt",
+        "users",
+        "shopReviews",
+        "shops",
+        "sellers",
+        "site_config",
+        "discountCodes",
+        "products",
+        "productVariant",
+        "productReviews",
+        "inventoryHistory",
+        "behaviorLog",
+        "orders",
+        "adminAudit",
+        "adminGuard",
+        "notificationJob",
+        "orderEvent",
+        "returnRequest",
+        "shoppingState",
+        "savedPcBuild",
+        "orderItems",
+        "userAnalytics",
+        "productAnalytics",
+        "address",
+        "pcBuildTemplate",
+        "chatbotConversation",
+        "chatbotMessage",
+        "notifications",
+        "conversationGroup",
+        "Participant",
+        "message",
+        "log_config"
+      ],
+      "declaredEdges": 19,
+      "logicalEdges": 0
+    },
+    {
+      "id": "database-accounts",
+      "title": "Tài khoản và cửa hàng",
+      "models": [
+        "users",
+        "sellers",
+        "shops",
+        "address",
+        "images",
+        "shopReviews",
+        "oauthIdentity",
+        "shoppingState",
+        "products",
+        "productReviews",
+        "orders",
+        "notifications"
+      ],
+      "declaredEdges": 13,
+      "logicalEdges": 3
+    },
+    {
+      "id": "database-catalog",
+      "title": "Sản phẩm và tồn kho",
+      "models": [
+        "products",
+        "productVariant",
+        "productReviews",
+        "inventoryHistory",
+        "discountCodes",
+        "productAnalytics",
+        "site_config",
+        "images",
+        "shops",
+        "users",
+        "orderItems",
+        "sellers"
+      ],
+      "declaredEdges": 7,
+      "logicalEdges": 5
+    },
+    {
+      "id": "database-orders",
+      "title": "Đơn hàng và thanh toán",
+      "models": [
+        "orders",
+        "orderItems",
+        "paymentSession",
+        "paymentReceipt",
+        "orderEvent",
+        "returnRequest",
+        "users",
+        "shops",
+        "products",
+        "discountCodes",
+        "productVariant"
+      ],
+      "declaredEdges": 4,
+      "logicalEdges": 10
+    },
+    {
+      "id": "database-chat",
+      "title": "Tin nhắn và thông báo",
+      "models": [
+        "conversationGroup",
+        "Participant",
+        "message",
+        "chatAttachment",
+        "pushSubscription",
+        "notifications",
+        "users",
+        "sellers",
+        "orders"
+      ],
+      "declaredEdges": 2,
+      "logicalEdges": 6
+    },
+    {
+      "id": "database-pc-builder",
+      "title": "PC Builder và chatbot",
+      "models": [
+        "pcBuildTemplate",
+        "savedPcBuild",
+        "chatbotConversation",
+        "chatbotMessage",
+        "users",
+        "products"
+      ],
+      "declaredEdges": 1,
+      "logicalEdges": 3
+    },
+    {
+      "id": "database-operations",
+      "title": "Quản trị và phân tích",
+      "models": [
+        "adminAudit",
+        "adminGuard",
+        "notificationJob",
+        "behaviorLog",
+        "log_config",
+        "userAnalytics",
+        "users"
+      ],
+      "declaredEdges": 0,
+      "logicalEdges": 1
+    }
+  ]
+}

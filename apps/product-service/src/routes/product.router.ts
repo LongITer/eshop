@@ -30,7 +30,7 @@ import isAuthenticated from "@packages/middleware/isAuthenticated";
 import { isSeller, isUser } from "@packages/middleware/authorizeRoles";
 import * as management from '../controllers/product-management.controller';
 import { revenueReport } from '../controllers/reports.controller';
-import { sellerStatistics } from '../controllers/statistics.controller';
+import { sellerStatistics, sellerAnalytics, sellerProductAnalytics, sellerCustomerAnalytics } from '../controllers/statistics.controller';
 import * as moderation from '../controllers/product-reports.controller';
 import { updateDiscountProducts } from '../controllers/discount-products.controller';
 import prisma from '@packages/libs/prisma';
@@ -43,9 +43,11 @@ router.get('/seller-violations', isAuthenticated, isSeller, moderation.sellerVio
 router.get('/seller-moderation-tasks', isAuthenticated, isSeller, moderation.sellerModerationTasks);
 router.patch('/seller-moderation-tasks/:id', isAuthenticated, isSeller, moderation.resolveModerationTask);
 import { listVariants, saveVariant } from '../controllers/variants.controller';
-import { buildCatalog, quoteBuild } from '../controllers/pc-builder.controller';
+import { buildCatalog, quoteBuild, getSavedBuild, saveBuild } from '../controllers/pc-builder.controller';
 router.get('/pc-builder/catalog', buildCatalog);
 router.post('/pc-builder/quote', quoteBuild);
+router.get('/pc-builder/saved', isAuthenticated, isUser, getSavedBuild);
+router.put('/pc-builder/saved', isAuthenticated, isUser, saveBuild);
 router.get('/variants/:id', listVariants);
 router.put('/variants/:id', isAuthenticated, isSeller, saveVariant);
 router.get('/sitemap-data', handle(async (req, res) => {
@@ -58,6 +60,9 @@ router.get('/sitemap-data', handle(async (req, res) => {
 }));
 router.get('/seller-reports', isAuthenticated, isSeller, revenueReport);
 router.get('/seller-statistics', isAuthenticated, isSeller, sellerStatistics);
+router.get('/seller-analytics', isAuthenticated, isSeller, sellerAnalytics);
+router.get('/seller-analytics/products/:id', isAuthenticated, isSeller, sellerProductAnalytics);
+router.get('/seller-analytics/customers/:id', isAuthenticated, isSeller, sellerCustomerAnalytics);
 router.get('/seller-product/:id', isAuthenticated, isSeller, management.getEditableProduct);
 router.put('/update-product/:id', isAuthenticated, isSeller, rateLimit({ windowMs: 60000, max: 10, keyGenerator: req => (req as any).seller.id }), management.updateProduct);
 router.get('/inventory', isAuthenticated, isSeller, management.getInventory);

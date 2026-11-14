@@ -93,7 +93,7 @@ export const lookup = handle(async (req, res) => {
     res.json({ rows: rows.map(row => ({ id: row.id, name: `${row.title} · ${row.shop.name}` })) });
   } else if (kind === 'shops') {
     if (!['overview', 'catalog'].some(p => canAdmin(req.user, p as any))) throw new ForbiddenError();
-    res.json({ rows: await prisma.shops.findMany({ where: { name: contains }, take: 20, select: { id: true, name: true } }) });
+    res.json({ rows: await prisma.shops.findMany({ where: req.query.id ? { id: objectId(req.query.id) } : { name: contains }, take: 20, select: { id: true, name: true } }) });
   } else {
     if (!canAdmin(req.user, 'notifications')) throw new ForbiddenError();
     const where = { OR: [{ name: contains }, { email: contains }] };

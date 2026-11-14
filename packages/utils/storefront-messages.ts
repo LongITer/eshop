@@ -1,5 +1,9 @@
+import { dynamicStorefrontError, storefrontErrorMessages } from './storefront-error-messages';
+import { pcBuilderMessages } from './pc-builder-messages';
 // Static storefront copy only. Product names, messages and API identifiers are never translated.
 export const storefrontMessages: ReadonlyArray<readonly [string, string]> = [
+  ...storefrontErrorMessages,
+  ...pcBuilderMessages,
   ["Chưa thể thanh toán", "Payment unavailable"],
   ["Giá tối thiểu (USD)", "Minimum price (USD)"],
   ["Giá tối đa (USD)", "Maximum price (USD)"],
@@ -377,6 +381,27 @@ export const storefrontMessages: ReadonlyArray<readonly [string, string]> = [
   ["Đánh dấu tất cả đã đọc","Mark all as read"],
   ["Đánh dấu đã đọc","Mark as read"],
   ["chưa đọc","unread"],
+  ["Đóng thông báo","Close notifications"],
+  ["Thông báo gần đây","Recent notifications"],
+  ["Xem tất cả thông báo","View all notifications"],
+  ["Cập nhật thông tin về đơn hàng và tài khoản của bạn.","Stay up to date with your orders and account."],
+  ["Không có thông báo chưa đọc.","No unread notifications."],
+  ["Bạn đã xem hết thông báo.","You're all caught up."],
+  ["Tất cả thông báo","All notifications"],
+  ["Chưa đọc","Unread"],
+  ["Trung tâm thông báo","Notification center"],
+  ["Chi tiết thông báo","Notification details"],
+  ["Làm mới thông báo","Refresh notifications"],
+  ["Đăng nhập để xem thông báo của bạn.","Sign in to view your notifications."],
+  ["Đã xem hết thông báo","All caught up"],
+  ["Hệ thống","System"],
+  ["Hôm nay","Today"],
+  ["Trước đó","Earlier"],
+  ["Thông báo đã được cập nhật.","Notifications are up to date."],
+  ["Bạn chưa có thông báo nào.","You have no notifications yet."],
+  ["Cập nhật mới nhất","Latest updates"],
+  ["Đường dẫn điều hướng","Breadcrumb"],
+  ["Các trang thông báo","Notification pages"],
   ["Vừa xong","Just now"],
   ["Tất cả cuộc trò chuyện","All Conversations"],
   ["Chưa có cuộc trò chuyện","No conversations yet"],
@@ -622,6 +647,19 @@ export const storefrontMessages: ReadonlyArray<readonly [string, string]> = [
   ["Ngôn ngữ trò chuyện","Chat language"],
   ["Đang tải kết quả thanh toán…","Loading payment result…"],
   ["Đang tải tin nhắn…","Loading messages…"],
+  ["Trò chuyện với cửa hàng","Chat with your shops"],
+  ["Đang hoạt động","Online"],
+  ["Ngoại tuyến","Offline"],
+  ["Gửi tin nhắn để bắt đầu trò chuyện","Say something to start a conversation"],
+  ["Đóng hộp chat","Close chat"],
+  ["Quay lại danh sách trò chuyện","Back to conversations"],
+  ["Tìm cuộc trò chuyện","Search conversations"],
+  ["Không có cuộc trò chuyện phù hợp.","No conversations match your search."],
+  ["Cuộc trò chuyện này hiện không khả dụng.","This conversation is unavailable."],
+  ["Không tải được tin nhắn. Vui lòng thử lại.","Unable to load messages. Please try again."],
+  ["Không gửi được tin nhắn. Vui lòng thử lại.","Could not send the message. Please try again."],
+  ["Chat mất kết nối. Đang kết nối lại…","Chat disconnected. Reconnecting…"],
+  ["Chưa xác nhận được tin nhắn đã gửi. Hãy kiểm tra cuộc trò chuyện trước khi gửi lại.","Could not confirm delivery. Check the conversation before sending again."],
   ["Bán hàng","Sell with us"],
   ["Không thể kiểm tra công suất nguồn: thiếu công suất hoặc mức nguồn đề xuất.","Cannot verify PSU capacity: wattage or recommended PSU watts is missing."],
   ["Kiểm tra thêm BIOS, không gian vỏ máy, đầu nối và tản nhiệt theo thông số sản phẩm. Các kiểm tra này chưa bao quát mọi trường hợp.","Also check BIOS support, case clearance, connectors and cooling with the product specifications. These checks are not exhaustive."]
@@ -640,6 +678,6 @@ export function translateStorefront(text: string, language: 'vi' | 'en'): string
     const stock = /^Chỉ còn tối đa (\d+) sản phẩm cho lựa chọn này$/.exec(key);
     if (stock) return `Only ${stock[1]} items available for this option`;
   }
-  const translated = dictionaries[language].get(key);
+  const translated = dictionaries[language].get(key) ?? dynamicStorefrontError(key, language);
   return translated === undefined ? text : text.replace(key, () => translated);
 }

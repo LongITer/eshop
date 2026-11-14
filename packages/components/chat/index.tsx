@@ -49,6 +49,7 @@ export function useChatConnection({ actorId, api, socketRef, onEvent }: { actorI
   const callback = useRef(onEvent); callback.current = onEvent;
   const [ready, setReady] = useState(false);
   useEffect(() => {
+    setReady(false);
     if (!actorId) return;
     let stopped = false; let ws: WebSocket | null = null; let timer: ReturnType<typeof setTimeout>;
     const connect = async () => {
@@ -56,9 +57,9 @@ export function useChatConnection({ actorId, api, socketRef, onEvent }: { actorI
         const { data } = await api.post('/chatting/api/socket-ticket'); if (stopped) return;
         const base = process.env.NEXT_PUBLIC_CHAT_WS_URL || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/chatting-ws`;
         ws = new WebSocket(`${base}?ticket=${encodeURIComponent(data.ticket)}`); socketRef.current = ws;
-        ws.onmessage = event => { try { const parsed = JSON.parse(event.data); if (parsed.type === 'READY') setReady(true); callback.current(parsed); } catch { /* Ignore malformed frames. */ } };
-        ws.onclose = () => { setReady(false); if (!stopped) timer = setTimeout(connect, 3000); };
-        ws.onerror = () => ws?.close();
+        ws.onmessage = event => { if (stopped) return; try { const parsed = JSON.parse(event.data); if (parsed.type === 'READY') setReady(true); callback.current(parsed); } catch { /* Ignore malformed frames. */ } };
+        ws.onclose = () => { if (stopped) return; setReady(false); timer = setTimeout(connect, 3000); };
+        ws.onerror = () => { if (!stopped) ws?.close(); };
       } catch { setReady(false); if (!stopped) timer = setTimeout(connect, 5000); }
     };
     connect();

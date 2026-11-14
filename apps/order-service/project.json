@@ -12,6 +12,7 @@
         "target": "node",
         "compiler": "tsc",
         "outputPath": "apps/order-service/dist",
+        "deleteOutputPath": false,
         "main": "apps/order-service/src/main.ts",
         "tsConfig": "apps/order-service/tsconfig.app.json",
         "webpackConfig": "apps/order-service/webpack.config.js"

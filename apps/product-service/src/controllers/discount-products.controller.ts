@@ -12,6 +12,10 @@ export const updateDiscountProducts = handle(async (req: any, res) => {
   await transaction(async tx => {
     const code = await tx.discountCodes.findFirst({ where: { id, sellerId: req.seller.id } });
     if (!code) throw new NotFoundError('Discount code not found');
+    // Serialize assignments with deletion, including newly linked products that
+    // were absent from the deletion transaction's original product snapshot.
+    const previousUpdate = code.updatedAt instanceof Date ? code.updatedAt.getTime() : 0;
+    await tx.discountCodes.update({ where: { id, sellerId: req.seller.id }, data: { updatedAt: new Date(Math.max(Date.now(), previousUpdate + 1)) } });
     const products = await tx.products.findMany({ where: { shopId, OR: [{ id: { in: [...selected] } }, { discount_codes: { has: id } }] }, select: { id: true, discount_codes: true, isDeleted: true } });
     if (products.filter(p => selected.has(p.id) && !p.isDeleted).length !== selected.size) throw new ValidationError('Select available products belonging to your shop');
     for (const product of products) {

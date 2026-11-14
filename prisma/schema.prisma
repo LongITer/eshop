@@ -312,6 +312,7 @@ model orders {
   @@index([createdAt])
   @@index([status, createdAt])
   @@index([shopId, createdAt])
+  @@index([shopId, userId, createdAt])
   @@index([paymentStatus, status, createdAt])
 }
 
@@ -446,6 +447,13 @@ model shoppingState {
   updatedAt DateTime @updatedAt
 }
 
+model savedPcBuild {
+  id        String @id @map("_id") @db.ObjectId
+  parts     Json
+  revision  Int @default(0)
+  updatedAt DateTime @updatedAt
+}
+
 model orderItems {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   orderId     String   @db.ObjectId
@@ -463,6 +471,8 @@ model orderItems {
   totalPrice  Float
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  @@index([orderId])
+  @@index([productId, orderId])
 }
 
 model userAnalytics {

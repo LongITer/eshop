@@ -12,6 +12,7 @@
         "target": "node",
         "compiler": "tsc",
         "outputPath": "apps/auth-service/dist",
+        "deleteOutputPath": false,
         "main": "apps/auth-service/src/main.ts",
         "tsConfig": "apps/auth-service/tsconfig.app.json",
         "webpackConfig": "apps/auth-service/webpack.config.js"

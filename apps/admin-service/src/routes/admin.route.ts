@@ -20,7 +20,7 @@ import { isAdmin } from "@packages/middleware/authorizeRoles";
 import { adminPermission } from '@packages/middleware/adminPermission';
 import * as gov from '../controllers/governance.controller';
 import * as ops from '../controllers/operations.controller';
-import { adminStatistics } from '../controllers/statistics.controller';
+import { adminStatistics, adminAnalytics, adminProductAnalytics } from '../controllers/statistics.controller';
 import * as moderation from '../controllers/product-reports.controller';
 import rateLimit from 'express-rate-limit';
 
@@ -33,6 +33,8 @@ router.patch('/product-reports/:id', isAuthenticated, isAdmin, adminPermission('
 router.get('/violations', isAuthenticated, isAdmin, adminPermission('catalog'), moderation.violations);
 router.post('/products/:id/scan', isAuthenticated, isAdmin, adminPermission('catalog'), rateLimit({ windowMs: 60000, max: 10, keyGenerator: req => req.user!.id }), moderation.scanListing);
 router.get('/statistics', isAuthenticated, isAdmin, adminPermission('overview'), adminStatistics);
+router.get('/analytics', isAuthenticated, isAdmin, adminPermission('overview'), adminAnalytics);
+router.get('/analytics/products/:id', isAuthenticated, isAdmin, adminPermission('overview'), adminProductAnalytics);
 router.get('/orders', isAuthenticated, isAdmin, adminPermission('orders'), ops.getOrders);
 router.get('/orders/:orderId', isAuthenticated, isAdmin, adminPermission('orders'), ops.orderDetail);
 router.patch('/update-order-status/:orderId', isAuthenticated, isAdmin, adminPermission('fulfillment'), ops.updateStatus);

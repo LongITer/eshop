@@ -5,6 +5,7 @@ import axios from "axios";
 const axiosInstance = axios.create({
   baseURL: typeof window !== "undefined" ? "" : "http://localhost:8080",
   withCredentials: true,
+  timeout: 12000,
 });
 
 let isRefreshing = false;

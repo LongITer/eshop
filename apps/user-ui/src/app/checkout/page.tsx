@@ -11,7 +11,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import CheckoutForm from "@/shared/components/checkout/checkoutForm";
 
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY
-  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY)
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY).catch(() => null)
   : null;
 
 const Page = () => {
@@ -27,16 +27,20 @@ const Page = () => {
   const sessionId = searchParams.get("sessionId");
 
   useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError(null);
+    setClientSecret('');
     const fetchSessionAndClientSecret = async () => {
       if (!sessionId) {
-        setError(t("Phiên thanh toán không hợp lệ. Vui lòng thử lại."));
+        setError("Phiên thanh toán không hợp lệ. Vui lòng thử lại.");
         setLoading(false);
         return;
       }
 
       try {
         const verifyRes = await axiosInstance.get(
-          `/order/verify-payment-session?sessionId=${sessionId}`,
+          '/order/verify-payment-session', { params: { sessionId }, signal: controller.signal },
         );
 
         const { totalAmount: sessionTotal, cart, coupon } = verifyRes.data.session;
@@ -50,34 +54,42 @@ const Page = () => {
           throw new Error("Invalid payment session data.");
         }
 
-        setCartItems(cart);
-        setCoupon(coupon);
-        setSummary({ totalAmount: sessionTotal, shippingFee: verifyRes.data.session.shippingFee || 0, shippingAddress: verifyRes.data.session.shippingAddress, shippingByShop: verifyRes.data.session.shippingByShop });
-
         const intentRes = await axiosInstance.post(
           "/order/create-payment-intent",
           {
             sessionId,
           },
+          { signal: controller.signal },
         );
 
         const secret = intentRes?.data?.clientSecret;
 
-        if (typeof secret !== "string" || !secret.trim()) {
+        if (typeof secret !== "string" || !/^pi_[A-Za-z0-9]+_secret_[A-Za-z0-9_]+$/.test(secret)) {
           throw new Error("Payment initialization failed: missing client secret.");
         }
-
+        if (controller.signal.aborted) return;
+        setCartItems(cart);
+        setCoupon(coupon);
+        setSummary({ totalAmount: sessionTotal, shippingFee: verifyRes.data.session.shippingFee || 0, shippingAddress: verifyRes.data.session.shippingAddress, shippingByShop: verifyRes.data.session.shippingByShop });
         setClientSecret(secret);
       } catch (err: any) {
-        console.error(err);
-        setError(t("Không chuẩn bị được thanh toán. Vui lòng thử lại."));
+        if (!controller.signal.aborted) setError("Không chuẩn bị được thanh toán. Vui lòng thử lại.");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
     fetchSessionAndClientSecret();
+    return () => controller.abort();
   }, [sessionId]);
+
+  useEffect(() => {
+    let active = true;
+    stripePromise?.then(stripe => {
+      if (active && !stripe) setError('Unable to load payment form. Reload this page or return to your cart.');
+    });
+    return () => { active = false; };
+  }, []);
 
   const appearance = {
     theme: "stripe",

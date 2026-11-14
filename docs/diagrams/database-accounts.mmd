@@ -1,0 +1,128 @@
+erDiagram
+  images {
+    ObjectId id PK "Mongo _id"
+    String file_id
+    String url
+    ObjectId userId FK "nullable"
+    ObjectId shopId FK "nullable"
+    ObjectId productId FK "nullable"
+  }
+  oauthIdentity {
+    ObjectId id PK "Mongo _id"
+    String subject UK
+    ObjectId userId
+    DateTime createdAt
+  }
+  users {
+    ObjectId id PK "Mongo _id"
+    String name
+    String email UK
+    String password "nullable"
+    String role
+    String adminRole "nullable"
+    DateTime suspendedAt "nullable"
+    DateTime suspendedUntil "nullable"
+    String suspensionReason "nullable"
+    String[] following
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  shopReviews {
+    ObjectId id PK "Mongo _id"
+    ObjectId userId FK
+    Float rating
+    String reviews "nullable"
+    DateTime createdAt
+    DateTime updatedAt
+    ObjectId shopsId FK "nullable"
+  }
+  shops {
+    ObjectId id PK "Mongo _id"
+    String name
+    String bio "nullable"
+    String category "nullable"
+    String coverBanner "nullable"
+    String address "nullable"
+    String opening_hours "nullable"
+    String website "nullable"
+    Json socialLinks "nullable"
+    Float ratings "nullable"
+    ObjectId sellerId UK, FK
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  sellers {
+    ObjectId id PK "Mongo _id"
+    String name
+    String email UK
+    String phone_number
+    String country
+    String password "nullable"
+    String stripe_id "nullable"
+    DateTime suspendedAt "nullable"
+    DateTime suspendedUntil "nullable"
+    String suspensionReason "nullable"
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  products {
+    ObjectId id PK "Mongo _id"
+    String title
+    Int stock
+    Float sale_price
+    productStatus status "enum"
+    ObjectId shopId FK
+  }
+  productReviews {
+    ObjectId id PK "Mongo _id"
+    ObjectId userId FK
+  }
+  orders {
+    ObjectId id PK "Mongo _id"
+    String orderNumber UK
+    ObjectId userId FK
+    ObjectId shopId FK
+    orderStatus status "enum"
+    paymentStatus paymentStatus "enum"
+  }
+  shoppingState {
+    ObjectId id PK "Mongo _id"
+    Json payload
+    Int revision
+    DateTime updatedAt
+  }
+  address {
+    ObjectId id PK "Mongo _id"
+    ObjectId userId FK
+    String label
+    String name
+    String street
+    String city
+    String zip
+    String country
+    Boolean isDefault
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  notifications {
+    ObjectId id PK "Mongo _id"
+    String title
+    ObjectId userId FK "nullable"
+    ObjectId sellerId FK "nullable"
+  }
+  users |o--o{ images : "userId"
+  shops |o--o{ images : "shopId"
+  products |o--o{ images : "productId"
+  users ||--o{ shopReviews : "userId"
+  shops |o--o{ shopReviews : "shopsId"
+  sellers ||--o| shops : "sellerId"
+  shops ||--o{ products : "shopId"
+  users ||--o{ productReviews : "userId"
+  users ||--o{ orders : "userId"
+  shops ||--o{ orders : "shopId"
+  users ||--o{ address : "userId"
+  users |o--o{ notifications : "userId"
+  sellers |o--o{ notifications : "sellerId"
+  users ||..o{ oauthIdentity : "userId [ID]"
+  users ||..o| shoppingState : "id [ID]"
+  shops }o..o{ users : "following array [ID]"

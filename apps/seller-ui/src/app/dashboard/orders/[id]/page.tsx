@@ -8,34 +8,44 @@ import axiosInstance from "apps/seller-ui/src/utils/axioInstance";
 import { ArrowLeft, Loader2, Package, Check, Truck, MapPin, CreditCard, CalendarDays, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useState } from "react";
+import useSeller from "apps/seller-ui/src/hooks/useSeller";
 
-const fetchOrders = async () => {
-  const res = await axiosInstance.get("/order/get-seller-orders");
+const fetchOrders = async ({ signal }: { signal: AbortSignal }) => {
+  const res = await axiosInstance.get("/order/get-seller-orders", { signal });
   return Array.isArray(res.data) ? res.data : (res.data?.orders ?? []);
 };
 
 const deliveryStages = ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered'];
 const money = (value: unknown) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value || 0));
-const card = 'rounded-2xl bg-slate-900/80 p-5 shadow-sm ring-1 ring-white/10 sm:p-6';
+const card = 'rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6';
+const control = 'min-h-11 w-full rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:opacity-50';
 const formatAddress = (address: any) => [...new Set([address?.address, address?.street, address?.ward, address?.district, address?.city, address?.state, address?.zip || address?.postalCode, address?.country].filter(Boolean))].join(', ') || 'No shipping address';
 
 const OrderDetails = () => {
   const { id } = useParams<{ id: string }>();
+  const { seller, isLoading: sellerLoading } = useSeller();
+  const [statusDraft, setStatusDraft] = useState('');
+  const [tracking, setTracking] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [cancelReason, setCancelReason] = useState('');
   const queryClient = useQueryClient();
   const { data: orders = [], isLoading, isError, refetch } = useQuery({
-    queryKey: ["seller-orders"],
+    queryKey: ["seller-orders", seller?.id],
+    enabled: !!seller?.id,
     queryFn: fetchOrders,
   });
   const updateStatusMutation = useMutation({
-    mutationFn: async (status: string) => {
+    mutationFn: async (input: { status: string; trackingNumber?: string; estimatedDelivery?: string; reason?: string }) => {
       const response = await axiosInstance.patch(
         `/order/update-order-status/${id}`,
-        { status },
+        input,
       );
       return response.data;
     },
     onError: (error: any) => toast.error(error.response?.data?.message || "Could not update status."),
     onSuccess: () => {
+      setStatusDraft(''); setTracking(''); setDeliveryDate(''); setCancelReason('');
       toast.success("Order status updated.");
       queryClient.invalidateQueries({ queryKey: ["aftercare", true, id] });
       queryClient.invalidateQueries({ queryKey: ["seller-payments"] });
@@ -46,10 +56,10 @@ const OrderDetails = () => {
   });
   const order = orders.find((item: any) => item.id === id);
 
-  if (isLoading) {
+  if (isLoading || sellerLoading) {
     return (
       <div className="min-h-screen bg-[#080d1a] p-6 text-white md:p-10">
-        <div className="mx-auto max-w-4xl animate-pulse">
+        <div className="mx-auto max-w-4xl">
           <div className="mb-6 h-4 w-44 rounded bg-slate-800" />
           <div className="mb-7 h-8 w-64 rounded bg-slate-800" />
           <div className="mb-8 h-24 rounded-lg border border-slate-800 bg-[#0d1423]" />
@@ -80,6 +90,7 @@ const OrderDetails = () => {
 
   const activeIndex = deliveryStages.indexOf(order.status);
   const nextStatuses = transitions[order.status] || [];
+  const selectedStatus = nextStatuses.includes(statusDraft) ? statusDraft : order.status;
   const itemCount = (order.items || []).reduce((sum: number, item: any) => sum + item.quantity, 0);
   const statusColor = ['Cancelled', 'Refunded', 'Returned'].includes(order.status) ? 'bg-rose-500/10 text-rose-300 ring-rose-500/20' : order.status === 'Delivered' ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/20' : 'bg-blue-500/10 text-blue-300 ring-blue-500/20';
   return (
@@ -91,7 +102,12 @@ const OrderDetails = () => {
           <span className={`rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 ${statusColor}`}>{order.status}</span>
         </header>
         <section className={`${card} mb-6`} aria-label="Order fulfillment">
-          <div className="flex flex-wrap items-center justify-between gap-4"><div><h2 className="text-base font-semibold">Order fulfillment</h2><p className="mt-1 text-sm text-slate-400">Track progress and update the delivery status.</p></div><div className="flex items-center gap-3"><label htmlFor="delivery-status" className="text-sm text-slate-400">Update status</label><select id="delivery-status" value={order.status} onChange={event => updateStatusMutation.mutate(event.target.value)} disabled={updateStatusMutation.isPending || !nextStatuses.length} className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 disabled:opacity-60">{[order.status, ...nextStatuses].map(status => <option key={status} value={status}>{status}</option>)}</select>{updateStatusMutation.isPending && <Loader2 size={16} className="animate-spin text-blue-400" aria-label="Saving status" />}</div></div>
+          <div><h2 className="text-base font-semibold">Order fulfillment</h2><p className="mt-1 text-sm text-slate-400">Track progress and update the delivery status.</p></div>
+          {nextStatuses.length > 0 ? <form className="mt-5 space-y-4" onSubmit={event => { event.preventDefault(); if (selectedStatus === order.status || updateStatusMutation.isPending) return; updateStatusMutation.mutate({ status: selectedStatus, ...(selectedStatus === 'Shipped' ? { ...(tracking.trim() ? { trackingNumber: tracking.trim() } : {}), ...(deliveryDate ? { estimatedDelivery: deliveryDate } : {}) } : {}), ...(selectedStatus === 'Cancelled' ? { reason: cancelReason.trim() } : {}) }); }}>
+            <div className="flex flex-wrap items-end gap-3"><label className="min-w-0 flex-1 space-y-2 sm:max-w-xs"><span className="text-xs font-medium text-slate-400">Next status</span><select id="delivery-status" value={selectedStatus} onChange={event => setStatusDraft(event.target.value)} disabled={updateStatusMutation.isPending} className={control}><option value={order.status}>{order.status} (current)</option>{nextStatuses.map(status => <option key={status}>{status}</option>)}</select></label><button type="submit" disabled={updateStatusMutation.isPending || selectedStatus === order.status || (selectedStatus === 'Cancelled' && cancelReason.trim().length < 3)} className={`flex min-h-11 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white disabled:opacity-40 ${selectedStatus === 'Cancelled' ? 'bg-rose-600 hover:bg-rose-500' : 'bg-blue-600 hover:bg-blue-500'}`}>{updateStatusMutation.isPending && <Loader2 size={15} className="animate-spin" />}{selectedStatus === 'Cancelled' ? 'Confirm cancellation' : 'Save status'}</button></div>
+            {selectedStatus === 'Shipped' && <div className="grid gap-4 rounded-xl border border-slate-800 bg-slate-950/40 p-4 sm:grid-cols-2"><label className="space-y-2"><span className="text-xs text-slate-400">Tracking number (optional)</span><input maxLength={120} value={tracking} onChange={event => setTracking(event.target.value)} placeholder={order.trackingNumber || 'Enter carrier tracking number'} className={control} disabled={updateStatusMutation.isPending} /></label><label className="space-y-2"><span className="text-xs text-slate-400">Estimated delivery (optional)</span><input type="date" value={deliveryDate} onChange={event => setDeliveryDate(event.target.value)} className={control} disabled={updateStatusMutation.isPending} /></label></div>}
+            {selectedStatus === 'Cancelled' && <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4"><p className="mb-3 text-xs leading-6 text-rose-300">Cancelling restores the purchased stock and cannot be undone.{order.paymentStatus === 'Paid' ? ' The payment refund must still be processed separately.' : ''}</p><label className="space-y-2"><span className="text-xs text-slate-400">Reason for cancellation</span><textarea required minLength={3} maxLength={1000} rows={2} value={cancelReason} onChange={event => setCancelReason(event.target.value)} className={control} disabled={updateStatusMutation.isPending} placeholder="Explain why this order is being cancelled" /></label></div>}
+          </form> : <p className="mt-4 rounded-xl bg-slate-950/40 px-4 py-3 text-xs text-slate-500">This order has no further fulfillment transitions.</p>}
           {activeIndex >= 0 && <div className="relative mt-8 grid grid-cols-5 pb-1">
             <div className="absolute left-[10%] right-[10%] top-4 h-0.5 bg-slate-700" /><div className="absolute left-[10%] top-4 h-0.5 bg-blue-500 transition-all" style={{ width: `${activeIndex * 20}%` }} />
             {deliveryStages.map((stage, index) => <div key={stage} className="relative flex flex-col items-center gap-2.5"><span className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full ring-4 ring-slate-900 ${index < activeIndex ? 'bg-blue-600 text-white' : index === activeIndex ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20' : 'bg-slate-800 text-slate-500'}`}>{index < activeIndex ? <Check size={15} /> : index === 3 ? <Truck size={15} /> : index === 4 ? <Check size={15} /> : <Package size={15} />}</span><span className={`text-[10px] sm:text-xs ${index <= activeIndex ? 'font-medium text-blue-300' : 'text-slate-500'}`}>{stage}</span></div>)}

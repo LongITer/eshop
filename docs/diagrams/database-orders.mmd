@@ -1,0 +1,121 @@
+erDiagram
+  paymentSession {
+    String id PK "Mongo _id"
+    ObjectId userId
+    Json payload
+    DateTime expiresAt
+    DateTime createdAt
+  }
+  paymentReceipt {
+    String id PK "Mongo _id"
+    String sessionId "nullable"
+    ObjectId userId
+    ObjectId[] orderIds
+    DateTime createdAt
+  }
+  users {
+    ObjectId id PK "Mongo _id"
+    String name
+    String email UK
+    String role
+  }
+  shops {
+    ObjectId id PK "Mongo _id"
+    String name
+  }
+  discountCodes {
+    ObjectId id PK "Mongo _id"
+  }
+  products {
+    ObjectId id PK "Mongo _id"
+    String title
+    Int stock
+    Float sale_price
+    productStatus status "enum"
+  }
+  productVariant {
+    ObjectId id PK "Mongo _id"
+    String sku
+    Int stock
+  }
+  orders {
+    ObjectId id PK "Mongo _id"
+    String orderNumber UK
+    ObjectId userId FK
+    ObjectId shopId FK
+    Float subTotal
+    Float shippingFee
+    Float discount
+    ObjectId discountCodeId "nullable"
+    Float totalAmount
+    orderStatus status "enum"
+    paymentStatus paymentStatus "enum"
+    String paymentMethod "nullable"
+    String currency
+    Int platformFeeCents "nullable"
+    String stripePaymentId "nullable"
+    String stripeRefundId "nullable"
+    String refundState "nullable"
+    Json shippingAddress
+    String note "nullable"
+    String trackingNumber "nullable"
+    DateTime estimatedDelivery "nullable"
+    DateTime deliveredAt "nullable"
+    DateTime cancelledAt "nullable"
+    String cancelReason "nullable"
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  orderEvent {
+    ObjectId id PK "Mongo _id"
+    ObjectId orderId
+    String actorId
+    String from
+    String to
+    String reason "nullable"
+    DateTime createdAt
+  }
+  returnRequest {
+    ObjectId id PK "Mongo _id"
+    ObjectId orderId UK
+    ObjectId userId
+    ObjectId shopId
+    String reason
+    String[] evidence
+    String status
+    String sellerNote "nullable"
+    DateTime escalatedAt "nullable"
+    String escalationReason "nullable"
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  orderItems {
+    ObjectId id PK "Mongo _id"
+    ObjectId orderId FK
+    ObjectId productId FK
+    ObjectId variantId "nullable"
+    String sku "nullable"
+    String title
+    String image "nullable"
+    String color "nullable"
+    String size "nullable"
+    Int quantity
+    Float unitPrice
+    Float totalPrice
+    DateTime createdAt
+    DateTime updatedAt
+  }
+  users ||--o{ orders : "userId"
+  shops ||--o{ orders : "shopId"
+  orders ||--o{ orderItems : "orderId"
+  products ||--o{ orderItems : "productId"
+  users ||..o{ paymentSession : "userId [ID]"
+  users ||..o{ paymentReceipt : "userId [ID]"
+  paymentSession |o..o{ paymentReceipt : "sessionId [ID]"
+  orders }o..o{ paymentReceipt : "orderIds array [ID]"
+  discountCodes |o..o{ orders : "discountCodeId [ID]"
+  productVariant |o..o{ orderItems : "variantId [ID]"
+  orders ||..o{ orderEvent : "orderId [ID]"
+  orders ||..o| returnRequest : "orderId [ID]"
+  users ||..o{ returnRequest : "userId [ID]"
+  shops ||..o{ returnRequest : "shopId [ID]"

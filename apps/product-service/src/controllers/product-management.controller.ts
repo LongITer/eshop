@@ -105,7 +105,7 @@ export const getInventory = handle(async (req: any, res) => {
   if (!shopId) throw new NotFoundError('Shop not found');
   const threshold = Math.max(1, Math.min(1000, Number(req.query.threshold) || 5));
   const [products, history] = await Promise.all([
-    prisma.products.findMany({ where: { shopId, isDeleted: false, ...(req.query.low === 'true' ? { stock: { lt: threshold } } : {}) }, orderBy: { stock: 'asc' }, include: { images: true } }),
+    prisma.products.findMany({ where: { shopId, isDeleted: false, ...(req.query.low === 'true' ? { stock: { lte: threshold } } : {}) }, orderBy: { stock: 'asc' }, include: { images: true } }),
     prisma.inventoryHistory.findMany({ where: { shopId }, ...pageArgs(req.query), orderBy: { createdAt: 'desc' }, include: { product: { select: { title: true } } } }),
   ]);
   res.json({ products, history, threshold });

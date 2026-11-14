@@ -3,6 +3,7 @@ import axios from "axios";
 const axiosInstance = axios.create({
   baseURL: typeof window !== "undefined" ? "" : (process.env.GATEWAY_INTERNAL_URL || process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:8080"),
   withCredentials: true,
+  timeout: 12000,
   headers: { 'X-Session-Role': 'user' },
 });
 

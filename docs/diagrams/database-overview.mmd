@@ -1,0 +1,95 @@
+erDiagram
+  images {
+    ObjectId id PK "Mongo _id"
+    ObjectId userId FK "nullable"
+    ObjectId shopId FK "nullable"
+    ObjectId productId FK "nullable"
+  }
+  users {
+    ObjectId id PK "Mongo _id"
+    String name
+    String email UK
+    String role
+  }
+  shopReviews {
+    ObjectId id PK "Mongo _id"
+    ObjectId userId FK
+    ObjectId shopsId FK "nullable"
+  }
+  shops {
+    ObjectId id PK "Mongo _id"
+    String name
+    ObjectId sellerId UK, FK
+  }
+  sellers {
+    ObjectId id PK "Mongo _id"
+    String name
+    String email UK
+  }
+  products {
+    ObjectId id PK "Mongo _id"
+    String title
+    Int stock
+    Float sale_price
+    productStatus status "enum"
+    ObjectId shopId FK
+  }
+  productVariant {
+    ObjectId id PK "Mongo _id"
+    ObjectId productId FK
+    String sku
+    Int stock
+  }
+  productReviews {
+    ObjectId id PK "Mongo _id"
+    ObjectId productId FK
+    ObjectId userId FK
+  }
+  inventoryHistory {
+    ObjectId id PK "Mongo _id"
+    ObjectId productId FK
+  }
+  orders {
+    ObjectId id PK "Mongo _id"
+    String orderNumber UK
+    ObjectId userId FK
+    ObjectId shopId FK
+    orderStatus status "enum"
+    paymentStatus paymentStatus "enum"
+  }
+  orderItems {
+    ObjectId id PK "Mongo _id"
+    ObjectId orderId FK
+    ObjectId productId FK
+    String sku "nullable"
+    String title
+  }
+  address {
+    ObjectId id PK "Mongo _id"
+    ObjectId userId FK
+    String name
+  }
+  notifications {
+    ObjectId id PK "Mongo _id"
+    String title
+    ObjectId userId FK "nullable"
+    ObjectId sellerId FK "nullable"
+  }
+  users |o--o{ images : "userId"
+  shops |o--o{ images : "shopId"
+  products |o--o{ images : "productId"
+  users ||--o{ shopReviews : "userId"
+  shops |o--o{ shopReviews : "shopsId"
+  sellers ||--o| shops : "sellerId"
+  shops ||--o{ products : "shopId"
+  products ||--o{ productVariant : "productId"
+  products ||--o{ productReviews : "productId"
+  users ||--o{ productReviews : "userId"
+  products ||--o{ inventoryHistory : "productId"
+  users ||--o{ orders : "userId"
+  shops ||--o{ orders : "shopId"
+  orders ||--o{ orderItems : "orderId"
+  products ||--o{ orderItems : "productId"
+  users ||--o{ address : "userId"
+  users |o--o{ notifications : "userId"
+  sellers |o--o{ notifications : "sellerId"

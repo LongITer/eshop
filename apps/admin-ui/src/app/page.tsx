@@ -16,7 +16,8 @@ export default function LoginPage() {
     mutationFn: () => axiosInstance.post('/api/login-admin', { email, password }),
     onSuccess: () => { client.invalidateQueries({ queryKey: ['admin'] }); router.push('/dashboard'); },
   });
-  const error = (login.error as AxiosError<{ message?: string }>)?.response?.data?.message || 'Unable to sign in. Check your credentials and try again.';
+  const loginError = login.error as AxiosError<{ message?: string }> | null;
+  const error = loginError?.response?.data?.message || (loginError?.code === 'ECONNABORTED' || !loginError?.response ? 'Cannot reach the server. Check that the API gateway is running, then try again.' : 'Unable to sign in. Check your credentials and try again.');
   return <main className="grid min-h-screen lg:grid-cols-2">
     <section className="relative hidden flex-col justify-between overflow-hidden border-r border-gray-800 bg-[#0b1222] p-14 lg:flex">
       <div className="pointer-events-none absolute -left-48 top-36 h-[600px] w-[600px] rounded-full bg-blue-600/10 blur-3xl" />

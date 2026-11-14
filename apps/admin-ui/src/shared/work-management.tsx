@@ -23,7 +23,7 @@ export function WorkQueue() {
 export function Lookup({ kind, value, onChange, label }: { kind: string; value: string; onChange: (id: string) => void; label: string }) {
   const [search, setSearch] = useState(''), [debounced, setDebounced] = useState('');
   useEffect(() => { const timer = setTimeout(() => setDebounced(search), 300); return () => clearTimeout(timer); }, [search]);
-  const query = useQuery({ queryKey: ['admin-lookup', kind, debounced, value], queryFn: async () => (await axios.get('/admin/lookup', { params: { kind, search: debounced, ...(kind === 'products' && value ? { id: value } : {}) } })).data.rows, enabled: !!debounced || (kind === 'products' && !!value) });
+  const query = useQuery({ queryKey: ['admin-lookup', kind, debounced, value], queryFn: async () => (await axios.get('/admin/lookup', { params: { kind, search: debounced, ...(['products', 'shops'].includes(kind) && value ? { id: value } : {}) } })).data.rows, enabled: !!debounced || (['products', 'shops'].includes(kind) && !!value) });
   useEffect(() => { setSearch(''); setDebounced(''); }, [kind]);
   return <label className="admin-label flex-1 basis-48">{label}<input className="admin-control" placeholder="Tên / email…" value={search} onChange={e => { setSearch(e.target.value); if (value) onChange(''); }} />
     <select className="admin-control" value={value} onChange={e => onChange(e.target.value)}><option value="">—</option>{query.data?.map((row: any) => <option key={row.id} value={row.id}>{row.name}{row.email ? ` · ${row.email}` : ''}</option>)}</select>

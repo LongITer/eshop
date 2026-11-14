@@ -1,9 +1,11 @@
 import { NextFunction, Request, Response } from "express";
 import prisma from "@packages/libs/prisma";
-import { ValidationError } from "@packages/error-handler";
+import { ForbiddenError, NotFoundError, ValidationError } from "@packages/error-handler";
 import { imageKit } from "@packages/libs/imagekit";
 import { Prisma } from "@prisma/client";
 import { sendBehaviorLog } from "@packages/utils/logs/behavior-log";
+import { objectId } from "@packages/utils/api";
+import { transaction } from "@packages/utils/transaction";
 import { scanProductListing } from "@packages/utils/product-moderation-ai";
 import { submitProductReport } from "@packages/utils/product-moderation";
 
@@ -119,28 +121,32 @@ export const deleteDiscountCodes = async (
   next: NextFunction,
 ) => {
   try {
-    const { id } = req.params;
+    const id = objectId(req.params.id);
     const sellerId = req.seller.id;
-
-    // Check discount code exists and belongs to the seller
-    const discountCode = await prisma.discountCodes.findUnique({
-      where: { id },
-      select: { id: true, sellerId: true },
-    });
-
-    // If discount code not found or doesn't belong to the seller
-    if (!discountCode) {
-      return res.status(404).json({ message: "Discount code not found" });
-    }
-
-    if (discountCode.sellerId !== sellerId) {
-      return res.status(403).json({
-        message: "You don't have permission to access this discount code",
+    await transaction(async tx => {
+      const discountCode = await tx.discountCodes.findUnique({
+        where: { id },
+        select: { id: true, sellerId: true },
       });
-    }
+      if (!discountCode) throw new NotFoundError("Discount code not found");
+      if (discountCode.sellerId !== sellerId) throw new ForbiddenError("You don't have permission to access this discount code");
 
-    await prisma.discountCodes.delete({
-      where: { id },
+      const shop = await tx.shops.findUnique({ where: { sellerId }, select: { id: true } });
+      if (shop) {
+        const products = await tx.products.findMany({
+          where: { shopId: shop.id, discount_codes: { has: id } },
+          select: { id: true, discount_codes: true },
+        });
+        // MongoDB scalar lists require replacing the array. A conflicting product
+        // update aborts this transaction; the helper retries from a fresh snapshot.
+        for (const product of products) {
+          await tx.products.update({
+            where: { id: product.id, shopId: shop.id },
+            data: { discount_codes: { set: product.discount_codes.filter(code => code !== id) } },
+          });
+        }
+      }
+      await tx.discountCodes.delete({ where: { id, sellerId } });
     });
 
     return res.status(200).json({ message: "Discount code deleted successfully" });
@@ -364,6 +370,7 @@ export const getShopProducts = async (
       },
       include: {
         images: true,
+        _count: { select: { reviews: true } },
       },
     });
 
