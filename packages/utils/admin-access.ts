@@ -1,11 +1,12 @@
-export const adminRoles = ['owner', 'operations', 'support', 'finance'] as const;
+export const adminRoles = ['owner', 'operations', 'support', 'finance', 'moderator'] as const;
 export type AdminRole = typeof adminRoles[number];
-export type AdminPermission = 'fulfillment' | 'overview' | 'orders' | 'payments' | 'catalog' | 'accounts' | 'returns' | 'notifications' | 'logs' | 'settings' | 'team';
+export type AdminPermission = 'fulfillment' | 'overview' | 'orders' | 'payments' | 'catalog' | 'moderation' | 'accounts' | 'returns' | 'notifications' | 'logs' | 'settings' | 'team';
 const grants: Record<AdminRole, readonly AdminPermission[]> = {
-  owner: ['overview', 'catalog', 'accounts', 'notifications', 'settings', 'team'],
-  operations: ['overview', 'catalog', 'accounts', 'notifications'],
-  support: ['catalog', 'accounts', 'notifications'],
+  owner: ['overview', 'catalog', 'moderation', 'accounts', 'notifications', 'settings', 'team'],
+  operations: ['overview', 'catalog', 'moderation', 'accounts', 'notifications'],
+  support: ['catalog', 'moderation', 'accounts', 'notifications'],
   finance: ['overview'],
+  moderator: ['moderation'],
 };
 // Existing administrators retain owner access; an unknown explicit role fails closed.
 export function canAdmin(account: { role?: string; adminRole?: string | null } | null | undefined, permission: AdminPermission) {

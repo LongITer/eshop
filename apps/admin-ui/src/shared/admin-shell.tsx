@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import axios from '../utils/axioInstance';
 import { LanguageSwitcher, useLanguage } from '@packages/components/language-switcher';
 
-const permissionByPath: Record<string, AdminPermission> = { '': 'overview', '/orders': 'orders', '/statistics': 'overview', '/payments': 'payments', '/products': 'catalog', '/events': 'catalog', '/templates': 'catalog', '/returns': 'returns', '/users': 'accounts', '/sellers': 'accounts', '/violations': 'catalog', '/notifications': 'notifications', '/notification-jobs': 'notifications', '/loggers': 'logs', '/audit': 'team', '/log-settings': 'settings', '/management': 'team', '/customization': 'settings' };
+const permissionByPath: Record<string, AdminPermission> = { '': 'overview', '/orders': 'orders', '/statistics': 'overview', '/payments': 'payments', '/products': 'catalog', '/events': 'catalog', '/templates': 'catalog', '/returns': 'returns', '/users': 'accounts', '/sellers': 'accounts', '/violations': 'moderation', '/notifications': 'notifications', '/notification-jobs': 'notifications', '/loggers': 'logs', '/audit': 'team', '/log-settings': 'settings', '/management': 'team', '/customization': 'settings' };
 const groups = [
   { title: 'Workspace', links: [
     { label: 'Overview', path: '', icon: LayoutDashboard },

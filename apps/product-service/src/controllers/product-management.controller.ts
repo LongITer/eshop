@@ -5,6 +5,7 @@ import { handle, objectId, pageArgs, textField } from '@packages/utils/api';
 import { NotFoundError, ValidationError, ForbiddenError } from '@packages/error-handler';
 import { scanProductListing } from '@packages/utils/product-moderation-ai';
 import { submitProductReport } from '@packages/utils/product-moderation';
+import { priceReviewReasons, prohibitedKeywordMatches, validateProductCategory } from '@packages/utils/product-listing-rules';
 
 export const getEditableProduct = handle(async (req: any, res) => {
   const product = await prisma.products.findFirst({ where: { id: objectId(req.params.id), shopId: req.seller.shop?.id, isDeleted: false }, include: { images: true, variants: true } });
@@ -59,20 +60,35 @@ export const updateProduct = handle(async (req: any, res) => {
     if (!Array.isArray(images) || images.length < 1 || images.length > 10 || images.some((img: any) => !img || typeof img.url !== 'string' || !img.url.startsWith('https://') || typeof img.file_id !== 'string' || !img.file_id)) throw new ValidationError('Provide 1–10 uploaded images');
     data.images = { deleteMany: {}, create: images.map((img: any) => ({ file_id: img.file_id, url: img.url })) };
   }
-  const beforeScan = await prisma.products.findFirst({ where: { id, shopId, isDeleted: false } });
+  const beforeScan = await prisma.products.findFirst({ where: { id, shopId, isDeleted: false }, include: { images: true } });
   if (!beforeScan) throw new NotFoundError();
   if (beforeScan.status === 'PendingReview' && data.status !== undefined && data.status !== 'PendingReview') throw new ValidationError('Administrator approval is required before publishing this product');
   if (beforeScan.status === 'Rejected' && data.status !== undefined && data.status !== 'Rejected') throw new ValidationError('This listing was rejected by an administrator and cannot be republished');
   if (beforeScan.status === 'Suspended' && data.status !== undefined && data.status !== 'Suspended') throw new ValidationError('Administrator review is required before republishing this product');
-  const listingChanged = ['title', 'category', 'short_description', 'detailed_description'].some(key => (data as any)[key] !== undefined && (data as any)[key] !== (beforeScan as any)[key]);
+  const category = String(data.category ?? beforeScan.category), subCategory = String(data.subCategory ?? beforeScan.subCategory);
+  if (data.category !== undefined || data.subCategory !== undefined) await validateProductCategory(category, subCategory);
+  const salePrice = Number(data.sale_price ?? beforeScan.sale_price), regularPrice = Number(data.regular_price ?? beforeScan.regular_price);
+  const priceChanged = salePrice !== beforeScan.sale_price || regularPrice !== beforeScan.regular_price || category !== beforeScan.category || subCategory !== beforeScan.subCategory;
+  const priceReasons = priceChanged ? await priceReviewReasons({ category, subCategory, salePrice, regularPrice, excludeProductId: id }) : [];
+  const textChanged = ['title', 'category', 'short_description', 'detailed_description'].some(key => (data as any)[key] !== undefined && (data as any)[key] !== (beforeScan as any)[key]);
+  const imageUrls = req.body.images !== undefined ? req.body.images.map((image: any) => image.url) : beforeScan.images.map(image => image.url);
+  const imagesChanged = req.body.images !== undefined && JSON.stringify(imageUrls) !== JSON.stringify(beforeScan.images.map(image => image.url));
+  const listingChanged = textChanged || imagesChanged || priceChanged;
+  const candidate = { title: data.title ?? beforeScan.title, category, description: `${data.short_description ?? beforeScan.short_description ?? ''}\n${String(data.detailed_description ?? beforeScan.detailed_description)}`.replace(/<[^>]*>/g, ' ').slice(0, 12000), images: [...imageUrls].sort(), salePrice, regularPrice };
+  const keywordMatches = listingChanged ? prohibitedKeywordMatches(candidate) : [];
   let moderation: { flagged: boolean; category: string; reason: string } | null = null;
   let scanUnavailable = false;
   if (listingChanged) {
-    const candidate = { title: data.title ?? beforeScan.title, category: data.category ?? beforeScan.category, description: `${data.short_description ?? beforeScan.short_description ?? ''}\n${String(data.detailed_description ?? beforeScan.detailed_description)}`.replace(/<[^>]*>/g, ' ').slice(0, 12000) };
-    try { moderation = await scanProductListing(candidate); } catch { scanUnavailable = true; }
-    if (scanUnavailable || moderation?.flagged) {
+    try { moderation = await scanProductListing(candidate, imageUrls); } catch { scanUnavailable = true; }
+    const reviewReasons = [
+      ...(keywordMatches.length ? [`Prohibited keyword match: ${keywordMatches.join(', ')}.`] : []),
+      ...priceReasons,
+      ...(moderation?.flagged ? [moderation.reason] : []),
+      ...(scanUnavailable ? ['Automatic text/image screening is unavailable; administrator review is required.'] : []),
+    ];
+    if (reviewReasons.length) {
       data.status = 'PendingReview';
-      data.moderationReason = scanUnavailable ? 'Automatic screening is unavailable; administrator review is required.' : moderation!.reason;
+      data.moderationReason = reviewReasons.join(' ');
     }
   }
   const product = await transaction(async tx => {
@@ -97,7 +113,10 @@ export const updateProduct = handle(async (req: any, res) => {
     }
     return updated;
   });
-  if (moderation?.flagged) await submitProductReport(product.id, req.seller.id, 'AI', moderation.category, moderation.reason).catch(error => console.error('Could not persist AI moderation report:', error));
+  if (keywordMatches.length || priceReasons.length || moderation?.flagged) {
+    const reportCategory = keywordMatches.length ? 'Prohibited' : moderation?.flagged ? moderation.category : 'Misleading';
+    await submitProductReport(product.id, req.seller.id, 'AI', reportCategory, String(data.moderationReason || moderation?.reason || priceReasons.join(' ')), candidate).catch(error => console.error('Could not persist automated moderation report:', error));
+  }
   res.json({ success: true, product });
 });
 export const getInventory = handle(async (req: any, res) => {

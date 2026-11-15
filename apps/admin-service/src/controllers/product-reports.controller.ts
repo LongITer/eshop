@@ -5,6 +5,7 @@ import { scanProductListing } from '@packages/utils/product-moderation-ai';
 import { NotFoundError, ValidationError } from '@packages/error-handler';
 import { transaction } from '@packages/utils/transaction';
 import { audit } from '@packages/utils/admin-audit';
+import { priceReviewReasons, prohibitedKeywordMatches } from '@packages/utils/product-listing-rules';
 
 export const reports = handle(async (req, res) => {
   const status = req.query.status ?? 'Pending';
@@ -37,17 +38,32 @@ export const decidePendingListing = handle(async (req, res) => {
   res.json({ product });
 });
 export const adminReport = handle(async (req, res) => {
-  const report = await submitProductReport(objectId(req.body.productId), req.user!.id, 'Admin', req.body.category, textField(req.body.reason, 'reason', 2000));
+  const source = req.user!.adminRole === 'moderator' ? 'Moderator' : 'Admin';
+  const report = await submitProductReport(objectId(req.body.productId), req.user!.id, source, req.body.category, textField(req.body.reason, 'reason', 2000));
   res.status(201).json({ report });
 });
 export const scanListing = handle(async (req, res) => {
   const id = objectId(req.params.id);
-  const product = await prisma.products.findUnique({ where: { id } });
+  const product = await prisma.products.findUnique({ where: { id }, include: { images: true } });
   if (!product) throw new NotFoundError();
   const snapshot = listingSnapshot(product);
-  const result = await scanProductListing(snapshot);
-  if (!result.flagged) { res.json({ flagged: false, reason: result.reason }); return; }
-  const report = await submitProductReport(id, req.user!.id, 'AI', result.category, result.reason, snapshot);
+  const keywordMatches = prohibitedKeywordMatches(snapshot);
+  const priceReasons = await priceReviewReasons({ category: product.category, subCategory: product.subCategory, salePrice: product.sale_price, regularPrice: product.regular_price, excludeProductId: id, allowInvalidForModeration: true });
+  let result: { flagged: boolean; category: string; reason: string };
+  try { result = await scanProductListing(snapshot, snapshot.images); }
+  catch (error) {
+    if (!keywordMatches.length && !priceReasons.length) throw error;
+    result = { flagged: false, category: 'Other', reason: '' };
+  }
+  const flagged = keywordMatches.length > 0 || priceReasons.length > 0 || result.flagged;
+  const reason = [
+    ...(keywordMatches.length ? [`Prohibited keyword match: ${keywordMatches.join(', ')}.`] : []),
+    ...priceReasons,
+    ...(result.flagged ? [result.reason] : []),
+  ].join(' ');
+  if (!flagged) { res.json({ flagged: false, reason: result.reason }); return; }
+  const category = keywordMatches.length ? 'Prohibited' : result.flagged ? result.category : 'Misleading';
+  const report = await submitProductReport(id, req.user!.id, 'AI', category, reason, snapshot);
   res.json({ flagged: true, report });
 });
 export const reviewReport = handle(async (req, res) => {

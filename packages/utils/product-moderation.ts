@@ -7,17 +7,17 @@ import { audit } from './admin-audit';
 export const violationCategories = ['Prohibited', 'Counterfeit', 'Misleading', 'Unsafe', 'Other'] as const;
 export const reportFields = { id: true, productId: true, shopId: true, source: true, category: true, reason: true, snapshot: true, status: true, resolutionReason: true, resolvedAt: true, violationId: true, createdAt: true } as const;
 export const violationFields = { id: true, productId: true, shopId: true, sellerId: true, productTitle: true, category: true, reason: true, severity: true, productAction: true, sellerAction: true, suspendedUntil: true, occurrence: true, followupStatus: true, affectedOrders: true, createdAt: true } as const;
-export function listingSnapshot(product: { title: string; category: string; detailed_description: string; short_description?: string | null }) {
-  return { title: product.title, category: product.category, description: `${product.short_description || ''}\n${product.detailed_description}`.replace(/<[^>]*>/g, ' ').slice(0, 12000) };
+export function listingSnapshot(product: { title: string; category: string; detailed_description: string; short_description?: string | null; sale_price?: number; regular_price?: number; images?: { url: string }[] }) {
+  return { title: product.title, category: product.category, description: `${product.short_description || ''}\n${product.detailed_description}`.replace(/<[^>]*>/g, ' ').slice(0, 12000), images: product.images?.map(image => image.url).sort() ?? [], ...(Number.isFinite(product.sale_price) && Number.isFinite(product.regular_price) ? { salePrice: product.sale_price!, regularPrice: product.regular_price! } : {}) };
 }
-export async function submitProductReport(productId: string, reporterId: string, source: 'Customer' | 'Admin' | 'AI', category: string, reason: string, expectedSnapshot?: ReturnType<typeof listingSnapshot>) {
+export async function submitProductReport(productId: string, reporterId: string, source: 'Customer' | 'Admin' | 'Moderator' | 'AI', category: string, reason: string, expectedSnapshot?: ReturnType<typeof listingSnapshot>) {
   if (!violationCategories.includes(category as any)) throw new ValidationError('Invalid violation category');
-  const product = await prisma.products.findUnique({ where: { id: productId } });
+  const product = await prisma.products.findUnique({ where: { id: productId }, include: { images: true } });
   if (!product || (source === 'Customer' && (product.status !== 'Active' || product.isDeleted))) throw new NotFoundError('Product is unavailable');
   const snapshot = listingSnapshot(product);
   if (expectedSnapshot && JSON.stringify(snapshot) !== JSON.stringify(expectedSnapshot)) throw new ValidationError('The listing changed during the AI scan. Review the updated listing again.');
   const version = createHash('sha256').update(JSON.stringify(snapshot)).digest('hex');
-  const dedupeKey = source === 'Admin' ? randomUUID() : `${source}:${reporterId}:${productId}:${version}`;
+  const dedupeKey = source === 'Admin' || source === 'Moderator' ? randomUUID() : `${source}:${reporterId}:${productId}:${version}`;
   return prisma.productReport.upsert({ where: { dedupeKey }, update: {}, create: { productId, shopId: product.shopId, reporterId, source, category, reason, snapshot, dedupeKey }, select: reportFields });
 }
 

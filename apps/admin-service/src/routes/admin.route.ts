@@ -25,13 +25,13 @@ import * as moderation from '../controllers/product-reports.controller';
 import rateLimit from 'express-rate-limit';
 
 const router: Router = express.Router();
-router.get('/product-reports', isAuthenticated, isAdmin, adminPermission('catalog'), moderation.reports);
-router.get('/pending-products', isAuthenticated, isAdmin, adminPermission('catalog'), moderation.pendingListings);
-router.patch('/pending-products/:id', isAuthenticated, isAdmin, adminPermission('catalog'), moderation.decidePendingListing);
-router.post('/product-reports', isAuthenticated, isAdmin, adminPermission('catalog'), moderation.adminReport);
-router.patch('/product-reports/:id', isAuthenticated, isAdmin, adminPermission('catalog'), moderation.reviewReport);
-router.get('/violations', isAuthenticated, isAdmin, adminPermission('catalog'), moderation.violations);
-router.post('/products/:id/scan', isAuthenticated, isAdmin, adminPermission('catalog'), rateLimit({ windowMs: 60000, max: 10, keyGenerator: req => req.user!.id }), moderation.scanListing);
+router.get('/product-reports', isAuthenticated, isAdmin, adminPermission('moderation'), moderation.reports);
+router.get('/pending-products', isAuthenticated, isAdmin, adminPermission('moderation'), moderation.pendingListings);
+router.patch('/pending-products/:id', isAuthenticated, isAdmin, adminPermission('moderation'), moderation.decidePendingListing);
+router.post('/product-reports', isAuthenticated, isAdmin, adminPermission('moderation'), moderation.adminReport);
+router.patch('/product-reports/:id', isAuthenticated, isAdmin, adminPermission('moderation'), moderation.reviewReport);
+router.get('/violations', isAuthenticated, isAdmin, adminPermission('moderation'), moderation.violations);
+router.post('/products/:id/scan', isAuthenticated, isAdmin, adminPermission('moderation'), rateLimit({ windowMs: 60000, max: 10, keyGenerator: req => req.user!.id }), moderation.scanListing);
 router.get('/statistics', isAuthenticated, isAdmin, adminPermission('overview'), adminStatistics);
 router.get('/analytics', isAuthenticated, isAdmin, adminPermission('overview'), adminAnalytics);
 router.get('/analytics/products/:id', isAuthenticated, isAdmin, adminPermission('overview'), adminProductAnalytics);
@@ -47,7 +47,7 @@ router.get('/logs', isAuthenticated, isAdmin, adminPermission('logs'), ops.logs)
 
 // Products
 // GET /admin/get-all-products?page=1&limit=20&search=...
-router.get("/get-all-products", isAuthenticated, isAdmin, adminPermission('catalog'), getAllProducts);
+router.get("/get-all-products", isAuthenticated, isAdmin, adminPermission('moderation'), getAllProducts);
 
 // Events
 // GET /admin/get-all-events?page=1&limit=20&search=...
