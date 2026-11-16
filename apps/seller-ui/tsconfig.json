@@ -43,15 +43,16 @@
   },
   "include": [
     "../../apps/seller-ui/.next/types/**/*.ts",
-    "../../packages/components/**/*.tsx",
     "../../dist/apps/seller-ui/.next/types/**/*.ts",
+    "../../packages/**/*.ts",
+    "../../packages/components/**/*.tsx",
+    ".next/types/**/*.ts",
     "next-env.d.ts",
     "src/**/*.js",
     "src/**/*.jsx",
     "src/**/*.ts",
     "src/**/*.tsx",
-    ".next/types/**/*.ts",
-    "../../packages/**/*.ts"
+    ".next-order-automation-check/types/**/*.ts"
   ],
   "exclude": [
     "out-tsc",

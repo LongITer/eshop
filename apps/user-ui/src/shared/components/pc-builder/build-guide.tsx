@@ -10,7 +10,12 @@ import axios from '@/utils/axioInstance';
 
 type Goal = 'office' | 'gaming' | 'creative';
 type SuggestedPart = { selection: PcSelection; title: string; price: number; status: 'matched' | 'unchecked' | 'unknown' };
-type Product = { id: string; title: string; sale_price: number; stock: number; colors?: string[]; sizes?: string[]; variants?: any[]; recommendation?: { status?: SuggestedPart['status'] } };
+
+const labels: Record<PcSlot, string> = {
+  cpu: 'CPU / Processor', motherboard: 'Motherboard', ram: 'Memory / RAM',
+  gpu: 'Graphics card', storage: 'Storage', psu: 'Power supply',
+  case: 'PC case', cooler: 'CPU cooler',
+};
 
 const goals: { id: Goal; title: string; detail: string; icon: typeof Laptop; weights: Record<PcSlot, number> }[] = [
   { id: 'office', title: 'Học tập & văn phòng', detail: 'Ưu tiên CPU, RAM và trải nghiệm hằng ngày.', icon: Laptop, weights: { cpu: .22, motherboard: .12, ram: .16, gpu: .02, storage: .14, psu: .1, case: .12, cooler: .12 } },
@@ -18,8 +23,16 @@ const goals: { id: Goal; title: string; detail: string; icon: typeof Laptop; wei
   { id: 'creative', title: 'Thiết kế & dựng video', detail: 'Cân đối CPU, GPU và bộ nhớ cho tác vụ sáng tạo.', icon: MonitorCog, weights: { cpu: .23, motherboard: .12, ram: .15, gpu: .23, storage: .11, psu: .08, case: .04, cooler: .04 } },
 ];
 
-const labels: Record<PcSlot, string> = { cpu: 'CPU', motherboard: 'Bo mạch chủ', ram: 'RAM', gpu: 'Card đồ họa', storage: 'Ổ lưu trữ', psu: 'Nguồn', case: 'Vỏ máy', cooler: 'Tản nhiệt' };
-const statusRank: Record<SuggestedPart['status'], number> = { matched: 0, unchecked: 1, unknown: 2 };
+const budgetPresets = [
+  { value: 500, label: 'Dưới $500' },
+  { value: 800, label: '$500 - $800' },
+  { value: 1200, label: '$800 - $1,200' },
+  { value: 1500, label: '$1,200 - $1,500' },
+  { value: 2000, label: '$1,500 - $2,000' },
+  { value: 3000, label: '$3,000+' },
+];
+
+type Product = { id: string; title: string; sale_price: number; stock: number; colors?: string[]; sizes?: string[]; variants?: any[]; recommendation?: { status?: SuggestedPart['status'] } };
 
 function productChoice(product: Product, slot: PcSlot, remaining: number, target: number): SuggestedPart | undefined {
   if (!product || !product.id || Number(product.stock) < 1) return undefined;
@@ -44,6 +57,7 @@ export default function PcBuildGuide({ onApply, currentPartCount = 0 }: { onAppl
   const [expanded, setExpanded] = useState(false);
   const [goal, setGoal] = useState<Goal>('gaming');
   const [budget, setBudget] = useState('1200');
+  const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
   const [suggestions, setSuggestions] = useState<SuggestedPart[]>([]);
   const [missing, setMissing] = useState<PcSlot[]>([]);
   const [quote, setQuote] = useState<any>(null);
@@ -51,9 +65,15 @@ export default function PcBuildGuide({ onApply, currentPartCount = 0 }: { onAppl
   const [confirmApply, setConfirmApply] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [budgetAllocation, setBudgetAllocation] = useState<Record<PcSlot, number>>({});
 
   async function generate() {
-    const maxBudget = Number(budget);
+    let maxBudget = Number(budget);
+    // If a preset is selected, use its value as the budget
+    if (selectedPreset !== null) {
+      maxBudget = selectedPreset;
+      setSelectedPreset(null); // Clear preset after applying
+    }
     if (!Number.isFinite(maxBudget) || maxBudget < 250 || maxBudget > 20000) {
       setError(t('Enter a budget between $250 and $20,000.'));
       return;
@@ -64,6 +84,7 @@ export default function PcBuildGuide({ onApply, currentPartCount = 0 }: { onAppl
       const chosen: SuggestedPart[] = [];
       let total = 0;
       let remainingWeight = 1;
+      const allocation: Record<PcSlot, number> = {};
       for (const slot of PC_SLOTS) {
         const target = Math.max(0, (maxBudget - total) * profile.weights[slot] / remainingWeight);
         remainingWeight -= profile.weights[slot];
@@ -74,11 +95,12 @@ export default function PcBuildGuide({ onApply, currentPartCount = 0 }: { onAppl
         const options = products.map(product => productChoice(product, slot, maxBudget - total, target)).filter((item): item is SuggestedPart => !!item);
         const affordable = options.filter(item => item.price <= target);
         const pool = affordable.length ? affordable : options;
-        pool.sort((a, b) => statusRank[a.status] - statusRank[b.status] || b.price - a.price);
+        pool.sort((a, b) => { var _a, _b; return (statusRank[a.status] || 0) - (statusRank[b.status] || 0) || ((_b = b.price) !== null && _b !== void 0 ? _b : 0) - ((_a = a.price) !== null && _a !== void 0 ? _a : 0); });
         const next = pool[0];
-        if (next) { chosen.push(next); total += next.price; }
-        else setMissing(current => [...current, slot]);
+        if (next) { chosen.push(next); total += next.price; allocation[slot] = next.price; }
+        else { setMissing(current => [...current, slot]); allocation[slot] = 0; }
       }
+      setBudgetAllocation(allocation);
       setSuggestions(chosen);
       if (!chosen.length) setError(t('No in-stock components were found. You can still choose parts manually.'));
       else {
@@ -109,6 +131,8 @@ export default function PcBuildGuide({ onApply, currentPartCount = 0 }: { onAppl
     setExpanded(false);
   }
 
+  const statusRank: Record<SuggestedPart['status'], number> = { matched: 0, unchecked: 1, unknown: 2 };
+
   return <section className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm" aria-labelledby="pc-build-guide-title">
     <div className="flex flex-wrap items-center justify-between gap-4 bg-gradient-to-r from-blue-50 via-white to-indigo-50 px-5 py-5 sm:px-6">
       <div className="flex min-w-0 items-center gap-3">
@@ -126,8 +150,44 @@ export default function PcBuildGuide({ onApply, currentPartCount = 0 }: { onAppl
       </div>
 
       <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(220px,.8fr)] md:items-end">
-        <div><label htmlFor="pc-guide-budget" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-900"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-700">2</span>{t('What is your total budget?')}</label><div className="relative"><span className="pointer-events-none absolute left-3 top-3 text-sm font-medium text-slate-400">$</span><input id="pc-guide-budget" inputMode="numeric" type="number" min="250" max="20000" step="50" value={budget} onChange={event => setBudget(event.target.value)} className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-16 text-sm font-semibold text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /><span className="pointer-events-none absolute right-3 top-3 text-xs text-slate-400">USD</span></div><p className="mt-1.5 text-[11px] text-slate-500">{t('For components only; shipping and discounts are calculated at checkout.')}</p></div>
-        <button type="button" disabled={loading} onClick={() => void generate()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70">{loading ? <><Loader2 size={17} className="animate-spin" aria-hidden="true" />{t('Finding compatible parts…')}</> : <><Sparkles size={16} aria-hidden="true" />{t('Build my suggestion')}</>}</button>
+        <div>
+          <label htmlFor="pc-guide-budget" className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-900">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-700">2</span>
+            {t('What is your total budget?')}
+          </label>
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3 top-3 text-sm font-medium text-slate-400">$</span>
+            <input
+              id="pc-guide-budget"
+              inputMode="numeric"
+              type="number"
+              min="250"
+              max="20000"
+              step="50"
+              value={budget}
+              onChange={event => setBudget(event.target.value)}
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-16 text-sm font-semibold text-slate-800 outline-none focus-border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+            <span className="pointer-events-none absolute right-3 top-3 text-xs text-slate-400">USD</span>
+          </div>
+          <p className="mt-1.5 text-[11px] text-slate-500">{t('For components only; shipping and discounts are calculated at checkout.')}</p>
+        </div>
+        <div>
+          <label className="mb-2 block text-sm font-bold text-slate-900">{t('Or select a preset')}</label>
+          <div className="grid grid-cols-2 gap-2">
+            {budgetPresets.map(preset => (
+              <button
+                key={preset.value}
+                type="button"
+                onClick={() => setSelectedPreset(preset.value)}
+                className={`flex min-h-9 items-center justify-center rounded-lg border ${selectedPreset === preset.value ? 'border-blue-600 bg-blue-100 text-blue-700' : 'border-slate-300 text-slate-600 hover:border-blue-500 hover:text-blue-700'} px-3 py-1.5 text-xs font-medium transition`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          {selectedPreset !== null && <p className="mt-2 text-xs text-slate-500">{t('Using preset budget: $')}{selectedPreset}</p>}
+        </div>
+      </div>
       </div>
 
       <p className="flex items-start gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-600"><CircleHelp size={15} className="mt-0.5 shrink-0 text-blue-500" aria-hidden="true" /><span>{t(selectedGoal.detail)} {t('The estimate uses current catalog prices and compatibility data. Review missing specifications before ordering.')}</span></p>

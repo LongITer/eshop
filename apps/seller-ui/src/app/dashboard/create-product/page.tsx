@@ -39,6 +39,47 @@ export default function CreateProduct() {
   const subcategories: string[] = categoriesQuery.data?.subCategories?.[selectedCategory] || [];
   const regularPrice = watch("regular_price");
   const selectedDiscounts: string[] = watch("discountCodes") || [];
+  const fillSample = (kind: "prohibited" | "regular") => {
+    const prohibited = kind === "prohibited";
+    const preferredCategory = prohibited
+      ? categories.find(value => /bag|fashion|accessor|thời trang|túi/i.test(value))
+      : categories.find(value => /computer|electronics|điện tử|máy tính/i.test(value));
+    const category = preferredCategory || categories[0] || "";
+    const options: string[] = categoriesQuery.data?.subCategories?.[category] || [];
+    const preferredSubcategory = prohibited
+      ? options.find(value => /bag|handbag|túi/i.test(value))
+      : options.find(value => /processor|computer|linh kiện|máy tính/i.test(value));
+    const subCategory = preferredSubcategory || options[0] || "";
+    const values: Record<string, unknown> = prohibited ? {
+      title: "Túi xách nhái thương hiệu nổi tiếng – hàng giả",
+      slug: "tui-xach-nhai-thuong-hieu-hang-gia",
+      brand: "Hàng giả, mạo danh thương hiệu",
+      short_description: "Sản phẩm giả mạo nhãn hiệu, được giới thiệu như hàng chính hãng.",
+      tag: "hàng giả, nhái thương hiệu, sản phẩm không được phép",
+      warranty: "Không có bảo hành chính hãng",
+      regular_price: 120,
+      sale_price: 80,
+      stock: 5,
+      cash_on_delivery: "yes",
+      detail_description: "<p>Đây là dữ liệu mẫu dùng để kiểm tra quy trình phát hiện sản phẩm không được phép. Nội dung mô tả rõ sản phẩm giả mạo thương hiệu và không có nguồn gốc chính hãng. Không đăng bán sản phẩm này.</p>",
+    } : {
+      title: "AMD Ryzen 7 7700 – bộ xử lý máy tính",
+      slug: "amd-ryzen-7-7700-bo-xu-ly-may-tinh",
+      brand: "AMD",
+      short_description: "Bộ xử lý máy tính mới, thông tin sản phẩm và tình trạng được mô tả rõ ràng.",
+      tag: "AMD, Ryzen 7, bộ xử lý, máy tính",
+      warranty: "Bảo hành chính hãng 36 tháng",
+      regular_price: 299,
+      sale_price: 279,
+      stock: 12,
+      cash_on_delivery: "yes",
+      detail_description: "<p>Bộ xử lý AMD Ryzen 7 7700 dành cho máy tính để bàn. Sản phẩm mới, có hộp và phụ kiện theo tiêu chuẩn nhà sản xuất. Người mua vui lòng kiểm tra khả năng tương thích với bo mạch chủ trước khi đặt hàng. Sản phẩm được bảo hành chính hãng trong 36 tháng.</p>",
+    };
+    for (const [name, value] of Object.entries({ ...values, category, subCategory, colors: [], sizes: [], discountCodes: [], custom_specifications: [] })) {
+      setValue(name, value, { shouldDirty: true, shouldValidate: true });
+    }
+    toast.success(prohibited ? "Filled a prohibited product review example." : "Filled a regular product example.");
+  };
   const error = (key: string) => errors[key] ? <p className="mt-1 text-xs leading-5 text-rose-400" role="alert">{String(errors[key]?.message || "Check this field")}</p> : null;
   const upload = async (file?: File) => {
     if (!file || imageLock.current || saving) return;
@@ -79,7 +120,7 @@ export default function CreateProduct() {
     catch { toast.error("This image could not be enhanced."); }
   };
   return <main className="mx-auto max-w-[1440px] space-y-6 p-4 text-slate-100 sm:p-6 lg:p-8">
-    <header><Link href="/dashboard/all-products" className="mb-4 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-blue-300"><ArrowLeft size={16}/>Products</Link><h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Create product</h1><p className="mt-2 text-sm text-slate-400">Add clear photos, accurate specifications and pricing to help customers choose.</p></header>
+    <header><Link href="/dashboard/all-products" className="mb-4 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-blue-300"><ArrowLeft size={16}/>Products</Link><div className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Create product</h1><p className="mt-2 text-sm text-slate-400">Add clear photos, accurate specifications and pricing to help customers choose.</p></div><div className="flex flex-wrap gap-2"><button type="button" disabled={categoriesQuery.isLoading || categoriesQuery.isError} onClick={() => fillSample("regular")} className="rounded-xl border border-slate-700 px-3 py-2.5 text-sm text-slate-300 hover:border-blue-500 hover:text-blue-300 disabled:opacity-50">Fill regular product</button><button type="button" disabled={categoriesQuery.isLoading || categoriesQuery.isError} onClick={() => fillSample("prohibited")} className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 text-sm text-amber-200 hover:bg-amber-500/10 disabled:opacity-50">Fill prohibited example</button></div></div></header>
     <form onSubmit={handleSubmit(submit)} className="grid items-start gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
       <aside className={`${panelClass} xl:sticky xl:top-24`}><div className="flex items-center justify-between"><h2 className="font-semibold">Product photos</h2><span className="text-xs text-slate-500">{images.length} / 8</span></div><p className="mb-4 mt-2 text-xs leading-5 text-slate-400">The first image is your cover. JPG, PNG or WebP, up to 5 MB each.</p><div className="grid grid-cols-2 gap-3">{images.map((image, index) => <div key={image.fileId} className={`group relative overflow-hidden rounded-xl border border-slate-700 bg-slate-950 ${index === 0 ? "col-span-2 aspect-[4/3]" : "aspect-square"}`}><img src={image.url} alt={`Product ${index + 1}`} className="h-full w-full object-contain"/>{index === 0 && <span className="absolute left-2 top-2 rounded-md bg-slate-950/80 px-2 py-1 text-[10px] font-medium">Cover photo</span>}<div className="absolute bottom-2 right-2 flex gap-1"><button type="button" aria-label={`Enhance photo ${index + 1}`} disabled={imageBusy || saving} onClick={() => { setEnhance({ index, url: image.url }); setPreviewLoading(false); setPreviewError(false); }} className="rounded-lg bg-slate-900/90 p-2 text-blue-300 hover:bg-blue-600 hover:text-white"><WandSparkles size={15}/></button><button type="button" aria-label={`Remove photo ${index + 1}`} disabled={imageBusy || saving} onClick={() => removeImage(index)} className="rounded-lg bg-slate-900/90 p-2 text-slate-300 hover:bg-rose-600 hover:text-white"><Trash2 size={15}/></button></div></div>)}{images.length < 8 && <label className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-700 bg-slate-950/30 px-3 py-7 text-center text-slate-400 transition hover:border-blue-500 hover:text-blue-300 ${images.length === 0 ? "col-span-2 min-h-48" : "aspect-square"} ${imageBusy || saving ? "pointer-events-none opacity-50" : ""}`}>{imageBusy ? <Loader2 size={26} className="animate-spin"/> : <ImagePlus size={28}/>}<span className="text-xs font-medium">{imageBusy ? "Uploading photo…" : "Upload photo"}</span><input type="file" className="sr-only" aria-label="Upload product photo" accept="image/jpeg,image/png,image/webp" disabled={imageBusy || saving} onChange={e => { const file = e.target.files?.[0]; e.target.value = ""; upload(file); }}/></label>}</div><div className="mt-5 flex gap-2 rounded-xl bg-blue-500/5 p-3 text-xs leading-5 text-slate-400"><Package size={17} className="mt-0.5 shrink-0 text-blue-400"/>Use real product photos and include details such as ports, packaging and accessories.</div></aside>
       <div className="min-w-0 space-y-6"><section className={panelClass}><h2 className="mb-5 font-semibold">Basic information</h2><div className="grid gap-5 md:grid-cols-2"><div className="md:col-span-2"><Input label="Product title *" placeholder="e.g. AMD Ryzen 7 7700" className={fieldClass} {...register("title", { required: "Enter a product title", validate: v => !!v.trim() || "Enter a product title", maxLength: { value: 200, message: "Use at most 200 characters" } })}/>{error("title")}</div><div><Input label="Product URL slug *" placeholder="amd-ryzen-7-7700" className={fieldClass} {...register("slug", { required: "Enter a URL slug", pattern: { value: /^[a-z0-9]+(?:-[a-z0-9]+)*$/, message: "Use lowercase letters, numbers and hyphens" }, minLength: { value: 3, message: "Use at least 3 characters" }, maxLength: { value: 50, message: "Use at most 50 characters" } })}/>{error("slug")}</div><div><Input label="Brand *" placeholder="e.g. AMD" className={fieldClass} {...register("brand", { required: "Enter a brand" })}/>{error("brand")}</div><div className="md:col-span-2"><Input type="textarea" rows={3} label="Short description *" placeholder="Briefly describe the product and its key benefits (up to 150 words)." className={fieldClass} {...register("short_description", { required: "Enter a short description", validate: v => { const count = v.trim().split(/\s+/).filter(Boolean).length; return count > 0 && count <= 150 || "Use between 1 and 150 words"; } })}/>{error("short_description")}</div><div><label className="mb-1 block text-sm font-semibold text-slate-300">Category *</label><Controller name="category" control={control} rules={{ required: "Choose a category" }} render={({ field }) => <select {...field} disabled={categoriesQuery.isLoading || categoriesQuery.isError} onChange={e => { field.onChange(e); setValue("subCategory", ""); }} className={fieldClass}><option value="">{categoriesQuery.isLoading ? "Loading categories…" : "Choose category"}</option>{categories.map(value => <option key={value}>{value}</option>)}</select>}/>{error("category")}{categoriesQuery.isError && <button type="button" onClick={() => categoriesQuery.refetch()} className="mt-2 text-xs text-rose-400">Categories unavailable. Try again</button>}</div><div><label className="mb-1 block text-sm font-semibold text-slate-300">Subcategory *</label><select {...register("subCategory", { required: "Choose a subcategory" })} disabled={!selectedCategory || categoriesQuery.isLoading} className={fieldClass}><option value="">Choose subcategory</option>{subcategories.map(value => <option key={value}>{value}</option>)}</select>{error("subCategory")}</div><div><Input label="Tags *" placeholder="processor, gaming, AM5" className={fieldClass} {...register("tag", { required: "Enter at least one tag", validate: v => v.split(",").some((s: string) => s.trim()) || "Enter at least one tag" })}/>{error("tag")}</div><div><Input label="Warranty *" placeholder="e.g. 3-year manufacturer warranty" className={fieldClass} {...register("warranty", { required: "Enter warranty details" })}/>{error("warranty")}</div></div></section>
@@ -89,6 +130,23 @@ export default function CreateProduct() {
       <footer className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-4"><p className="text-xs text-slate-500">Fields marked * are required.</p><div className="flex gap-3"><Link href="/dashboard/all-products" className="rounded-xl border border-slate-700 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800">Cancel</Link><button type="submit" disabled={saving || imageBusy || categoriesQuery.isLoading || categoriesQuery.isError} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50">{saving ? <Loader2 className="animate-spin" size={17}/> : <Plus size={17}/>} {saving ? "Creating…" : "Create product"}</button></div></footer>
       </div>
     </form>
+    {saving && <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" role="status" aria-live="polite" aria-label="AI is screening your product">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-blue-400/25 bg-slate-900 shadow-2xl shadow-blue-950/40">
+        <div className="relative h-40 overflow-hidden bg-slate-950">
+          {images[0]?.url ? <img src={images[0].url} alt="" className="h-full w-full object-contain opacity-70" /> : <div className="flex h-full items-center justify-center text-slate-700"><Package size={64}/></div>}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-cyan-300/15 to-blue-500/5" />
+          <div className="ai-scan-line absolute inset-x-0 h-1 bg-cyan-300 shadow-[0_0_24px_5px_rgba(34,211,238,0.65)]" />
+          <div className="absolute left-3 top-3 flex items-center gap-2 rounded-full border border-cyan-300/20 bg-slate-950/80 px-3 py-1.5 text-xs font-medium text-cyan-200"><WandSparkles size={14} className="animate-pulse"/> AI SCREENING</div>
+        </div>
+        <div className="p-6 text-center">
+          <h2 className="text-lg font-semibold">AI đang quét sản phẩm</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-400">Đang phân tích hình ảnh và nội dung để kiểm tra sản phẩm. Vui lòng chờ, đừng đóng trang này.</p>
+          <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-slate-800"><div className="ai-progress-bar h-full w-1/3 rounded-full bg-gradient-to-r from-blue-500 via-cyan-300 to-blue-500"/></div>
+          <p className="mt-3 text-xs text-slate-500">Quá trình có thể mất vài giây</p>
+        </div>
+      </div>
+      <style jsx>{`@keyframes aiScan { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, 156px, 0); } } @keyframes aiProgress { from { transform: translate3d(-110%, 0, 0); } to { transform: translate3d(310%, 0, 0); } } .ai-scan-line { will-change: transform; animation: aiScan 4.5s cubic-bezier(.45, 0, .55, 1) infinite alternate; } .ai-progress-bar { will-change: transform; animation: aiProgress 4.8s linear infinite; } @media (prefers-reduced-motion: reduce) { .ai-scan-line, .ai-progress-bar { animation-duration: 6s; } }`}</style>
+    </div>}
     {enhance && <div role="dialog" aria-modal="true" aria-labelledby="enhance-title" className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"><div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-5"><div className="mb-4 flex items-center justify-between"><h2 id="enhance-title" className="font-semibold">Enhance product photo</h2><button type="button" aria-label="Close photo editor" onClick={() => setEnhance(null)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800"><X size={18}/></button></div><div className="relative h-64 overflow-hidden rounded-xl bg-slate-950"><img src={enhance.url} alt="Enhanced product preview" className="h-full w-full object-contain" onLoad={() => setPreviewLoading(false)} onError={() => { setPreviewLoading(false); setPreviewError(true); toast.error("The enhanced image could not be loaded. Choose another effect or close the editor."); }}/>{previewLoading && <div className="absolute inset-0 flex items-center justify-center bg-slate-950/70"><Loader2 className="animate-spin"/></div>}</div><div className="mt-4 grid grid-cols-2 gap-2">{enhancements.map(({ label, effect }) => <button type="button" key={effect} disabled={previewLoading} onClick={() => applyEffect(effect)} className="rounded-lg border border-slate-700 p-2 text-left text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40">{label}</button>)}</div><button type="button" disabled={previewLoading || previewError} onClick={() => { setImages(previous => previous.map((image, index) => index === enhance.index ? { ...image, url: enhance.url } : image)); setEnhance(null); }} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold disabled:opacity-50"><Save size={16}/>Apply to product</button></div></div>}
   </main>;
 }

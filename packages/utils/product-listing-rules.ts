@@ -1,22 +1,6 @@
 import prisma from '@packages/libs/prisma';
 import { ValidationError } from '@packages/error-handler';
 
-const defaultProhibitedKeywords = [
-  'ma tuy', 'cocaine', 'heroin', 'methamphetamine', 'amphetamine',
-  'sung quan dung', 'vu khi quan dung', 'illegal firearm', 'gunpowder',
-  'luu dan', 'chat no', 'thuoc no', 'explosive device', 'hang gia', 'hang nhai',
-  'counterfeit', 'fake goods', 'stolen goods',
-];
-
-const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
-
-export function prohibitedKeywordMatches(listing: { title: string; category: string; description: string }) {
-  const configured = (process.env.PRODUCT_PROHIBITED_KEYWORDS || '').split(/[;,\n]/).map(value => value.trim()).filter(Boolean);
-  const keywords = [...new Set([...defaultProhibitedKeywords, ...configured].map(normalize).filter(Boolean))];
-  const text = normalize(`${listing.title} ${listing.category} ${listing.description}`);
-  return keywords.filter(keyword => (` ${text} `).includes(` ${keyword} `));
-}
-
 export async function validateProductCategory(category: string, subCategory: string) {
   const config = await prisma.site_config.findFirst();
   if (!config) throw new ValidationError('Product categories are unavailable. Please retry later.');
@@ -41,10 +25,11 @@ export async function priceReviewReasons(input: { category: string; subCategory:
   const reasons: string[] = [];
   if (regularPrice >= salePrice * 20) reasons.push('The sale price is at least 95% below the listed regular price.');
 
-  const peerPrices = input.peerPrices ?? (await prisma.products.findMany({
+  const peerRows = input.peerPrices ?? await prisma.products.findMany({
     where: { category, subCategory, status: 'Active', isDeleted: false, sale_price: { gt: 0 }, ...(input.excludeProductId ? { id: { not: input.excludeProductId } } : {}) },
     orderBy: { createdAt: 'desc' }, take: 101, select: { sale_price: true },
-  })).map(row => row.sale_price);
+  }) ?? [];
+  const peerPrices = (peerRows || []).map((row: any) => row.sale_price);
   if (peerPrices.length >= 10) {
     const prices = peerPrices.filter(value => Number.isFinite(value) && value > 0).sort((a, b) => a - b);
     const median = prices[Math.floor(prices.length / 2)];

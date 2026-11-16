@@ -3,7 +3,7 @@ import db, { resetDb } from './mocks/prisma';
 import { appFor, userId, productId, shopId } from './helpers';
 import * as products from '../../apps/product-service/src/controllers/product-management.controller';
 beforeEach(resetDb);
-const product = { id: productId, shopId, stock: 10, sale_price: 50, regular_price: 100, title: 'CPU', shop: { sellerId: userId } };
+const product = { id: productId, shopId, stock: 10, sale_price: 50, regular_price: 100, title: 'CPU', shop: { sellerId: userId }, images: [] };
 test.each([{ stock: -1 }, { stock: 1.5 }, { sale_price: '10' }, { colors: 'red' }, { images: [] }, { status: 'Bogus' }])('invalid product changes cannot reach database mutation', async body => {
   expect((await request(appFor('put', '/:id', products.updateProduct, 'seller')).put('/' + productId).send(body)).status).toBe(400);
   expect(db.products.update).not.toHaveBeenCalled();

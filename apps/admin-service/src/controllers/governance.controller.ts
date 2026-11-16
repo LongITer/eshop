@@ -113,3 +113,36 @@ export const uploadImage = handle(async (req, res) => {
   const result = await imageKit.upload({ file, fileName: `site-${Date.now()}.${png ? 'png' : jpg ? 'jpg' : 'webp'}`, folder: '/site' });
   res.json({ url: result.url });
 });
+
+export const getSellerUnsuspendRequests = handle(async (req, res) => {
+  const { page = 1, limit = 20, status } = req.query;
+  const where: any = {};
+  if (status) where.status = status;
+  const [rows, total] = await Promise.all([
+    prisma.sellerUnsuspendRequest.findMany({ where, skip: (Number(page) - 1) * Number(limit), take: Number(limit), orderBy: { createdAt: 'desc' }, include: { seller: { select: { id: true, name: true, email: true, suspendedAt: true, suspendedUntil: true, suspensionReason: true } }, shop: { select: { id: true, name: true } } } }),
+    prisma.sellerUnsuspendRequest.count({ where })
+  ]);
+  res.json({ rows, total });
+});
+
+export const reviewSellerUnsuspendRequest = handle(async (req, res) => {
+  const id = objectId(req.params.id);
+  const { decision, reason } = req.body;
+  if (!['Approve', 'Reject'].includes(decision)) throw new ValidationError('Invalid decision');
+  const adminReason = textField(reason, 'reason', 1000);
+  const request = await transaction(async tx => {
+    const current = await tx.sellerUnsuspendRequest.findUnique({ where: { id }, include: { seller: true, shop: true } });
+    if (!current) throw new NotFoundError();
+    if (current.status !== 'Pending') throw new ValidationError('This request has already been reviewed');
+    const updated = await tx.sellerUnsuspendRequest.update({ where: { id }, data: { status: decision === 'Approve' ? 'Approved' : 'Rejected', adminReason, reviewedBy: req.user!.id, reviewedAt: new Date() } });
+    if (decision === 'Approve') {
+      await tx.sellers.update({ where: { id: current.sellerId }, data: { suspendedAt: null, suspendedUntil: null, suspensionReason: null } });
+      await tx.notifications.create({ data: { sellerId: current.sellerId, type: 'System', title: 'Tài khoản đã được mở khóa', message: adminReason || 'Yêu cầu mở khóa tài khoản của bạn đã được chấp nhận.', redirectUrl: '/dashboard' } });
+    } else {
+      await tx.notifications.create({ data: { sellerId: current.sellerId, type: 'System', title: 'Yêu cầu mở khóa bị từ chối', message: adminReason || 'Yêu cầu mở khóa tài khoản của bạn đã bị từ chối.', redirectUrl: '/dashboard/violations' } });
+    }
+    await audit(tx, req.user!.id, `seller.unsuspend.${decision.toLowerCase()}`, current.sellerId, adminReason, { status: current.status }, { status: updated.status });
+    return updated;
+  });
+  res.json({ request });
+});

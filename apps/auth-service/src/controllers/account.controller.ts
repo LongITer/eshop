@@ -84,6 +84,14 @@ export const updateShop = handle(async (req: any, res) => {
     if (!Array.isArray(req.body.socialLinks) || req.body.socialLinks.length > 10 || req.body.socialLinks.some((item: any) => !item || typeof item.url !== 'string' || !/^https?:\/\//.test(item.url) || typeof item.name !== 'string')) throw new ValidationError('Invalid social links');
     data.socialLinks = req.body.socialLinks;
   }
+  if (req.body.orderAutomation !== undefined) {
+    const automation = req.body.orderAutomation;
+    const stages = ['Pending', 'Confirmed', 'Processing', 'Shipped'];
+    if (!automation || typeof automation !== 'object' || Array.isArray(automation) || typeof automation.enabled !== 'boolean' || !automation.delaysMinutes || typeof automation.delaysMinutes !== 'object' || stages.some(stage => !Number.isInteger(automation.delaysMinutes[stage]) || automation.delaysMinutes[stage] < 5 || automation.delaysMinutes[stage] > 10080)) {
+      throw new ValidationError('Set an auto-advance delay from 5 minutes to 7 days for each order status');
+    }
+    data.orderAutomation = { enabled: automation.enabled, delaysMinutes: Object.fromEntries(stages.map(stage => [stage, automation.delaysMinutes[stage]])) };
+  }
   const shop = await prisma.shops.update({ where: { id, sellerId: req.seller.id }, data, include: { avatar: true } });
   res.json({ shop });
 });

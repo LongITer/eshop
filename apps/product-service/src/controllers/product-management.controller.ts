@@ -5,7 +5,7 @@ import { handle, objectId, pageArgs, textField } from '@packages/utils/api';
 import { NotFoundError, ValidationError, ForbiddenError } from '@packages/error-handler';
 import { scanProductListing } from '@packages/utils/product-moderation-ai';
 import { submitProductReport } from '@packages/utils/product-moderation';
-import { priceReviewReasons, prohibitedKeywordMatches, validateProductCategory } from '@packages/utils/product-listing-rules';
+import { priceReviewReasons, validateProductCategory } from '@packages/utils/product-listing-rules';
 
 export const getEditableProduct = handle(async (req: any, res) => {
   const product = await prisma.products.findFirst({ where: { id: objectId(req.params.id), shopId: req.seller.shop?.id, isDeleted: false }, include: { images: true, variants: true } });
@@ -75,16 +75,12 @@ export const updateProduct = handle(async (req: any, res) => {
   const imagesChanged = req.body.images !== undefined && JSON.stringify(imageUrls) !== JSON.stringify(beforeScan.images.map(image => image.url));
   const listingChanged = textChanged || imagesChanged || priceChanged;
   const candidate = { title: data.title ?? beforeScan.title, category, description: `${data.short_description ?? beforeScan.short_description ?? ''}\n${String(data.detailed_description ?? beforeScan.detailed_description)}`.replace(/<[^>]*>/g, ' ').slice(0, 12000), images: [...imageUrls].sort(), salePrice, regularPrice };
-  const keywordMatches = listingChanged ? prohibitedKeywordMatches(candidate) : [];
   let moderation: { flagged: boolean; category: string; reason: string } | null = null;
-  let scanUnavailable = false;
   if (listingChanged) {
-    try { moderation = await scanProductListing(candidate, imageUrls); } catch { scanUnavailable = true; }
+    moderation = await scanProductListing(candidate, imageUrls);
     const reviewReasons = [
-      ...(keywordMatches.length ? [`Prohibited keyword match: ${keywordMatches.join(', ')}.`] : []),
       ...priceReasons,
-      ...(moderation?.flagged ? [moderation.reason] : []),
-      ...(scanUnavailable ? ['Automatic text/image screening is unavailable; administrator review is required.'] : []),
+      ...(moderation.flagged ? [moderation.reason] : []),
     ];
     if (reviewReasons.length) {
       data.status = 'PendingReview';
@@ -113,8 +109,8 @@ export const updateProduct = handle(async (req: any, res) => {
     }
     return updated;
   });
-  if (keywordMatches.length || priceReasons.length || moderation?.flagged) {
-    const reportCategory = keywordMatches.length ? 'Prohibited' : moderation?.flagged ? moderation.category : 'Misleading';
+  if (priceReasons.length || moderation?.flagged) {
+    const reportCategory = moderation?.flagged ? moderation.category : 'Misleading';
     await submitProductReport(product.id, req.seller.id, 'AI', reportCategory, String(data.moderationReason || moderation?.reason || priceReasons.join(' ')), candidate).catch(error => console.error('Could not persist automated moderation report:', error));
   }
   res.json({ success: true, product });
