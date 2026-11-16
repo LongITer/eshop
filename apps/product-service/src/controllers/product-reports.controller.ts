@@ -40,3 +40,25 @@ export const resolveModerationTask = handle(async (req, res) => {
   });
   res.json({ success: true });
 });
+
+export const requestSellerUnsuspend = handle(async (req, res) => {
+  if (!req.seller?.shop?.id) throw new ForbiddenError();
+  const seller = await prisma.sellers.findUnique({ where: { id: req.seller.id } });
+  if (!seller) throw new ForbiddenError();
+  if (!seller.suspendedAt) throw new ValidationError('Your account is not suspended');
+  // Removed restriction for temporary suspension
+  const reason = textField(req.body.reason, 'reason', 2000);
+  const existing = await prisma.sellerUnsuspendRequest.findFirst({ where: { sellerId: req.seller.id, status: 'Pending' } });
+  // Make retries safe when the browser did not receive the response or its
+  // status query failed. A pending request is already the desired outcome.
+  if (existing) return res.status(200).json({ request: { id: existing.id, status: existing.status, createdAt: existing.createdAt } });
+  const request = await prisma.sellerUnsuspendRequest.create({ data: { sellerId: req.seller.id, shopId: req.seller.shop.id, reason } });
+  res.status(201).json({ request: { id: request.id, status: request.status, createdAt: request.createdAt } });
+});
+
+export const getSellerUnsuspendStatus = handle(async (req, res) => {
+  if (!req.seller?.shop?.id) throw new ForbiddenError();
+  const request = await prisma.sellerUnsuspendRequest.findFirst({ where: { sellerId: req.seller.id }, orderBy: { createdAt: 'desc' } });
+  if (!request) return res.json({ request: null });
+  res.json({ request: { id: request.id, status: request.status, reason: request.reason, adminReason: request.adminReason, createdAt: request.createdAt, reviewedAt: request.reviewedAt } });
+});

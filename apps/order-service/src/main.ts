@@ -6,6 +6,7 @@ import bodyParser from "body-parser";
 import { errorMiddleware } from "@packages/error-handler/error-middleware";
 import router from "./routes/order.route";
 import { createOrder } from "./routes/order.controller";
+import "./jobs/order-auto-advance";
 const app = express();
 
 app.use(

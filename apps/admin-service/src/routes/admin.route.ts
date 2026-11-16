@@ -92,4 +92,8 @@ router.post('/notification-jobs/:id/retry', isAuthenticated, isAdmin, adminPermi
 router.get('/templates', isAuthenticated, isAdmin, adminPermission('catalog'), templates.templates);
 router.post('/templates', isAuthenticated, isAdmin, adminPermission('catalog'), templates.saveTemplate);
 router.put('/templates/:id', isAuthenticated, isAdmin, adminPermission('catalog'), templates.saveTemplate);
+
+// Seller unsuspend requests
+router.get('/seller-unsuspend-requests', isAuthenticated, isAdmin, adminPermission('accounts'), gov.getSellerUnsuspendRequests);
+router.patch('/seller-unsuspend-requests/:id', isAuthenticated, isAdmin, adminPermission('accounts'), gov.reviewSellerUnsuspendRequest);
 export default router;

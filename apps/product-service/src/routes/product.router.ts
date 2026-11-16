@@ -32,6 +32,7 @@ import * as management from '../controllers/product-management.controller';
 import { revenueReport } from '../controllers/reports.controller';
 import { sellerStatistics, sellerAnalytics, sellerProductAnalytics, sellerCustomerAnalytics } from '../controllers/statistics.controller';
 import * as moderation from '../controllers/product-reports.controller';
+import { requestSellerUnsuspend, getSellerUnsuspendStatus } from '../controllers/product-reports.controller';
 import { updateDiscountProducts } from '../controllers/discount-products.controller';
 import prisma from '@packages/libs/prisma';
 import { handle } from '@packages/utils/api';
@@ -59,6 +60,12 @@ router.get('/sitemap-data', handle(async (req, res) => {
   res.json({ entries: [...products.map(p => ({ path: `/product/${encodeURIComponent(p.slug)}`, updatedAt: p.updatedAt })), ...shops.map(s => ({ path: `/shop/${s.id}`, updatedAt: s.updatedAt }))], hasMore: products.length === 500 || shops.length === 500 });
 }));
 router.get('/seller-reports', isAuthenticated, isSeller, revenueReport);
+
+// Seller unsuspend requests
+router.post('/seller-unsuspend-request', isAuthenticated, isSeller, requestSellerUnsuspend);
+// Compatibility for clients that read request state from the request URL.
+router.get('/seller-unsuspend-request', isAuthenticated, isSeller, getSellerUnsuspendStatus);
+router.get('/seller-unsuspend-status', isAuthenticated, isSeller, getSellerUnsuspendStatus);
 router.get('/seller-statistics', isAuthenticated, isSeller, sellerStatistics);
 router.get('/seller-analytics', isAuthenticated, isSeller, sellerAnalytics);
 router.get('/seller-analytics/products/:id', isAuthenticated, isSeller, sellerProductAnalytics);

@@ -8,7 +8,7 @@ import { objectId } from "@packages/utils/api";
 import { transaction } from "@packages/utils/transaction";
 import { scanProductListing } from "@packages/utils/product-moderation-ai";
 import { submitProductReport } from "@packages/utils/product-moderation";
-import { priceReviewReasons, prohibitedKeywordMatches, validateProductCategory } from "@packages/utils/product-listing-rules";
+import { priceReviewReasons, validateProductCategory } from "@packages/utils/product-listing-rules";
 
 // Get product categories
 export const getCategories = async (
@@ -291,17 +291,21 @@ export const createProduct = async (
 
     const imageUrls = images.map((image: any) => image.url);
     const listing = { title, category, description: `${short_description}\n${String(detailed_description || detail_description)}`.replace(/<[^>]*>/g, ' ').slice(0, 12000), images: [...imageUrls].sort(), salePrice, regularPrice };
-    const keywordMatches = prohibitedKeywordMatches(listing);
-    let moderation: { flagged: boolean; category: string; reason: string } | null = null;
-    let scanUnavailable = false;
-    try { moderation = await scanProductListing(listing, imageUrls); } catch { scanUnavailable = true; }
+    const moderation = await scanProductListing(listing, imageUrls);
     const reviewReasons = [
-      ...(keywordMatches.length ? [`Prohibited keyword match: ${keywordMatches.join(', ')}.`] : []),
       ...priceReasons,
-      ...(moderation?.flagged ? [moderation.reason] : []),
-      ...(scanUnavailable ? ['Automatic text/image screening is unavailable; administrator review is required.'] : []),
+      ...(moderation.flagged ? [moderation.reason] : []),
     ];
+    const severeViolation = moderation.flagged && ['Prohibited', 'Counterfeit', 'Unsafe'].includes(moderation.category);
     const reviewRequired = reviewReasons.length > 0;
+
+    let productStatus: 'Active' | 'PendingReview' | 'Rejected' = 'Active';
+    if (severeViolation) {
+      productStatus = 'Rejected';
+    } else if (reviewRequired) {
+      productStatus = 'PendingReview';
+    }
+
     const reviewReason = reviewReasons.join(' ');
     const newProduct = await prisma.products.create({
       data: {
@@ -327,8 +331,8 @@ export const createProduct = async (
         regular_price: regularPrice,
         custom_properties: finalCustomProperties,
         custom_specification: finalCustomSpecifications,
-        status: reviewRequired ? 'PendingReview' : 'Active',
-        ...(reviewRequired ? { moderationReason: reviewReason } : {}),
+        status: productStatus,
+        ...(reviewRequired || severeViolation ? { moderationReason: reviewReason } : {}),
         images: {
           create: images
             .filter((img: any) => img && img.fileId && img.url) // UI sends img.url
@@ -340,8 +344,8 @@ export const createProduct = async (
       },
     });
 
-    if (keywordMatches.length || priceReasons.length || moderation?.flagged) {
-      const reportCategory = keywordMatches.length ? 'Prohibited' : moderation?.flagged ? moderation.category : 'Misleading';
+    if (priceReasons.length || moderation.flagged) {
+      const reportCategory = moderation.flagged ? moderation.category : 'Misleading';
       await submitProductReport(newProduct.id, req.seller.id, 'AI', reportCategory, reviewReason, listing).catch(error => console.error('Could not persist automated moderation report:', error));
     }
 
@@ -354,7 +358,7 @@ export const createProduct = async (
 
     return res.status(201).json({
       success: true,
-      message: reviewRequired ? "Product submitted for administrator review" : "Product created successfully",
+      message: severeViolation ? "Product rejected due to policy violation" : (reviewRequired ? "Product submitted for administrator review" : "Product created successfully"),
       newProduct,
     });
   } catch (error) {

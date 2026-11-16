@@ -110,12 +110,14 @@ model shops {
   opening_hours String?
   website       String?
   socialLinks   Json?
+  orderAutomation Json?
   ratings       Float?        @default(0.0)
   reviews       shopReviews[]
   sellerId      String        @unique @db.ObjectId
   sellers       sellers       @relation(fields: [sellerId], references: [id])
   products      products[]
   orders        orders[]
+  unsuspendRequests sellerUnsuspendRequest[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -136,6 +138,7 @@ model sellers {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   notifications notifications[]
+  unsuspendRequests sellerUnsuspendRequest[]
 }
 
 model site_config {
@@ -374,6 +377,23 @@ model moderationOrderTask {
   createdAt DateTime @default(now())
   @@unique([violationId, orderId])
   @@index([shopId, status, createdAt])
+}
+
+model sellerUnsuspendRequest {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  sellerId String @db.ObjectId
+  shopId String @db.ObjectId
+  seller sellers @relation(fields: [sellerId], references: [id])
+  shop shops @relation(fields: [shopId], references: [id])
+  reason String
+  status String @default("Pending")
+  adminReason String?
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([sellerId, status])
+  @@index([status, createdAt])
 }
 
 model adminAudit {

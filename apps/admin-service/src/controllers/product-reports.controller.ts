@@ -5,7 +5,7 @@ import { scanProductListing } from '@packages/utils/product-moderation-ai';
 import { NotFoundError, ValidationError } from '@packages/error-handler';
 import { transaction } from '@packages/utils/transaction';
 import { audit } from '@packages/utils/admin-audit';
-import { priceReviewReasons, prohibitedKeywordMatches } from '@packages/utils/product-listing-rules';
+import { priceReviewReasons } from '@packages/utils/product-listing-rules';
 
 export const reports = handle(async (req, res) => {
   const status = req.query.status ?? 'Pending';
@@ -47,22 +47,15 @@ export const scanListing = handle(async (req, res) => {
   const product = await prisma.products.findUnique({ where: { id }, include: { images: true } });
   if (!product) throw new NotFoundError();
   const snapshot = listingSnapshot(product);
-  const keywordMatches = prohibitedKeywordMatches(snapshot);
   const priceReasons = await priceReviewReasons({ category: product.category, subCategory: product.subCategory, salePrice: product.sale_price, regularPrice: product.regular_price, excludeProductId: id, allowInvalidForModeration: true });
-  let result: { flagged: boolean; category: string; reason: string };
-  try { result = await scanProductListing(snapshot, snapshot.images); }
-  catch (error) {
-    if (!keywordMatches.length && !priceReasons.length) throw error;
-    result = { flagged: false, category: 'Other', reason: '' };
-  }
-  const flagged = keywordMatches.length > 0 || priceReasons.length > 0 || result.flagged;
+  const result = await scanProductListing(snapshot, snapshot.images);
+  const flagged = priceReasons.length > 0 || result.flagged;
   const reason = [
-    ...(keywordMatches.length ? [`Prohibited keyword match: ${keywordMatches.join(', ')}.`] : []),
     ...priceReasons,
     ...(result.flagged ? [result.reason] : []),
   ].join(' ');
   if (!flagged) { res.json({ flagged: false, reason: result.reason }); return; }
-  const category = keywordMatches.length ? 'Prohibited' : result.flagged ? result.category : 'Misleading';
+  const category = result.flagged ? result.category : 'Misleading';
   const report = await submitProductReport(id, req.user!.id, 'AI', category, reason, snapshot);
   res.json({ flagged: true, report });
 });
