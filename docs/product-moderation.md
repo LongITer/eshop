@@ -24,11 +24,15 @@ available through customer sessions for that customer's own orders.
 - Customer: **Report this listing** on a product page. Sign-in required, server-owned
   source/reporter identity, maximum 10 reports per day, deduplicated per listing
   version/customer. Reports alone never hide products or suspend sellers.
-- Admin: **Violations**, or **Review** from the product catalog. Search for a product,
+- Admin/Moderator: **Violations**, or **Review** from the product catalog. Search for a product,
   submit evidence manually or choose **Scan with AI**. The existing Gemini key is used
   (`GEMINI_API_KEY`; optional `MODERATION_AI_MODEL`, default `gemini-3.8-flash`).
-- AI: text-only triage of title/category/public description, stateless (`store:false`),
-  timeout and strict response validation. No account/customer/order fields are sent.
+- Moderator is a dedicated admin access level with the `moderation` permission only;
+  it cannot access accounts, payments, orders, returns, team settings or analytics.
+- AI: stateless (`store:false`) triage of title/category/public description and uploaded
+  product images. Images are fetched only from the configured ImageKit host, with
+  per-image and total request size limits, timeout and strict response validation.
+  No account/customer/order fields are sent.
   Missing configuration, quota failures and invalid output leave manual review
   available, without inventing a clean result. A flagged scan creates a pending
   report only. No legal conclusion or automatic sanction is inferred.
@@ -49,9 +53,28 @@ confirmed violation history.
 
 ## Automatic listing gate
 
-New listings are screened before they become public. The existing Gemini text triage checks the title, category, short description and detailed description for clear signs of prohibited goods, counterfeits, scams or unsafe products. A flagged listing enters `PendingReview`; the AI result creates a pending report and does not decide whether a violation occurred. Admins can approve it to publish, or reject it permanently. Sellers cannot publish a listing while it is pending or after rejection.
+New listings are screened before they become public. Gemini checks the title, category,
+short description, detailed description and product images for prohibited goods,
+counterfeits, scams, unsafe products and inappropriate imagery. A small built-in
+keyword list covers common prohibited goods; operators can append comma/semicolon/
+newline-separated terms through `PRODUCT_PROHIBITED_KEYWORDS`. A keyword match only
+queues human review and never automatically sanctions a seller.
 
-If the AI service is unavailable or returns invalid output, the listing stays hidden in the same admin queue for manual review. Edits to an active listing's title, category or descriptions are screened again; a flagged or unscannable edit hides the listing pending review. This is text-only screening and can miss image-only evidence or subtle violations; admins retain the final decision. Product creation and text edits are rate-limited per seller.
+The API validates the selected category and subcategory against the current admin-managed
+catalog. Prices are validated for positive values up to USD 10,000,000. A sale price at
+least 95% below the regular price, or more than 10× away from the median of the 101 most
+recent active listings in the same subcategory (when at least 10 are available), enters
+`PendingReview`. This conservative heuristic is a review signal, not a price verdict.
+Flagged text/image, keyword or price checks enter `PendingReview`; admins/moderators can
+approve or reject the listing. Sellers cannot publish a listing while it is pending or
+after rejection.
+
+If the AI service or image fetch is unavailable or returns invalid output, the listing
+stays hidden in the same review queue. Edits to an active listing's title, category,
+descriptions, images or price are screened again; a flagged or unscannable edit hides the
+listing pending review. The screen can miss subtle violations; admins/moderators retain
+the final decision. SKU price changes run through the same anomaly check and can move a
+listing into `PendingReview`. Product creation and text edits are rate-limited per seller.
 
 ## Related purchases: private remediation
 
@@ -85,6 +108,11 @@ notices. The seller UI hides selling navigation in this state. Suspension does n
 grant access to another shop. Unrelated account APIs and publishing remain denied.
 
 ## Setup and verification
+
+Set `GEMINI_API_KEY` and `IMAGEKIT_URL_ENDPOINT` to enable multimodal listing scans.
+Configure additional blocked phrases with `PRODUCT_PROHIBITED_KEYWORDS`; restart the
+product service after changing environment values. Assign the `moderator` access level
+from Admin → Team management to grant moderation access without broader admin access.
 
 Generate Prisma Client after updating the schema. On Windows a running Node service
 may lock the engine DLL; stop affected services before a full regeneration if needed.

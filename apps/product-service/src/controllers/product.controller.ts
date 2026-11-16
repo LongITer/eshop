@@ -8,6 +8,7 @@ import { objectId } from "@packages/utils/api";
 import { transaction } from "@packages/utils/transaction";
 import { scanProductListing } from "@packages/utils/product-moderation-ai";
 import { submitProductReport } from "@packages/utils/product-moderation";
+import { priceReviewReasons, prohibitedKeywordMatches, validateProductCategory } from "@packages/utils/product-listing-rules";
 
 // Get product categories
 export const getCategories = async (
@@ -260,19 +261,9 @@ export const createProduct = async (
       );
     }
 
-    const hasUploadedImage =
-      Array.isArray(images) &&
-      images.some(
-        (image: any) =>
-          typeof image?.url === "string" &&
-          image.url.length > 0 &&
-          typeof image?.fileId === "string" &&
-          image.fileId.length > 0,
-      );
-
-    if (!hasUploadedImage) {
+    if (!Array.isArray(images) || images.length < 1 || images.length > 10 || images.some((image: any) => !image || typeof image.url !== 'string' || !image.url.startsWith('https://') || typeof image.fileId !== 'string' || !image.fileId)) {
       return next(
-        new ValidationError("At least one product image is required."),
+        new ValidationError("Provide 1–10 uploaded product images."),
       );
     }
 
@@ -281,6 +272,10 @@ export const createProduct = async (
         new ValidationError("Create your shop before listing products."),
       );
     }
+
+    await validateProductCategory(category, subCategory);
+    const salePrice = Number(sale_price), regularPrice = Number(regular_price);
+    const priceReasons = await priceReviewReasons({ category, subCategory, salePrice, regularPrice });
 
     const slugChecking = await prisma.products.findUnique({
       where: { slug },
@@ -294,11 +289,20 @@ export const createProduct = async (
       );
     }
 
-    const listing = { title, category, description: `${short_description}\n${String(detailed_description || detail_description)}`.replace(/<[^>]*>/g, ' ').slice(0, 12000) };
+    const imageUrls = images.map((image: any) => image.url);
+    const listing = { title, category, description: `${short_description}\n${String(detailed_description || detail_description)}`.replace(/<[^>]*>/g, ' ').slice(0, 12000), images: [...imageUrls].sort(), salePrice, regularPrice };
+    const keywordMatches = prohibitedKeywordMatches(listing);
     let moderation: { flagged: boolean; category: string; reason: string } | null = null;
     let scanUnavailable = false;
-    try { moderation = await scanProductListing(listing); } catch { scanUnavailable = true; }
-    const reviewRequired = scanUnavailable || moderation?.flagged === true;
+    try { moderation = await scanProductListing(listing, imageUrls); } catch { scanUnavailable = true; }
+    const reviewReasons = [
+      ...(keywordMatches.length ? [`Prohibited keyword match: ${keywordMatches.join(', ')}.`] : []),
+      ...priceReasons,
+      ...(moderation?.flagged ? [moderation.reason] : []),
+      ...(scanUnavailable ? ['Automatic text/image screening is unavailable; administrator review is required.'] : []),
+    ];
+    const reviewRequired = reviewReasons.length > 0;
+    const reviewReason = reviewReasons.join(' ');
     const newProduct = await prisma.products.create({
       data: {
         title,
@@ -319,12 +323,12 @@ export const createProduct = async (
           : [],
         sizes: sizes || [],
         stock: parseInt(stock),
-        sale_price: parseFloat(sale_price),
-        regular_price: parseFloat(regular_price),
+        sale_price: salePrice,
+        regular_price: regularPrice,
         custom_properties: finalCustomProperties,
         custom_specification: finalCustomSpecifications,
         status: reviewRequired ? 'PendingReview' : 'Active',
-        ...(reviewRequired ? { moderationReason: scanUnavailable ? 'Automatic screening is unavailable; administrator review is required.' : moderation!.reason } : {}),
+        ...(reviewRequired ? { moderationReason: reviewReason } : {}),
         images: {
           create: images
             .filter((img: any) => img && img.fileId && img.url) // UI sends img.url
@@ -336,8 +340,9 @@ export const createProduct = async (
       },
     });
 
-    if (moderation?.flagged) {
-      await submitProductReport(newProduct.id, req.seller.id, 'AI', moderation.category, moderation.reason, listing).catch(error => console.error('Could not persist AI moderation report:', error));
+    if (keywordMatches.length || priceReasons.length || moderation?.flagged) {
+      const reportCategory = keywordMatches.length ? 'Prohibited' : moderation?.flagged ? moderation.category : 'Misleading';
+      await submitProductReport(newProduct.id, req.seller.id, 'AI', reportCategory, reviewReason, listing).catch(error => console.error('Could not persist automated moderation report:', error));
     }
 
     await sendBehaviorLog("productCreated", {
