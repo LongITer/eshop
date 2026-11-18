@@ -130,22 +130,38 @@ export default function CreateProduct() {
       <footer className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-4"><p className="text-xs text-slate-500">Fields marked * are required.</p><div className="flex gap-3"><Link href="/dashboard/all-products" className="rounded-xl border border-slate-700 px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-800">Cancel</Link><button type="submit" disabled={saving || imageBusy || categoriesQuery.isLoading || categoriesQuery.isError} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50">{saving ? <Loader2 className="animate-spin" size={17}/> : <Plus size={17}/>} {saving ? "Creating…" : "Create product"}</button></div></footer>
       </div>
     </form>
-    {saving && !enhance && <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" role="status" aria-live="polite" aria-label="AI is screening your product">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-blue-400/25 bg-slate-900 shadow-2xl shadow-blue-950/40">
-        <div className="relative h-40 overflow-hidden bg-slate-950">
-          {images[0]?.url ? <img src={images[0].url} alt="" className="h-full w-full object-contain opacity-70" /> : <div className="flex h-full items-center justify-center text-slate-700"><Package size={64}/></div>}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-cyan-300/15 to-blue-500/5" />
-          <div className="absolute left-3 top-3 flex items-center gap-2 rounded-full border border-cyan-300/20 bg-slate-950/80 px-3 py-1.5 text-xs font-medium text-cyan-200"><WandSparkles size={14} className="animate-pulse"/> AI SCREENING</div>
+    {saving && !enhance && <div className="fixed inset-0 z-[120] items-center justify-center bg-slate-950/90 backdrop-blur-lg relative overflow-hidden rounded-2xl" role="status" aria-live="polite" aria-label="AI is screening your product">
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950/50 via-slate-900/30 to-slate-950/80"></div>
+        <svg className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+          <defs>
+            <linearGradient id="scanGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="cyan-400" stopOpacity="0.4"/>
+              <stop offset="100%" stopColor="blue-500" stopOpacity="0.4"/>
+            </linearGradient>
+          </defs>
+          <rect className="pt-6" width="100%" height="100%" fill="url(#scanGrad)"/>
+        </svg>
+      </div>
+      <div className="relative flex flex-col items-center justify-center gap-4 py-12 px-6 max-w-md w-full">
+        <div className="relative select-none">
+          {images[0]?.url ? <img src={images[0].url} alt="" className="h-24 w-24 rounded-2xl object-cover border border-cyan-500/20 mx-auto" /> : <div className="h-12 w-12 rounded-2xl bg-slate-800/50 border border-cyan-500/20 flex items-center justify-center mx-auto"><WandSparkles size={32} className="text-cyan-400"/></div>}
+          <div className="mt-4 text-center">
+            <h2 className="text-lg font-semibold text-slate-100">AI đang quét sản phẩm</h2>
+            <p className="mt-1 text-sm leading-relaxed text-slate-400/60">Đang phân tích hình ảnh và nội dung để kiểm tra sản phẩm. Vui lòng chờ, đừng đóng trang này.</p>
+          </div>
         </div>
-        <div className="p-6 text-center">
-          <h2 className="text-lg font-semibold">AI đang quét sản phẩm</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-400">Đang phân tích hình ảnh và nội dung để kiểm tra sản phẩm. Vui lòng chờ, đừng đóng trang này.</p>
-          <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-slate-800"><div className="ai-progress-bar h-full w-1/3 rounded-full bg-gradient-to-r from-blue-500 via-cyan-300 to-blue-500"/></div>
-          <p className="mt-3 text-xs text-slate-500">Quá trình có thể mất vài giây</p>
-          <button onClick={() => setSaving(false)} className="mt-3 rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-50">Huỷ</button>
+        <div className="w-full max-w-md">
+          <div className="mt-6 rounded-full h-1.5 bg-gradient-to-r from-cyan-500/30 via-blue-500/20 to-cyan-500/30 overflow-hidden">
+            <div className="h-full w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-500" style="width: 33.33%; animation: progress 4.5s linear infinite;"></div>
+          </div>
+          <p className="mt-2 text-xs text-slate-500/60 center">Quá trình có thể mất vài giây</p>
+        </div>
+        <div className="mt-6 flex gap-3">
+          <button onClick={() => setSaving(false)} className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:pointer-events-none">Huỷ</button>
         </div>
       </div>
-      <style jsx>{`@keyframes aiScan { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, 156px, 0); } } @keyframes aiProgress { from { transform: translate3d(-110%, 0, 0); } to { transform: translate3d(310%, 0, 0); } } .ai-scan-line { will-change: transform; animation: aiScan 4.5s cubic-bezier(.45, 0, .55, 1) infinite alternate; } .ai-progress-bar { will-change: transform; animation: aiProgress 4.8s linear infinite; } @media (prefers-reduced-motion: reduce) { .ai-scan-line, .ai-progress-bar { animation-duration: 6s; } }`}</style>
+      <style jsx>{`@keyframes progress { from { transform: translateX(-100%); } to { transform: translateX(300%); } } @media (prefers-reduced-motion: reduce) { .progress-bar { animation: none; } }`}</style>
     </div>}
     {enhance && <div role="dialog" aria-modal="true" aria-labelledby="enhance-title" className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"><div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 p-5"><div className="mb-4 flex items-center justify-between"><h2 id="enhance-title" className="font-semibold">Enhance product photo</h2><button type="button" aria-label="Close photo editor" onClick={() => setEnhance(null)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-800"><X size={18}/></button></div><div className="relative h-64 overflow-hidden rounded-xl bg-slate-950"><img src={enhance.url} alt="Enhanced product preview" className="h-full w-full object-contain" onLoad={() => setPreviewLoading(false)} onError={() => { setPreviewLoading(false); setPreviewError(true); toast.error("The enhanced image could not be loaded. Choose another effect or close the editor."); }}/>{previewLoading && <div className="absolute inset-0 flex items-center justify-center bg-slate-950/70"><Loader2 className="animate-spin"/></div>}</div><div className="mt-4 grid grid-cols-2 gap-2">{enhancements.map(({ label, effect }) => <button type="button" key={effect} disabled={previewLoading} onClick={() => applyEffect(effect)} className="rounded-lg border border-slate-700 p-2 text-left text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40">{label}</button>)}</div><button type="button" disabled={previewLoading || previewError} onClick={() => { setImages(previous => previous.map((image, index) => index === enhance.index ? { ...image, url: enhance.url } : image)); setEnhance(null); }} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold disabled:opacity-50"><Save size={16}/>Apply to product</button></div></div>}
   </main>;
