@@ -1,0 +1,673 @@
+
+> @./source@0.0.0 dev
+> npx nx run-many --target=serve --all --parallel=10
+
+
+ NX   Running target serve for 10 projects and 10 tasks they depend on:
+
+- recommendation-service
+- chatting-service
+- chatbot-service
+- product-service
+- logger-service
+- admin-service
+- kafka-service
+- order-service
+- auth-service
+- api-gateway
+
+
+
+> nx run api-gateway:build
+
+assets by path *.json 44.2 KiB
+  asset package-lock.json 42.8 KiB [emitted]
+  asset package.json 1.37 KiB [emitted]
+asset main.js 9.13 KiB [emitted] (name: main)
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/api-gateway/src/assets/.gitkeep] [copied]
+cacheable modules 6.96 KiB
+  ./apps/api-gateway/src/main.ts 4.87 KiB [built] [code generated]
+  ./apps/api-gateway/src/libs/initizeSizeConfig.ts 1.26 KiB [built] [code generated]
+  ./apps/api-gateway/src/libs/request-limit.ts 844 bytes [built] [code generated]
+external "tslib" 42 bytes [built] [code generated]
+external "express" 42 bytes [built] [code generated]
+external "cors" 42 bytes [built] [code generated]
+external "express-http-proxy" 42 bytes [built] [code generated]
+external "morgan" 42 bytes [built] [code generated]
+external "express-rate-limit" 42 bytes [built] [code generated]
+external "cookie-parser" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+external "jsonwebtoken" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 2412 ms
+(node:22492) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> nx run api-gateway:serve:development
+
+
+> nx run kafka-service:build
+
+assets by path *.json 1.29 KiB
+  asset package.json 1.11 KiB [emitted]
+  asset package-lock.json 188 bytes [emitted]
+asset main.js 9.07 KiB [emitted] (name: main)
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/kafka-service/src/assets/.gitkeep] [copied]
+cacheable modules 7.22 KiB
+  modules by path ./apps/kafka-service/src/ 6.43 KiB
+    ./apps/kafka-service/src/main.ts 1.81 KiB [built] [code generated]
+    ./apps/kafka-service/src/services/analytics.service.ts 4.62 KiB [built] [code generated]
+  modules by path ./packages/ 809 bytes
+    ./packages/utils/kafka/index.ts 545 bytes [built] [code generated]
+    ./packages/libs/prisma/index.ts 264 bytes [built] [code generated]
+external "kafkajs" 42 bytes [built] [code generated]
+external "tslib" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 2163 ms
+(node:6892) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> nx run kafka-service:serve:development
+
+
+> nx run logger-service:build
+
+assets by path *.json 30.4 KiB
+  asset package-lock.json 29.2 KiB [emitted]
+  asset package.json 1.16 KiB [emitted]
+asset main.js 6.89 KiB [emitted] (name: main)
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/logger-service/src/assets/.gitkeep] [copied]
+cacheable modules 4.83 KiB
+  modules by path ./apps/logger-service/src/*.ts 4.04 KiB
+    ./apps/logger-service/src/main.ts 1.37 KiB [built] [code generated]
+    ./apps/logger-service/src/logger-consumer.ts 2.5 KiB [built] [code generated]
+    ./apps/logger-service/src/logger-state.ts 178 bytes [built] [code generated]
+  modules by path ./packages/ 809 bytes
+    ./packages/utils/kafka/index.ts 545 bytes [built] [code generated]
+    ./packages/libs/prisma/index.ts 264 bytes [built] [code generated]
+external "tslib" 42 bytes [built] [code generated]
+external "express" 42 bytes [built] [code generated]
+external "ws" 42 bytes [built] [code generated]
+external "http" 42 bytes [built] [code generated]
+external "kafkajs" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 2581 ms
+(node:22828) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> nx run logger-service:serve:development
+
+
+> nx run recommendation-service:build
+
+assets by path *.json 31.1 KiB
+  asset package-lock.json 29.9 KiB [emitted]
+  asset package.json 1.26 KiB [emitted]
+asset main.js 16 KiB [emitted] (name: main)
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/recommendation-service/src/assets/.gitkeep] [copied]
+cacheable modules 13.7 KiB
+  modules by path ./packages/ 7.73 KiB 6 modules
+  modules by path ./apps/recommendation-service/src/ 5.95 KiB
+    ./apps/recommendation-service/src/main.ts 1.54 KiB [built] [code generated]
+    ./apps/recommendation-service/src/controllers/recommendation.controller.ts 3.23 KiB [built] [code generated]
+    ./apps/recommendation-service/src/services/scoring.ts 1.18 KiB [built] [code generated]
+external "tslib" 42 bytes [built] [code generated]
+external "express" 42 bytes [built] [code generated]
+external "dotenv/config" 42 bytes [built] [code generated]
+external "cookie-parser" 42 bytes [built] [code generated]
+external "path" 42 bytes [built] [code generated]
+external "jsonwebtoken" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 3098 ms
+(node:20680) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> nx run recommendation-service:serve:development
+
+
+> nx run order-service:build
+
+assets by path *.json 37.5 KiB
+  asset package-lock.json 36.1 KiB [emitted]
+  asset package.json 1.36 KiB [emitted]
+asset main.js 55.2 KiB [emitted] (name: main)
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/order-service/src/assets/.gitkeep] [copied]
+cacheable modules 51.5 KiB 18 modules
++ 16 modules
+webpack 5.98.0 compiled successfully in 3211 ms
+(node:22244) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> nx run auth-service:build
+
+asset main.js 72.2 KiB [emitted] (name: main)
+asset package-lock.json 54 KiB [emitted]
+asset package.json 1.66 KiB [emitted]
+cacheable modules 68.1 KiB 21 modules
++ 19 modules
+webpack 5.98.0 compiled successfully in 3146 ms
+(node:3788) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> nx run order-service:serve:development
+
+
+> nx run auth-service:serve:development
+
+
+> nx run product-service:build
+
+assets by path *.json 41.8 KiB
+  asset package-lock.json 40.4 KiB [emitted]
+  asset package.json 1.36 KiB [emitted]
+asset main.js 77.2 KiB [emitted] (name: main)
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/product-service/src/assets/.gitkeep] [copied]
+cacheable modules 73.9 KiB
+  modules by path ./packages/ 18.9 KiB 13 modules
+  modules by path ./apps/product-service/ 55 KiB 8 modules
+external "tslib" 42 bytes [built] [code generated]
+external "dotenv/config" 42 bytes [built] [code generated]
+external "express" 42 bytes [built] [code generated]
+external "cors" 42 bytes [built] [code generated]
+external "cookie-parser" 42 bytes [built] [code generated]
+external "node-cron" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+external "jsonwebtoken" 42 bytes [built] [code generated]
+external "imagekit" 42 bytes [built] [code generated]
+external "ioredis" 42 bytes [built] [code generated]
+external "kafkajs" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 3608 ms
+(node:2796) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> nx run admin-service:build
+
+assets by path *.json 35.2 KiB
+  asset package-lock.json 34 KiB [emitted]
+  asset package.json 1.24 KiB [emitted]
+asset main.js 54.2 KiB [emitted] (name: main)
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/admin-service/src/assets/.gitkeep] [copied]
+cacheable modules 51.2 KiB
+  modules by path ./packages/ 21.1 KiB 13 modules
+  modules by path ./apps/admin-service/src/ 30.1 KiB
+    modules by path ./apps/admin-service/src/controllers/*.ts 26 KiB 3 modules
+    ./apps/admin-service/src/main.ts 891 bytes [built] [code generated]
+    ./apps/admin-service/src/routes/admin.route.ts 3.21 KiB [built] [code generated]
+external "tslib" 42 bytes [built] [code generated]
+external "express" 42 bytes [built] [code generated]
+external "cookie-parser" 42 bytes [built] [code generated]
+external "jsonwebtoken" 42 bytes [built] [code generated]
+external "stripe" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+external "ioredis" 42 bytes [built] [code generated]
+external "kafkajs" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 3341 ms
+(node:9140) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> nx run product-service:serve:development
+
+
+> nx run chatting-service:build
+
+assets by path *.json 38.6 KiB
+  asset package-lock.json 37.4 KiB [emitted]
+  asset package.json 1.25 KiB [emitted]
+asset main.js 45.2 KiB [emitted] (name: main)
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/chatting-service/src/assets/.gitkeep] [copied]
+cacheable modules 42 KiB
+  modules by path ./packages/ 11.2 KiB 11 modules
+  modules by path ./apps/chatting-service/src/ 30.8 KiB 6 modules
+external "tslib" 42 bytes [built] [code generated]
+external "dotenv/config" 42 bytes [built] [code generated]
+external "express" 42 bytes [built] [code generated]
+external "cookie-parser" 42 bytes [built] [code generated]
+external "ws" 42 bytes [built] [code generated]
+external "crypto" 42 bytes [built] [code generated]
+external "ioredis" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+external "kafkajs" 42 bytes [built] [code generated]
+external "web-push" 42 bytes [built] [code generated]
+external "jsonwebtoken" 42 bytes [built] [code generated]
+external "imagekit" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 3419 ms
+(node:13240) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> nx run admin-service:serve:development
+
+
+> nx run chatting-service:serve:development
+
+
+> nx run chatbot-service:build
+
+assets by path *.json 109 KiB
+  asset package-lock.json 108 KiB [emitted]
+  asset package.json 1.49 KiB [emitted]
+asset main.js 79.4 KiB [emitted] (name: main)
+asset assets/.gitkeep 2 bytes [emitted] [from: apps/chatbot-service/src/assets/.gitkeep] [copied]
+cacheable modules 76.8 KiB
+  modules by path ./apps/chatbot-service/src/ 70.2 KiB
+    modules by path ./apps/chatbot-service/src/services/*.ts 31.1 KiB 3 modules
+    + 4 modules
+  modules by path ./packages/ 6.59 KiB 5 modules
+external "tslib" 42 bytes [built] [code generated]
+external "dotenv/config" 42 bytes [built] [code generated]
+external "express" 42 bytes [built] [code generated]
+external "cors" 42 bytes [built] [code generated]
+external "cookie-parser" 42 bytes [built] [code generated]
+external "jsonwebtoken" 42 bytes [built] [code generated]
+external "crypto" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 3909 ms
+(node:17864) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+> nx run chatbot-service:serve:development
+
+assets by path *.json 1.29 KiB
+  asset package.json 1.11 KiB [emitted]
+  asset package-lock.json 188 bytes [emitted]
+asset main.js 9.1 KiB [emitted] (name: main) 1 related asset
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/kafka-service/src/assets/.gitkeep] [copied]
+cacheable modules 7.22 KiB
+  modules by path ./apps/kafka-service/src/ 6.43 KiB
+    ./apps/kafka-service/src/main.ts 1.81 KiB [built] [code generated]
+    ./apps/kafka-service/src/services/analytics.service.ts 4.62 KiB [built] [code generated]
+  modules by path ./packages/ 809 bytes
+    ./packages/utils/kafka/index.ts 545 bytes [built] [code generated]
+    ./packages/libs/prisma/index.ts 264 bytes [built] [code generated]
+external "kafkajs" 42 bytes [built] [code generated]
+external "tslib" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 1977 ms
+(node:18968) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+assets by path *.json 44.2 KiB
+  asset package-lock.json 42.8 KiB [emitted]
+  asset package.json 1.37 KiB [emitted]
+asset main.js 9.16 KiB [emitted] (name: main) 1 related asset
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/api-gateway/src/assets/.gitkeep] [copied]
+cacheable modules 6.96 KiB
+  ./apps/api-gateway/src/main.ts 4.87 KiB [built] [code generated]
+  ./apps/api-gateway/src/libs/initizeSizeConfig.ts 1.26 KiB [built] [code generated]
+  ./apps/api-gateway/src/libs/request-limit.ts 844 bytes [built] [code generated]
+external "tslib" 42 bytes [built] [code generated]
+external "express" 42 bytes [built] [code generated]
+external "cors" 42 bytes [built] [code generated]
+external "express-http-proxy" 42 bytes [built] [code generated]
+external "morgan" 42 bytes [built] [code generated]
+external "express-rate-limit" 42 bytes [built] [code generated]
+external "cookie-parser" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+external "jsonwebtoken" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 2439 ms
+(node:21652) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+assets by path *.json 30.4 KiB
+  asset package-lock.json 29.2 KiB [emitted]
+  asset package.json 1.16 KiB [emitted]
+asset main.js 6.92 KiB [emitted] (name: main) 1 related asset
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/logger-service/src/assets/.gitkeep] [copied]
+cacheable modules 4.83 KiB
+  modules by path ./apps/logger-service/src/*.ts 4.04 KiB
+    ./apps/logger-service/src/main.ts 1.37 KiB [built] [code generated]
+    ./apps/logger-service/src/logger-consumer.ts 2.5 KiB [built] [code generated]
+    ./apps/logger-service/src/logger-state.ts 178 bytes [built] [code generated]
+  modules by path ./packages/ 809 bytes
+    ./packages/utils/kafka/index.ts 545 bytes [built] [code generated]
+    ./packages/libs/prisma/index.ts 264 bytes [built] [code generated]
+external "tslib" 42 bytes [built] [code generated]
+external "express" 42 bytes [built] [code generated]
+external "ws" 42 bytes [built] [code generated]
+external "http" 42 bytes [built] [code generated]
+external "kafkajs" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 2611 ms
+(node:13064) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+assets by path *.json 31.1 KiB
+  asset package-lock.json 29.9 KiB [emitted]
+  asset package.json 1.26 KiB [emitted]
+asset main.js 16 KiB [emitted] (name: main) 1 related asset
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/recommendation-service/src/assets/.gitkeep] [copied]
+cacheable modules 13.7 KiB
+  modules by path ./packages/ 7.73 KiB 6 modules
+  modules by path ./apps/recommendation-service/src/ 5.95 KiB
+    ./apps/recommendation-service/src/main.ts 1.54 KiB [built] [code generated]
+    ./apps/recommendation-service/src/controllers/recommendation.controller.ts 3.23 KiB [built] [code generated]
+    ./apps/recommendation-service/src/services/scoring.ts 1.18 KiB [built] [code generated]
+external "tslib" 42 bytes [built] [code generated]
+external "express" 42 bytes [built] [code generated]
+external "dotenv/config" 42 bytes [built] [code generated]
+external "cookie-parser" 42 bytes [built] [code generated]
+external "path" 42 bytes [built] [code generated]
+external "jsonwebtoken" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 2983 ms
+(node:2756) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Listening at http://localhost:8080/gateway-health
+assets by path *.json 37.5 KiB
+  asset package-lock.json 36.1 KiB [emitted]
+  asset package.json 1.36 KiB [emitted]
+asset main.js 55.2 KiB [emitted] (name: main) 1 related asset
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/order-service/src/assets/.gitkeep] [copied]
+cacheable modules 51.5 KiB 18 modules
++ 16 modules
+webpack 5.98.0 compiled successfully in 3351 ms
+(node:14040) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+asset main.js 72.2 KiB [emitted] (name: main) 1 related asset
+asset package-lock.json 54 KiB [emitted]
+asset package.json 1.66 KiB [emitted]
+cacheable modules 68.1 KiB 21 modules
++ 19 modules
+webpack 5.98.0 compiled successfully in 3742 ms
+(node:8052) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+assets by path *.json 38.6 KiB
+  asset package-lock.json 37.4 KiB [emitted]
+  asset package.json 1.25 KiB [emitted]
+asset main.js 45.3 KiB [emitted] (name: main) 1 related asset
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/chatting-service/src/assets/.gitkeep] [copied]
+cacheable modules 42 KiB
+  modules by path ./packages/ 11.2 KiB 11 modules
+  modules by path ./apps/chatting-service/src/ 30.8 KiB 6 modules
+external "tslib" 42 bytes [built] [code generated]
+external "dotenv/config" 42 bytes [built] [code generated]
+external "express" 42 bytes [built] [code generated]
+external "cookie-parser" 42 bytes [built] [code generated]
+external "ws" 42 bytes [built] [code generated]
+external "crypto" 42 bytes [built] [code generated]
+external "ioredis" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+external "kafkajs" 42 bytes [built] [code generated]
+external "web-push" 42 bytes [built] [code generated]
+external "jsonwebtoken" 42 bytes [built] [code generated]
+external "imagekit" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 3430 ms
+(node:14948) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"level":"INFO","timestamp":"2026-10-05T08:04:41.007Z","logger":"kafkajs","message":"[Consumer] Starting","groupId":"user-events-group"}
+(node:19080) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Listening at http://localhost:6008/api
+Listening at http://localhost:8080/gateway-health
+(node:14684) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+assets by path *.json 41.8 KiB
+  asset package-lock.json 40.4 KiB [emitted]
+  asset package.json 1.36 KiB [emitted]
+asset main.js 77.3 KiB [emitted] (name: main) 1 related asset
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/product-service/src/assets/.gitkeep] [copied]
+cacheable modules 73.9 KiB
+  modules by path ./packages/ 18.9 KiB 13 modules
+  modules by path ./apps/product-service/ 55 KiB 8 modules
+external "tslib" 42 bytes [built] [code generated]
+external "dotenv/config" 42 bytes [built] [code generated]
+external "express" 42 bytes [built] [code generated]
+external "cors" 42 bytes [built] [code generated]
+external "cookie-parser" 42 bytes [built] [code generated]
+external "node-cron" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+external "jsonwebtoken" 42 bytes [built] [code generated]
+external "imagekit" 42 bytes [built] [code generated]
+external "ioredis" 42 bytes [built] [code generated]
+external "kafkajs" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 4600 ms
+(node:20984) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+assets by path *.json 35.2 KiB
+  asset package-lock.json 34 KiB [emitted]
+  asset package.json 1.24 KiB [emitted]
+asset main.js 54.2 KiB [emitted] (name: main) 1 related asset
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/admin-service/src/assets/.gitkeep] [copied]
+cacheable modules 51.2 KiB
+  modules by path ./packages/ 21.1 KiB 13 modules
+  modules by path ./apps/admin-service/src/ 30.1 KiB
+    modules by path ./apps/admin-service/src/controllers/*.ts 26 KiB 3 modules
+    ./apps/admin-service/src/main.ts 891 bytes [built] [code generated]
+    ./apps/admin-service/src/routes/admin.route.ts 3.21 KiB [built] [code generated]
+external "tslib" 42 bytes [built] [code generated]
+external "express" 42 bytes [built] [code generated]
+external "cookie-parser" 42 bytes [built] [code generated]
+external "jsonwebtoken" 42 bytes [built] [code generated]
+external "stripe" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+external "ioredis" 42 bytes [built] [code generated]
+external "kafkajs" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 4108 ms
+(node:18104) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+assets by path *.json 109 KiB
+  asset package-lock.json 108 KiB [emitted]
+  asset package.json 1.49 KiB [emitted]
+asset main.js 79.4 KiB [emitted] (name: main) 1 related asset
+asset assets/.gitkeep 2 bytes [emitted] [from: apps/chatbot-service/src/assets/.gitkeep] [copied]
+cacheable modules 76.8 KiB
+  modules by path ./apps/chatbot-service/src/ 70.2 KiB
+    modules by path ./apps/chatbot-service/src/services/*.ts 31.1 KiB 3 modules
+    + 4 modules
+  modules by path ./packages/ 6.59 KiB 5 modules
+external "tslib" 42 bytes [built] [code generated]
+external "dotenv/config" 42 bytes [built] [code generated]
+external "express" 42 bytes [built] [code generated]
+external "cors" 42 bytes [built] [code generated]
+external "cookie-parser" 42 bytes [built] [code generated]
+external "jsonwebtoken" 42 bytes [built] [code generated]
+external "crypto" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 4064 ms
+(node:19984) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"level":"INFO","timestamp":"2026-10-05T08:04:41.901Z","logger":"kafkajs","message":"[ConsumerGroup] Consumer has joined the group","groupId":"user-events-group","memberId":"kafka-service-60a419a1-e8a0-48d3-9517-53c3d6b7337b","leaderId":"kafka-service-60a419a1-e8a0-48d3-9517-53c3d6b7337b","isLeader":true,"memberAssignment":{"users-events":[0,1,2,3,4,5]},"groupProtocol":"RoundRobinAssigner","duration":890}
+Listening at http://localhost:6009/api
+(node:10712) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+{"level":"INFO","timestamp":"2026-10-05T08:04:42.384Z","logger":"kafkajs","message":"[Consumer] Starting","groupId":"log-events-group"}
+Listening at http://localhost:6008/api
+(node:6128) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+🤖 Chatbot service is listening at http://localhost:6007/
+   Chat endpoint: POST http://localhost:6007/api/chat
+{"level":"WARN","timestamp":"2026-10-05T08:04:43.254Z","logger":"kafkajs","message":"KafkaJS v2.0.0 switched default partitioner. To retain the same partitioning behavior as in previous versions, create the producer with the option \"createPartitioner: Partitioners.LegacyPartitioner\". See the migration guide at https://kafka.js.org/docs/migration-guide-v2.0.0#producer-new-default-partitioner for details. Silence this warning by setting the environment variable \"KAFKAJS_NO_PARTITIONER_WARNING=1\""}
+
+(node:21468) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Listening at http://localhost:6004/api
+(node:19720) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Listening at http://localhost:6006/api
+(node:13116) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Auth service is listening at http://localhost:6001/
+Swagger json available at http://localhost:6001/docs-json
+Swagger docs available at http://localhost:6001/api-docs
+{"level":"INFO","timestamp":"2026-10-05T08:04:43.986Z","logger":"kafkajs","message":"[Consumer] Starting","groupId":"chat-message-db-writer"}
+🤖 Chatbot service is listening at http://localhost:6007/
+   Chat endpoint: POST http://localhost:6007/api/chat
+(node:9496) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Listening at http://localhost:6005/admin
+(node:864) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Product service is listening at http://localhost:6002/
+Swagger json available at http://localhost:6002/docs-json
+Swagger docs available at http://localhost:6002/api-docs
+(node:11664) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+{"level":"INFO","timestamp":"2026-10-05T08:04:44.428Z","logger":"kafkajs","message":"[ConsumerGroup] Consumer has joined the group","groupId":"log-events-group","memberId":"kafka-service-6446acb4-f542-47e0-8615-aa7310154c32","leaderId":"kafka-service-6446acb4-f542-47e0-8615-aa7310154c32","isLeader":true,"memberAssignment":{"log-events":[0]},"groupProtocol":"RoundRobinAssigner","duration":2042}
+{"level":"INFO","timestamp":"2026-10-05T08:04:44.427Z","logger":"kafkajs","message":"[ConsumerGroup] Consumer has joined the group","groupId":"chat-message-db-writer","memberId":"kafka-service-ff27f27b-b683-4074-b02e-5b7e78aed323","leaderId":"kafka-service-ff27f27b-b683-4074-b02e-5b7e78aed323","isLeader":true,"memberAssignment":{"chat.new_message":[0,1,2,3,4,5]},"groupProtocol":"RoundRobinAssigner","duration":439}
+jwt expired
+
+[0mGET /chatting/api/unread-count [33m401[0m 44.423 ms - 56[0m
+[0mPOST /api/refresh-token [32m201[0m 474.941 ms - 65[0m
+[0mGET /chatting/api/unread-count [32m200[0m 510.790 ms - 17[0m
+[0mGET /api/logged-in-user [32m200[0m 122.234 ms - 187[0m
+[0mGET /chatting/api/unread-count [32m200[0m 83.392 ms - 17[0m
+[0mGET /api/user-notifications?limit=1 [32m200[0m 297.880 ms - 428[0m
+[0mGET /recommendation/api/trending-products [32m200[0m 704.897 ms - 23694[0m
+[0mGET /product/api/top-shops [32m200[0m 730.091 ms - 622[0m
+[0mGET /product/api/get-all-events?page=1&limit=10 [32m200[0m 724.761 ms - 72[0m
+[0mGET /chatting/api/unread-count [32m200[0m 82.261 ms - 17[0m
+[0mGET /product/api/get-all-products?page=1&limit=1&type=latest [32m201[0m 945.647 ms - 19080[0m
+[0mGET /product/api/get-all-products?page=1&limit=10 [32m201[0m 983.004 ms - 42619[0m
+[0mGET /recommendation/api/recommendations/69f9bb6a18bafee696d09f03 [32m200[0m 528.785 ms - 22813[0m
+[0mGET /chatbot/api/conversations/6ac3593f2f9abd654537ee9a?sessionId=b6ccfbc0-eb8c-4fe6-a334-32b7a3e3f7f3 [32m200[0m 533.486 ms - 2036[0m
+[0mPOST /chatbot/api/conversations [32m201[0m 436.840 ms - 1025[0m
+[0mPOST /chatbot/api/chat [32m200[0m 504.930 ms - 974[0m
+[0mGET /chatting/api/unread-count [32m200[0m 81.390 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 78.104 ms - 17[0m
+Gemini API error: 503 {"error":{"message":"gemini-3.8-flash is currently experiencing high demand, spikes in demand are usually temporary. Please try again later.","code":"service_unavailable"}}
+
+[0mPOST /chatbot/api/chat [32m200[0m 5762.851 ms - 288[0m
+[0mGET /chatting/api/unread-count [32m200[0m 78.019 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 77.632 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 80.357 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 80.237 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 80.112 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 77.838 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 124.734 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 81.027 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 81.640 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 79.343 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 83.852 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 87.213 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 178.483 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 79.112 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 75.985 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 77.269 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 80.576 ms - 17[0m
+[0mGET /api/user-notifications?limit=1 [32m200[0m 195.182 ms - 428[0m
+[0mPOST /chatbot/api/conversations [32m201[0m 431.681 ms - 1025[0m
+[0mGET /chatting/api/unread-count [32m200[0m 92.962 ms - 17[0m
+[0mPOST /chatbot/api/chat [32m200[0m 6961.261 ms - 817[0m
+[0mGET /chatting/api/unread-count [32m200[0m 77.706 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 77.825 ms - 17[0m
+[0mGET /api/user-notifications?limit=1 [32m200[0m 83.725 ms - 428[0m
+[0mGET /chatting/api/unread-count [32m200[0m 79.609 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 79.652 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 77.973 ms - 17[0m
+[0mGET /api/user-notifications?limit=1 [32m200[0m 80.527 ms - 428[0m
+[0mGET /chatting/api/unread-count [32m200[0m 79.987 ms - 17[0m
+[0mPOST /chatbot/api/chat [32m200[0m 490.397 ms - 619[0m
+[0mGET /chatting/api/unread-count [32m200[0m 81.514 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 80.459 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 78.784 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 77.681 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 79.330 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 94.268 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 76.881 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 89.665 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 83.933 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 81.836 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 80.805 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 82.707 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 84.107 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 82.039 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 82.226 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 87.927 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 114.305 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 83.946 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 81.900 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 84.791 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 79.661 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 81.248 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 85.463 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 76.468 ms - 17[0m
+[0mPOST /chatbot/api/conversations [32m201[0m 425.210 ms - 1025[0m
+[0mPOST /chatbot/api/chat [32m200[0m 501.510 ms - 613[0m
+[0mGET /chatting/api/unread-count [32m200[0m 79.492 ms - 17[0m
+[0mGET /product/api/get-all-events?page=1&limit=10 [32m200[0m 52.586 ms - 72[0m
+[0mGET /api/logged-in-user [32m200[0m 124.282 ms - 187[0m
+[0mGET /product/api/get-all-products?page=1&limit=1&type=latest [32m201[0m 215.131 ms - 19080[0m
+[0mGET /product/api/top-shops [32m200[0m 212.904 ms - 622[0m
+[0mGET /product/api/get-all-products?page=1&limit=10 [32m201[0m 264.081 ms - 42619[0m
+[0mGET /chatbot/api/conversations/6ac35dac1b0218eb95660579?sessionId=b6ccfbc0-eb8c-4fe6-a334-32b7a3e3f7f3 [32m200[0m 122.003 ms - 2077[0m
+[0mGET /recommendation/api/trending-products [32m200[0m 322.130 ms - 23694[0m
+[0mGET /chatting/api/unread-count [32m200[0m 84.538 ms - 17[0m
+[0mGET /api/user-notifications?limit=1 [32m200[0m 87.916 ms - 428[0m
+[0mGET /recommendation/api/recommendations/69f9bb6a18bafee696d09f03 [32m200[0m 357.071 ms - 22813[0m
+[0mGET /chatting/api/unread-count [32m200[0m 399.325 ms - 17[0m
+[0mPOST /chatbot/api/conversations [32m201[0m 477.923 ms - 1025[0m
+[0mGET /chatting/api/unread-count [32m200[0m 78.543 ms - 17[0m
+jwt expired
+
+[0mGET /chatting/api/unread-count [33m401[0m 6.137 ms - 56[0m
+[0mPOST /api/refresh-token [32m201[0m 45.289 ms - 65[0m
+[0mGET /chatting/api/unread-count [32m200[0m 78.313 ms - 17[0m
+Gemini API error: 503 {"error":{"message":"gemini-3.8-flash is currently experiencing high demand, spikes in demand are usually temporary. Please try again later.","code":"service_unavailable"}}
+
+[0mPOST /chatbot/api/chat [32m200[0m 19173.769 ms - 288[0m
+[0mGET /chatting/api/unread-count [32m200[0m 82.480 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 80.803 ms - 17[0m
+[0mGET /order/get-user-orders [32m200[0m 666.511 ms - 2355[0m
+[0mGET /chatting/api/unread-count [32m200[0m 81.204 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 77.671 ms - 17[0m
+[0mGET /api/user-notifications?limit=1 [32m200[0m 82.553 ms - 428[0m
+[0mGET /api/followed-shops [32m200[0m 127.985 ms - 12[0m
+[0mGET /chatting/api/unread-count [32m200[0m 77.811 ms - 17[0m
+[0mGET /product/api/get-filtered-shops?page=1&limit=12 [32m200[0m 168.419 ms - 86909[0m
+[0mGET /product/api/get-filtered-shops?page=1&limit=12 [32m200[0m 169.966 ms - 86909[0m
+[0mGET /product/api/get-shop/69f809b0fc74dc3daa3b2b8c [32m200[0m 325.303 ms - 46552[0m
+[0mGET /product/api/get-all-events?page=1&limit=20&shopId=69f809b0fc74dc3daa3b2b8c [32m200[0m 48.449 ms - 72[0m
+[0mGET /chatting/api/unread-count [32m200[0m 88.379 ms - 17[0m
+[0mPOST /api/follow-shop/69f809b0fc74dc3daa3b2b8c [32m200[0m 177.444 ms - 16[0m
+[0mGET /api/followed-shops [32m200[0m 127.767 ms - 12[0m
+[0mPOST /api/follow-shop/69f809b0fc74dc3daa3b2b8c [32m200[0m 157.408 ms - 16[0m
+[0mGET /api/followed-shops [32m200[0m 122.998 ms - 12[0m
+[0mPOST /api/follow-shop/69f809b0fc74dc3daa3b2b8c [32m200[0m 159.916 ms - 16[0m
+[0mGET /api/followed-shops [32m200[0m 117.317 ms - 12[0m
+[0mPOST /api/follow-shop/69f809b0fc74dc3daa3b2b8c [32m200[0m 159.709 ms - 16[0m
+[0mGET /api/followed-shops [32m200[0m 124.921 ms - 12[0m
+[0mPOST /api/follow-shop/69f809b0fc74dc3daa3b2b8c [32m200[0m 158.610 ms - 16[0m
+[0mGET /api/followed-shops [32m200[0m 128.629 ms - 12[0m
+[0mPOST /api/follow-shop/69f809b0fc74dc3daa3b2b8c [32m200[0m 159.178 ms - 16[0m
+[0mGET /api/followed-shops [32m200[0m 122.401 ms - 12[0m
+[0mGET /chatting/api/unread-count [32m200[0m 78.363 ms - 17[0m
+[0mPOST /api/follow-shop/69f809b0fc74dc3daa3b2b8c [32m200[0m 162.591 ms - 16[0m
+[0mGET /api/followed-shops [32m200[0m 117.831 ms - 12[0m
+[0mGET /api/user-notifications?limit=1 [32m200[0m 78.003 ms - 428[0m
+[0mGET /chatting/api/unread-count [32m200[0m 88.156 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 77.882 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 83.291 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 81.584 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 79.218 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 85.937 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 80.852 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 84.044 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 77.898 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 80.839 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 82.024 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 85.212 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 91.869 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 158.117 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 80.519 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 81.021 ms - 17[0m
+[0mGET /api/user-notifications?limit=1 [32m200[0m 85.217 ms - 428[0m
+[0mGET /chatting/api/unread-count [32m200[0m 84.134 ms - 17[0m
+[0mPOST /chatbot/api/chat [32m200[0m 508.201 ms - 974[0m
+[0mPOST /chatbot/api/chat [32m200[0m 503.413 ms - 613[0m
+[0mGET /chatting/api/unread-count [32m200[0m 83.719 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 75.192 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 75.204 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 95.926 ms - 17[0m
+[0mGET /product/api/get-categories [32m200[0m 90.249 ms - 391[0m
+[0mGET /product/api/get-filtered-products?priceRange=0%2C1199&page=1&limit=12 [32m200[0m 1160.640 ms - 28974[0m
+[0mGET /product/api/get-filtered-products?priceRange=0%2C1199&page=1&limit=12 [32m200[0m 1189.008 ms - 28974[0m
+[0mGET /api/logged-in-user [32m200[0m 116.379 ms - 187[0m
+[0mGET /chatting/api/unread-count [32m200[0m 83.340 ms - 17[0m
+[0mGET /chatting/api/unread-count [32m200[0m 79.305 ms - 17[0m

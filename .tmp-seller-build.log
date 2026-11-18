@@ -1,0 +1,47 @@
+   ▲ Next.js 15.2.9
+   - Environments: .env
+
+   Creating an optimized production build ...
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+ ⚠ TypeScript project references are not fully supported. Attempting to build in incremental mode.
+   Collecting page data ...
+   Generating static pages (0/18) ...
+   Generating static pages (4/18) 
+   Generating static pages (8/18) 
+   Generating static pages (13/18) 
+ ✓ Generating static pages (18/18)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                      145 B         102 kB
+├ ○ /_not-found                            976 B         102 kB
+├ ƒ /api/hello                             145 B         102 kB
+├ ○ /dashboard                           5.55 kB         145 kB
+├ ○ /dashboard/all-products              5.12 kB         158 kB
+├ ○ /dashboard/create-product            8.93 kB         162 kB
+├ ○ /dashboard/discount-codes            4.67 kB         155 kB
+├ ƒ /dashboard/edit-product/[id]         3.93 kB         138 kB
+├ ○ /dashboard/inbox                     7.09 kB         143 kB
+├ ○ /dashboard/inventory                 1.62 kB         135 kB
+├ ○ /dashboard/notification              4.29 kB         138 kB
+├ ○ /dashboard/orders                    1.83 kB         149 kB
+├ ƒ /dashboard/orders/[id]               5.14 kB         139 kB
+├ ○ /dashboard/reports                   2.15 kB         133 kB
+├ ○ /dashboard/shop-settings             3.74 kB         134 kB
+├ ○ /login                               3.67 kB         149 kB
+├ ○ /signup                              7.13 kB         153 kB
+└ ○ /success                               145 B         102 kB
++ First Load JS shared by all             102 kB
+  ├ chunks/315-640c9ffd1ea90891.js       45.7 kB
+  ├ chunks/87c73c54-3e06db75395d38e2.js  53.3 kB
+  └ other shared chunks (total)          2.54 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

@@ -1,0 +1,41 @@
+apps/recommendation-service/src/controllers/recommendation.controller.ts(2,34): error TS6059: File 'D:/Eshop/packages/utils/api.ts' is not under 'rootDir' 'D:/Eshop/apps/recommendation-service/src'. 'rootDir' is expected to contain all source files.
+  File is CommonJS module because 'D:/Eshop/package.json' does not have field "type"
+apps/recommendation-service/src/controllers/recommendation.controller.ts(2,34): error TS6307: File 'D:/Eshop/packages/utils/api.ts' is not listed within the file list of project 'D:/Eshop/apps/recommendation-service/tsconfig.app.json'. Projects must list all files or use an 'include' pattern.
+  File is CommonJS module because 'D:/Eshop/package.json' does not have field "type"
+apps/recommendation-service/src/controllers/recommendation.controller.ts(29,22): error TS2339: Property 'user' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+apps/recommendation-service/src/main.ts(9,29): error TS6059: File 'D:/Eshop/packages/middleware/isAuthenticated.ts' is not under 'rootDir' 'D:/Eshop/apps/recommendation-service/src'. 'rootDir' is expected to contain all source files.
+  File is CommonJS module because 'D:/Eshop/package.json' does not have field "type"
+apps/recommendation-service/src/main.ts(9,29): error TS6307: File 'D:/Eshop/packages/middleware/isAuthenticated.ts' is not listed within the file list of project 'D:/Eshop/apps/recommendation-service/tsconfig.app.json'. Projects must list all files or use an 'include' pattern.
+  File is CommonJS module because 'D:/Eshop/package.json' does not have field "type"
+apps/recommendation-service/src/main.ts(10,24): error TS6059: File 'D:/Eshop/packages/middleware/authorizeRoles.ts' is not under 'rootDir' 'D:/Eshop/apps/recommendation-service/src'. 'rootDir' is expected to contain all source files.
+  File is CommonJS module because 'D:/Eshop/package.json' does not have field "type"
+apps/recommendation-service/src/main.ts(10,24): error TS6307: File 'D:/Eshop/packages/middleware/authorizeRoles.ts' is not listed within the file list of project 'D:/Eshop/apps/recommendation-service/tsconfig.app.json'. Projects must list all files or use an 'include' pattern.
+  File is CommonJS module because 'D:/Eshop/package.json' does not have field "type"
+apps/recommendation-service/src/main.ts(11,33): error TS6059: File 'D:/Eshop/packages/error-handler/error-middleware.ts' is not under 'rootDir' 'D:/Eshop/apps/recommendation-service/src'. 'rootDir' is expected to contain all source files.
+  File is CommonJS module because 'D:/Eshop/package.json' does not have field "type"
+apps/recommendation-service/src/main.ts(11,33): error TS6307: File 'D:/Eshop/packages/error-handler/error-middleware.ts' is not listed within the file list of project 'D:/Eshop/apps/recommendation-service/tsconfig.app.json'. Projects must list all files or use an 'include' pattern.
+  File is CommonJS module because 'D:/Eshop/package.json' does not have field "type"
+packages/middleware/authorizeRoles.ts(1,27): error TS6059: File 'D:/Eshop/packages/error-handler/index.ts' is not under 'rootDir' 'D:/Eshop/apps/recommendation-service/src'. 'rootDir' is expected to contain all source files.
+  The file is in the program because:
+    Imported via "@packages/error-handler" from file 'D:/Eshop/packages/middleware/authorizeRoles.ts'
+    Imported via "." from file 'D:/Eshop/packages/error-handler/error-middleware.ts'
+    Imported via '@packages/error-handler' from file 'D:/Eshop/packages/utils/api.ts'
+    Imported via '@packages/error-handler' from file 'D:/Eshop/apps/recommendation-service/src/controllers/recommendation.controller.ts'
+  File is CommonJS module because 'D:/Eshop/package.json' does not have field "type"
+packages/middleware/authorizeRoles.ts(1,27): error TS6307: File 'D:/Eshop/packages/error-handler/index.ts' is not listed within the file list of project 'D:/Eshop/apps/recommendation-service/tsconfig.app.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via "@packages/error-handler" from file 'D:/Eshop/packages/middleware/authorizeRoles.ts'
+    Imported via "." from file 'D:/Eshop/packages/error-handler/error-middleware.ts'
+    Imported via '@packages/error-handler' from file 'D:/Eshop/packages/utils/api.ts'
+    Imported via '@packages/error-handler' from file 'D:/Eshop/apps/recommendation-service/src/controllers/recommendation.controller.ts'
+  File is CommonJS module because 'D:/Eshop/package.json' does not have field "type"
+packages/middleware/isAuthenticated.ts(1,20): error TS6059: File 'D:/Eshop/packages/libs/prisma/index.ts' is not under 'rootDir' 'D:/Eshop/apps/recommendation-service/src'. 'rootDir' is expected to contain all source files.
+  The file is in the program because:
+    Imported via "@packages/libs/prisma" from file 'D:/Eshop/packages/middleware/isAuthenticated.ts'
+    Imported via '@packages/libs/prisma' from file 'D:/Eshop/apps/recommendation-service/src/controllers/recommendation.controller.ts'
+  File is CommonJS module because 'D:/Eshop/package.json' does not have field "type"
+packages/middleware/isAuthenticated.ts(1,20): error TS6307: File 'D:/Eshop/packages/libs/prisma/index.ts' is not listed within the file list of project 'D:/Eshop/apps/recommendation-service/tsconfig.app.json'. Projects must list all files or use an 'include' pattern.
+  The file is in the program because:
+    Imported via "@packages/libs/prisma" from file 'D:/Eshop/packages/middleware/isAuthenticated.ts'
+    Imported via '@packages/libs/prisma' from file 'D:/Eshop/apps/recommendation-service/src/controllers/recommendation.controller.ts'
+  File is CommonJS module because 'D:/Eshop/package.json' does not have field "type"

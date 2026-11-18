@@ -1,0 +1,20 @@
+Checking for new versions...
+
+A newer version of the Stripe CLI is available, please update to: v1.55.6
+Getting ready...
+Stripe test listener ready; signing secret saved to ignored .env. Restart order-service to load it.
+Ready! You are using Stripe API Version [2025-02-24.acacia]. Your webhook signing secret is [REDACTED] (^C to quit)
+time="Tue, 03 Nov 2026 18:08:25 +07" level=error msg="Error when writing ping message: websocket: close sent" prefix=websocket.Client.writePump
+time="Tue, 03 Nov 2026 18:16:36 +07" level=error msg="Error when writing ping message: websocket: close sent" prefix=websocket.Client.writePump
+time="Tue, 03 Nov 2026 18:20:42 +07" level=error msg="Error when writing ping message: websocket: close sent" prefix=websocket.Client.writePump
+2026-11-03 18:29:37   --> payment_intent.succeeded [evt_3UXftFP6LWr4S4eU1pdRMTN5]
+2026-11-03 18:29:43  <--  [200] POST http://localhost:8080/api/create-order [evt_3UXftFP6LWr4S4eU1pdRMTN5]
+time="Tue, 03 Nov 2026 18:53:27 +07" level=error msg="Error when writing ping message: websocket: close sent" prefix=websocket.Client.writePump
+time="Tue, 03 Nov 2026 19:09:49 +07" level=error msg="Error when writing ping message: websocket: close sent" prefix=websocket.Client.writePump
+time="Tue, 03 Nov 2026 19:13:55 +07" level=error msg="Error when writing ping message: websocket: close sent" prefix=websocket.Client.writePump
+time="Tue, 03 Nov 2026 19:30:17 +07" level=error msg="Error when writing ping message: websocket: close sent" prefix=websocket.Client.writePump
+time="Tue, 03 Nov 2026 20:31:41 +07" level=error msg="Error when writing ping message: websocket: close sent" prefix=websocket.Client.writePump
+time="Tue, 03 Nov 2026 20:52:09 +07" level=error msg="Error when writing ping message: websocket: close sent" prefix=websocket.Client.writePump
+time="Tue, 03 Nov 2026 21:16:43 +07" level=error msg="Error when writing ping message: websocket: close sent" prefix=websocket.Client.writePump
+time="Tue, 03 Nov 2026 21:28:59 +07" level=error msg="Error when writing ping message: websocket: close sent" prefix=websocket.Client.writePump
+time="Tue, 03 Nov 2026 21:49:27 +07" level=error msg="Error when writing ping message: websocket: close sent" prefix=websocket.Client.writePump

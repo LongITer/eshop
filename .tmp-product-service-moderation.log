@@ -1,0 +1,28 @@
+Product service is listening at http://localhost:6002/
+Swagger json available at http://localhost:6002/docs-json
+Swagger docs available at http://localhost:6002/api-docs
+[logging] sent info event from product-service
+Error in product cleanup cron job: PrismaClientKnownRequestError: 
+Invalid `prisma_default.products.deleteMany()` invocation in
+D:\Eshop\.build\product-service\main.js:2395:35
+
+  2392 import_node_cron.default.schedule("0 * * * *", async () => {
+  2393   try {
+  2394     const now = /* @__PURE__ */ new Date();
+→ 2395     await prisma_default.products.deleteMany(
+The change you are trying to make would violate the required relation 'orderItemsToproducts' between the `orderItems` and `products` models.
+    at $n.handleRequestError (D:\Eshop\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (D:\Eshop\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\Eshop\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (D:\Eshop\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async D:\Eshop\.build\product-service\main.js:2395:5
+    at async Timeout._onTimeout (D:\Eshop\node_modules\node-cron\dist\cjs\scheduler\runner.js:70:44) {
+  code: 'P2014',
+  clientVersion: '5.22.0',
+  meta: {
+    modelName: 'products',
+    relation_name: 'orderItemsToproducts',
+    model_a_name: 'orderItems',
+    model_b_name: 'products'
+  }
+}

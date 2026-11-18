@@ -1,0 +1,54 @@
+   ▲ Next.js 15.2.9
+   - Environments: .env
+
+   Creating an optimized production build ...
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+ ⚠ TypeScript project references are not fully supported. Attempting to build in incremental mode.
+   Collecting page data ...
+{"level":"WARN","timestamp":"2026-10-04T14:29:37.573Z","logger":"kafkajs","message":"KafkaJS v2.0.0 switched default partitioner. To retain the same partitioning behavior as in previous versions, create the producer with the option \"createPartitioner: Partitioners.LegacyPartitioner\". See the migration guide at https://kafka.js.org/docs/migration-guide-v2.0.0#producer-new-default-partitioner for details. Silence this warning by setting the environment variable \"KAFKAJS_NO_PARTITIONER_WARNING=1\""}
+   Generating static pages (0/21) ...
+   Generating static pages (5/21) 
+   Generating static pages (10/21) 
+   Generating static pages (15/21) 
+{"level":"WARN","timestamp":"2026-10-04T14:29:46.888Z","logger":"kafkajs","message":"KafkaJS v2.0.0 switched default partitioner. To retain the same partitioning behavior as in previous versions, create the producer with the option \"createPartitioner: Partitioners.LegacyPartitioner\". See the migration guide at https://kafka.js.org/docs/migration-guide-v2.0.0#producer-new-default-partitioner for details. Silence this warning by setting the environment variable \"KAFKAJS_NO_PARTITIONER_WARNING=1\""}
+ ✓ Generating static pages (21/21)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                    6.22 kB         163 kB
+├ ○ /_not-found                            978 B         102 kB
+├ ƒ /api/hello                             159 B         101 kB
+├ ƒ /api/track-event                       159 B         101 kB
+├ ○ /cart                                4.74 kB         162 kB
+├ ○ /checkout                            8.69 kB         130 kB
+├ ○ /forgot-password                     2.07 kB         147 kB
+├ ○ /inbox                                7.3 kB         143 kB
+├ ○ /login                               2.33 kB         147 kB
+├ ○ /notifications                        3.1 kB         136 kB
+├ ○ /offers                              2.14 kB         168 kB
+├ ƒ /order/[orderId]                     6.96 kB         145 kB
+├ ○ /payment-success                     7.85 kB         109 kB
+├ ƒ /product/[slug]                      11.9 kB         169 kB
+├ ○ /products                            2.29 kB         169 kB
+├ ○ /profile                             10.8 kB         161 kB
+├ ○ /profile/following                   6.02 kB         139 kB
+├ ○ /robots.txt                            159 B         101 kB
+├ ○ /shop                                4.87 kB         135 kB
+├ ƒ /shop/[id]                           12.2 kB         169 kB
+├ ○ /signup                               2.9 kB         148 kB
+├ ƒ /sitemap.xml                           159 B         101 kB
+└ ○ /wishlist                            2.62 kB         154 kB
++ First Load JS shared by all             101 kB
+  ├ chunks/8315-6528fe3f39f7e01a.js      45.7 kB
+  ├ chunks/87c73c54-3f2e23929f75771a.js  53.3 kB
+  └ other shared chunks (total)             2 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

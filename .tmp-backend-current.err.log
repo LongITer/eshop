@@ -1,0 +1,35 @@
+{"level":"ERROR","timestamp":"2026-11-15T13:14:19.558Z","logger":"kafkajs","message":"[Connection] Connection error: connect EACCES 35.240.228.123:9092","broker":"pkc-ldvr1.asia-southeast1.gcp.confluent.cloud:9092","clientId":"kafka-service","stack":"Error: connect EACCES 35.240.228.123:9092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1638:16)"}
+{"level":"ERROR","timestamp":"2026-11-15T13:14:19.561Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection error: connect EACCES 35.240.228.123:9092","retryCount":0,"retryTime":262}
+{"level":"ERROR","timestamp":"2026-11-15T13:14:19.827Z","logger":"kafkajs","message":"[Connection] Connection error: connect EACCES 35.240.228.123:9092","broker":"pkc-ldvr1.asia-southeast1.gcp.confluent.cloud:9092","clientId":"kafka-service","stack":"Error: connect EACCES 35.240.228.123:9092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1638:16)"}
+{"level":"ERROR","timestamp":"2026-11-15T13:14:19.827Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection error: connect EACCES 35.240.228.123:9092","retryCount":1,"retryTime":560}
+{"level":"ERROR","timestamp":"2026-11-15T13:14:20.401Z","logger":"kafkajs","message":"[Connection] Connection error: connect EACCES 35.240.228.123:9092","broker":"pkc-ldvr1.asia-southeast1.gcp.confluent.cloud:9092","clientId":"kafka-service","stack":"Error: connect EACCES 35.240.228.123:9092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1638:16)"}
+{"level":"ERROR","timestamp":"2026-11-15T13:14:20.402Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection error: connect EACCES 35.240.228.123:9092","retryCount":2,"retryTime":1154}
+{"level":"ERROR","timestamp":"2026-11-15T13:14:21.562Z","logger":"kafkajs","message":"[Connection] Connection error: connect EACCES 35.240.228.123:9092","broker":"pkc-ldvr1.asia-southeast1.gcp.confluent.cloud:9092","clientId":"kafka-service","stack":"Error: connect EACCES 35.240.228.123:9092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1638:16)"}
+{"level":"ERROR","timestamp":"2026-11-15T13:14:21.563Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection error: connect EACCES 35.240.228.123:9092","retryCount":3,"retryTime":2520}
+{"level":"ERROR","timestamp":"2026-11-15T13:14:24.085Z","logger":"kafkajs","message":"[Connection] Connection error: connect EACCES 35.240.228.123:9092","broker":"pkc-ldvr1.asia-southeast1.gcp.confluent.cloud:9092","clientId":"kafka-service","stack":"Error: connect EACCES 35.240.228.123:9092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1638:16)"}
+{"level":"ERROR","timestamp":"2026-11-15T13:14:24.085Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection error: connect EACCES 35.240.228.123:9092","retryCount":4,"retryTime":4126}
+{"level":"ERROR","timestamp":"2026-11-15T13:14:28.221Z","logger":"kafkajs","message":"[Connection] Connection error: connect EACCES 35.240.228.123:9092","broker":"pkc-ldvr1.asia-southeast1.gcp.confluent.cloud:9092","clientId":"kafka-service","stack":"Error: connect EACCES 35.240.228.123:9092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1638:16)"}
+{"level":"ERROR","timestamp":"2026-11-15T13:14:28.221Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection error: connect EACCES 35.240.228.123:9092","retryCount":5,"retryTime":9682}
+KafkaJSNonRetriableError
+  Caused by: KafkaJSConnectionError: Connection error: connect EACCES 35.240.228.123:9092
+    at TLSSocket.onError (D:\Eshop\node_modules\kafkajs\src\network\connection.js:210:23)
+    ... 3 lines matching cause stack trace ...
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21) {
+  name: 'KafkaJSNumberOfRetriesExceeded',
+  retriable: false,
+  helpUrl: undefined,
+  retryCount: 5,
+  retryTime: 9682,
+  [cause]: KafkaJSConnectionError: Connection error: connect EACCES 35.240.228.123:9092
+      at TLSSocket.onError (D:\Eshop\node_modules\kafkajs\src\network\connection.js:210:23)
+      at TLSSocket.emit (node:events:519:28)
+      at emitErrorNT (node:internal/streams/destroy:170:8)
+      at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+      at process.processTicksAndRejections (node:internal/process/task_queues:89:21) {
+    retriable: true,
+    helpUrl: undefined,
+    broker: 'pkc-ldvr1.asia-southeast1.gcp.confluent.cloud:9092',
+    code: 'EACCES',
+    [cause]: undefined
+  }
+}

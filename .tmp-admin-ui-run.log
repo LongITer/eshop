@@ -1,0 +1,42 @@
+
+> @./source@0.0.0 admin-ui
+> next dev apps/admin-ui --port 3001
+
+   ▲ Next.js 15.2.9
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.1.9:3001
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 2.4s
+ ○ Compiling / ...
+ ✓ Compiled / in 1760ms (963 modules)
+ GET / 200 in 3505ms
+ GET / 200 in 57ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 3.5s (1118 modules)
+ GET /dashboard 200 in 4000ms
+ GET /dashboard 200 in 40ms
+ ○ Compiling /dashboard/violations ...
+ ✓ Compiled /dashboard/violations in 1299ms (1125 modules)
+ GET /dashboard/violations 200 in 1681ms
+ GET /dashboard/violations 200 in 83ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1040ms (1115 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 1228ms
+ GET /dashboard/violations 200 in 193ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 54ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 71ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 77ms
+ GET / 200 in 28ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 52ms
+ GET /dashboard 200 in 36ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 57ms
+ GET /dashboard/violations 200 in 30ms
+ GET /dashboard/violations 200 in 63ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 61ms
+ GET /dashboard/violations 200 in 77ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 66ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 70ms
+ GET /dashboard/violations 200 in 99ms
+ GET /dashboard/violations 200 in 99ms

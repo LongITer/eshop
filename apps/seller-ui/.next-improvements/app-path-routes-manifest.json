@@ -1,0 +1,21 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/hello/route": "/api/hello",
+  "/login/page": "/login",
+  "/page": "/",
+  "/signup/page": "/signup",
+  "/success/page": "/success",
+  "/dashboard/all-products/page": "/dashboard/all-products",
+  "/dashboard/create-product/page": "/dashboard/create-product",
+  "/dashboard/discount-codes/page": "/dashboard/discount-codes",
+  "/dashboard/edit-product/[id]/page": "/dashboard/edit-product/[id]",
+  "/dashboard/inventory/page": "/dashboard/inventory",
+  "/dashboard/notification/page": "/dashboard/notification",
+  "/dashboard/orders/[id]/page": "/dashboard/orders/[id]",
+  "/dashboard/orders/page": "/dashboard/orders",
+  "/dashboard/page": "/dashboard",
+  "/dashboard/payment/page": "/dashboard/payment",
+  "/dashboard/reports/page": "/dashboard/reports",
+  "/dashboard/shop-settings/page": "/dashboard/shop-settings",
+  "/dashboard/inbox/page": "/dashboard/inbox"
+}

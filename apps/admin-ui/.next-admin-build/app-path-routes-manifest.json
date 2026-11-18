@@ -1,0 +1,23 @@
+{
+  "/api/hello/route": "/api/hello",
+  "/_not-found/page": "/_not-found",
+  "/order/[id]/page": "/order/[id]",
+  "/login/page": "/login",
+  "/page": "/",
+  "/dashboard/audit/page": "/dashboard/audit",
+  "/dashboard/customization/page": "/dashboard/customization",
+  "/dashboard/loggers/page": "/dashboard/loggers",
+  "/dashboard/management/page": "/dashboard/management",
+  "/dashboard/events/page": "/dashboard/events",
+  "/dashboard/notification-jobs/page": "/dashboard/notification-jobs",
+  "/dashboard/orders/page": "/dashboard/orders",
+  "/dashboard/payments/page": "/dashboard/payments",
+  "/dashboard/products/page": "/dashboard/products",
+  "/dashboard/page": "/dashboard",
+  "/dashboard/notifications/page": "/dashboard/notifications",
+  "/dashboard/log-settings/page": "/dashboard/log-settings",
+  "/dashboard/returns/page": "/dashboard/returns",
+  "/dashboard/users/page": "/dashboard/users",
+  "/dashboard/sellers/page": "/dashboard/sellers",
+  "/dashboard/templates/page": "/dashboard/templates"
+}

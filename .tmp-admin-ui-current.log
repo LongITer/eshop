@@ -1,0 +1,65 @@
+
+> @./source@0.0.0 admin-ui
+> next dev apps/admin-ui --port 3001
+
+   ▲ Next.js 15.2.9
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.1.9:3001
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 2s
+ ○ Compiling /dashboard/statistics ...
+ ✓ Compiled /dashboard/statistics in 1695ms (1090 modules)
+ GET /dashboard/statistics 200 in 3693ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 942ms (1008 modules)
+ GET /login 200 in 2432ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 553ms (1118 modules)
+ GET /dashboard 200 in 2081ms
+ ✓ Compiled /dashboard/violations in 381ms (1125 modules)
+ GET /dashboard/violations 200 in 477ms
+ ✓ Compiled in 2.5s (1139 modules)
+ GET /dashboard/violations 200 in 93ms
+ GET /dashboard/violations 200 in 145ms
+ ✓ Compiled in 1358ms (1139 modules)
+ GET /dashboard/violations 200 in 94ms
+ ✓ Compiled in 931ms (1139 modules)
+ GET /dashboard/violations 200 in 80ms
+ ✓ Compiled in 1025ms (1139 modules)
+ GET /dashboard/violations 200 in 90ms
+ ○ Compiling /_error ...
+ GET /dashboard/violations 500 in 4392ms
+ GET /dashboard/violations 500 in 13ms
+ GET /dashboard/violations 500 in 12ms
+ GET /dashboard/violations 500 in 18ms
+ GET /_next/static/webpack/5043ef8cf2bf938e.webpack.hot-update.json 500 in 1363ms
+ GET /dashboard/violations 500 in 12ms
+ GET /_next/static/webpack/5043ef8cf2bf938e.webpack.hot-update.json 500 in 837ms
+ GET /dashboard/violations 500 in 23ms
+ GET /_next/static/webpack/5043ef8cf2bf938e.webpack.hot-update.json 500 in 823ms
+ GET /dashboard/violations 500 in 14ms
+ GET /dashboard/violations 500 in 20ms
+ GET /dashboard/violations 500 in 14ms
+ GET /dashboard/violations 500 in 10ms
+ GET /_next/static/webpack/5043ef8cf2bf938e.webpack.hot-update.json 500 in 953ms
+ GET /dashboard/violations 500 in 21ms
+ GET /dashboard/violations 500 in 8ms
+ GET /dashboard/violations 500 in 21ms
+ GET /_next/static/webpack/5043ef8cf2bf938e.webpack.hot-update.json 500 in 1158ms
+ GET /dashboard/violations 500 in 21ms
+ GET /dashboard/violations 500 in 13ms
+ GET /_next/static/webpack/5043ef8cf2bf938e.webpack.hot-update.json 500 in 521ms
+ GET /dashboard/violations 500 in 20ms
+ ✓ Compiled /_not-found in 1752ms (1479 modules)
+ ✓ Compiled (1465 modules)
+ GET /_next/static/webpack/5043ef8cf2bf938e.webpack.hot-update.json 404 in 2067ms
+ GET /dashboard/violations 200 in 134ms
+ GET /dashboard/violations 200 in 43ms
+ GET /dashboard/violations 200 in 58ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1395ms (1479 modules)
+ GET / 200 in 1693ms
+ GET / 200 in 43ms
+ GET / 200 in 40ms

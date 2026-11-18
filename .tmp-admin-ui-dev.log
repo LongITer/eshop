@@ -1,0 +1,32 @@
+
+> @./source@0.0.0 admin-ui
+> next dev apps/admin-ui --port 3001
+
+   ▲ Next.js 15.2.9
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.1.10:3001
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 22.5s
+ ○ Compiling / ...
+ ✓ Compiled / in 8.5s (963 modules)
+ GET / 200 in 12240ms
+ GET / 200 in 59ms
+ HEAD / 200 in 258ms
+ HEAD / 200 in 65ms
+ GET / 200 in 377ms
+ GET /?utm_source=zalo&utm_medium=zalo&utm_campaign=zalo 200 in 276ms
+ ⚠ Cross origin request detected from a963-2001-ee1-fc25-8f90-3df6-e996-ae8-9572.ngrok-free.app to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+(node:13148) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ○ Compiling /dashboard ...
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled /dashboard in 18.7s (1118 modules)
+ GET /dashboard 200 in 35489ms
+ GET / 200 in 16575ms
+ GET /dashboard 200 in 588ms
+ GET /dashboard 200 in 52ms

@@ -1,0 +1,11 @@
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+ACCEPTANCE_READY http://localhost:8080 (isolated MongoDB; Stripe/Redis/logging doubles)
+Error POST - /api/seller-refresh-token - Unauthorized! No seller refresh token!
+Error PUT - /api/update-shop/6ac263e60cfd122ff7d8afd2 - Invalid website
+invalid signature
+invalid signature
+Error POST - /api/login-user - Invalid email or password!
+invalid signature
+Error POST - /api/seller-refresh-token - Unauthorized! No seller refresh token!
+Error POST - /api/login-admin - Invalide email or password!

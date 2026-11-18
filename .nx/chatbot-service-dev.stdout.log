@@ -1,0 +1,52 @@
+
+ NX   Running target serve for project chatbot-service and 1 task it depends on:
+
+
+
+> nx run chatbot-service:build
+
+assets by path *.json 109 KiB
+  asset package-lock.json 108 KiB [emitted]
+  asset package.json 1.49 KiB [emitted]
+asset main.js 37.5 KiB [emitted] (name: main)
+asset assets/.gitkeep 2 bytes [emitted] [from: apps/chatbot-service/src/assets/.gitkeep] [copied]
+cacheable modules 35 KiB
+  modules by path ./packages/ 6.59 KiB 5 modules
+  modules by path ./apps/chatbot-service/src/ 28.4 KiB
+    ./apps/chatbot-service/src/main.ts 1.28 KiB [built] [code generated]
+    + 3 modules
+external "tslib" 42 bytes [built] [code generated]
+external "dotenv/config" 42 bytes [built] [code generated]
+external "express" 42 bytes [built] [code generated]
+external "cors" 42 bytes [built] [code generated]
+external "cookie-parser" 42 bytes [built] [code generated]
+external "jsonwebtoken" 42 bytes [built] [code generated]
+external "crypto" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 1214 ms
+
+> nx run chatbot-service:serve:development --runBuildTargetDependencies=false --watch=true
+
+assets by path *.json 109 KiB
+  asset package-lock.json 108 KiB [emitted]
+  asset package.json 1.49 KiB [emitted]
+asset main.js 37.5 KiB [emitted] (name: main) 1 related asset
+asset assets/.gitkeep 2 bytes [emitted] [from: apps/chatbot-service/src/assets/.gitkeep] [copied]
+cacheable modules 35 KiB
+  modules by path ./packages/ 6.59 KiB 5 modules
+  modules by path ./apps/chatbot-service/src/ 28.4 KiB
+    ./apps/chatbot-service/src/main.ts 1.28 KiB [built] [code generated]
+    + 3 modules
+external "tslib" 42 bytes [built] [code generated]
+external "dotenv/config" 42 bytes [built] [code generated]
+external "express" 42 bytes [built] [code generated]
+external "cors" 42 bytes [built] [code generated]
+external "cookie-parser" 42 bytes [built] [code generated]
+external "jsonwebtoken" 42 bytes [built] [code generated]
+external "crypto" 42 bytes [built] [code generated]
+external "@prisma/client" 42 bytes [built] [code generated]
+webpack 5.98.0 compiled successfully in 878 ms
+🤖 Chatbot service is listening at http://localhost:6007/
+   Chat endpoint: POST http://localhost:6007/api/chat
+🤖 Chatbot service is listening at http://localhost:6007/
+   Chat endpoint: POST http://localhost:6007/api/chat

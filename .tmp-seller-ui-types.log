@@ -1,0 +1,19 @@
+apps/seller-ui/src/actions/track-user.ts(2,23): error TS2307: Cannot find module '@packages/utils/kafka' or its corresponding type declarations.
+apps/seller-ui/src/app/dashboard/all-products/page.tsx(7,3): error TS6133: 'getPaginationRowModel' is declared but its value is never read.
+apps/seller-ui/src/app/dashboard/all-products/page.tsx(47,10): error TS6133: 'analyticsData' is declared but its value is never read.
+apps/seller-ui/src/app/dashboard/all-products/page.tsx(47,25): error TS6133: 'setAnalyticsData' is declared but its value is never read.
+apps/seller-ui/src/app/dashboard/all-products/page.tsx(48,10): error TS6133: 'showAnalytics' is declared but its value is never read.
+apps/seller-ui/src/app/dashboard/all-products/page.tsx(48,25): error TS6133: 'setShowAnalytics' is declared but its value is never read.
+apps/seller-ui/src/app/dashboard/create-product/page.tsx(41,21): error TS6133: 'setIsChanged' is declared but its value is never read.
+apps/seller-ui/src/app/dashboard/create-product/page.tsx(673,31): error TS7030: Not all code paths return a value.
+apps/seller-ui/src/app/dashboard/layout.tsx(1,17): error TS6133: 'ReactNode' is declared but its value is never read.
+apps/seller-ui/src/app/dashboard/reports/page.tsx(4,29): error TS2307: Cannot find module '@packages/components/analytics' or its corresponding type declarations.
+apps/seller-ui/src/hooks/useSidebar.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+packages/utils/api.ts(2,33): error TS2307: Cannot find module '@packages/error-handler' or its corresponding type declarations.
+packages/utils/logs/behavior-log.ts(1,20): error TS2307: Cannot find module '@packages/libs/prisma' or its corresponding type declarations.
+packages/utils/logs/behavior-log.ts(2,19): error TS2307: Cannot find module '@packages/libs/redis' or its corresponding type declarations.
+packages/utils/logs/send-logs.ts(1,23): error TS2307: Cannot find module '@packages/utils/kafka' or its corresponding type declarations.
+packages/utils/order-lifecycle.ts(2,20): error TS2307: Cannot find module '@packages/libs/prisma' or its corresponding type declarations.
+packages/utils/order-lifecycle.ts(3,48): error TS2307: Cannot find module '@packages/error-handler' or its corresponding type declarations.
+packages/utils/order-lifecycle.ts(7,36): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+packages/utils/reporting.ts(1,33): error TS2307: Cannot find module '@packages/error-handler' or its corresponding type declarations.

@@ -1,0 +1,160 @@
+(node:15616) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ⨯ ./src/app/dashboard/violations/page.tsx
+Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+    ,-[[36;1;4mD:\Eshop\apps\admin-ui\src\app\dashboard\violations\page.tsx[0m:38:1]
+ [2m35[0m |   const label = (key: string) => vi ? ({ Pending: 'Chờ duyệt', Confirmed: 'Đã xác nhận', Dismissed: 'Không vi phạm', Customer: 'Khách báo cáo', Admin: 'Admin', Moderator: 'Moderator', AI: 'AI', Hide: 'Ẩn sản phẩm', Remove: 'Gỡ khỏi sàn', Warn: 'Cảnh cáo', Suspend: 'Khóa bán hàng', Low: 'Nhẹ', Medium: 'Vừa', High: 'Nặng', Critical: 'Nghiêm trọng' } as Record<string, string>)[key] || key : key;
+ [2m36[0m |   const error = (e: any) => e?.response?.data?.message || t('Không thể xử lý. Thử lại.', 'Could not process this request. Retry.');
+ [2m37[0m |   const Pagination = ({ current, total, onChange }: { current: number; total: number; onChange: (page: number) => void }) => <div className="flex items-center justify-between p-4 text-xs"><button type="button" className="admin-button" disabled={current <= 1} onClick={() => onChange(current - 1)}>←</button><span>{current} / {Math.max(1, Math.ceil(total / 20))}</span><button type="button" className="admin-button" disabled={current * 20 >= total} onClick={() => onChange(current + 1)}>→</button></div>;
+ [2m38[0m |   return <div className="admin-page space-y-6">
+    : [35;1m          ^^^[0m
+ [2m39[0m |     <PageHeading title={t('Vi phạm sản phẩm', 'Product violations')} description={t('Tiếp nhận báo cáo, kiểm tra, xử lý và theo dõi tái phạm. Admin không được xem đơn hàng.', 'Review reports, enforce decisions and track repeat violations. Order records are not accessible to administrators.')} />
+ [2m40[0m |     <Panel title={t('Sản phẩm chờ duyệt', 'Listings awaiting approval')} subtitle={t('Sản phẩm bị AI gắn cờ hoặc có giá bất thường sẽ bị ẩn cho tới khi duyệt.', 'Listings flagged by AI or with unusual prices stay hidden until reviewed.')} action={<button type="button" className="admin-button" onClick={() => pending.refetch()}>{t('Làm mới', 'Refresh')}</button>}>
+ [2m41[0m |       {pending.isLoading && <LoadingState />}
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/dashboard/violations/page.tsx
+ ⨯ ./src/app/dashboard/violations/page.tsx
+Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+    ,-[[36;1;4mD:\Eshop\apps\admin-ui\src\app\dashboard\violations\page.tsx[0m:38:1]
+ [2m35[0m |   const label = (key: string) => vi ? ({ Pending: 'Chờ duyệt', Confirmed: 'Đã xác nhận', Dismissed: 'Không vi phạm', Customer: 'Khách báo cáo', Admin: 'Admin', Moderator: 'Moderator', AI: 'AI', Hide: 'Ẩn sản phẩm', Remove: 'Gỡ khỏi sàn', Warn: 'Cảnh cáo', Suspend: 'Khóa bán hàng', Low: 'Nhẹ', Medium: 'Vừa', High: 'Nặng', Critical: 'Nghiêm trọng' } as Record<string, string>)[key] || key : key;
+ [2m36[0m |   const error = (e: any) => e?.response?.data?.message || t('Không thể xử lý. Thử lại.', 'Could not process this request. Retry.');
+ [2m37[0m |   const Pagination = ({ current, total, onChange }: { current: number; total: number; onChange: (page: number) => void }) => <div className="flex items-center justify-between p-4 text-xs"><button type="button" className="admin-button" disabled={current <= 1} onClick={() => onChange(current - 1)}>←</button><span>{current} / {Math.max(1, Math.ceil(total / 20))}</span><button type="button" className="admin-button" disabled={current * 20 >= total} onClick={() => onChange(current + 1)}>→</button></div>;
+ [2m38[0m |   return <div className="admin-page space-y-6">
+    : [35;1m          ^^^[0m
+ [2m39[0m |     <PageHeading title={t('Vi phạm sản phẩm', 'Product violations')} description={t('Tiếp nhận báo cáo, kiểm tra, xử lý và theo dõi tái phạm. Admin không được xem đơn hàng.', 'Review reports, enforce decisions and track repeat violations. Order records are not accessible to administrators.')} />
+ [2m40[0m |     <Panel title={t('Sản phẩm chờ duyệt', 'Listings awaiting approval')} subtitle={t('Sản phẩm bị AI gắn cờ hoặc có giá bất thường sẽ bị ẩn cho tới khi duyệt.', 'Listings flagged by AI or with unusual prices stay hidden until reviewed.')} action={<button type="button" className="admin-button" onClick={() => pending.refetch()}>{t('Làm mới', 'Refresh')}</button>}>
+ [2m41[0m |       {pending.isLoading && <LoadingState />}
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/dashboard/violations/page.tsx
+ ⨯ ./src/app/dashboard/violations/page.tsx
+Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+    ,-[[36;1;4mD:\Eshop\apps\admin-ui\src\app\dashboard\violations\page.tsx[0m:39:1]
+ [2m36[0m |   const label = (key: string) => vi ? ({ Pending: 'Chờ duyệt', Confirmed: 'Đã xác nhận', Dismissed: 'Không vi phạm', Customer: 'Khách báo cáo', Admin: 'Admin', Moderator: 'Moderator', AI: 'AI', Hide: 'Ẩn sản phẩm', Remove: 'Gỡ khỏi sàn', Warn: 'Cảnh cáo', Suspend: 'Khóa bán hàng', Low: 'Nhẹ', Medium: 'Vừa', High: 'Nặng', Critical: 'Nghiêm trọng' } as Record<string, string>)[key] || key : key;
+ [2m37[0m |   const error = (e: any) => e?.response?.data?.message || t('Không thể xử lý. Thử lại.', 'Could not process this request. Retry.');
+ [2m38[0m |   const Pagination = ({ current, total, onChange }: { current: number; total: number; onChange: (page: number) => void }) => <div className="flex items-center justify-between p-4 text-xs"><button type="button" className="admin-button" disabled={current <= 1} onClick={() => onChange(current - 1)}>←</button><span>{current} / {Math.max(1, Math.ceil(total / 20))}</span><button type="button" className="admin-button" disabled={current * 20 >= total} onClick={() => onChange(current + 1)}>→</button></div>;
+ [2m39[0m |   return <div className="admin-page space-y-6">
+    : [35;1m          ^^^[0m
+ [2m40[0m |     <PageHeading title={t('Vi phạm sản phẩm', 'Product violations')} description={t('Tiếp nhận báo cáo, kiểm tra, xử lý và theo dõi tái phạm. Admin không được xem đơn hàng.', 'Review reports, enforce decisions and track repeat violations. Order records are not accessible to administrators.')} />
+ [2m41[0m |     <Panel title={t('Sản phẩm chờ duyệt', 'Listings awaiting approval')} subtitle={t('Sản phẩm bị AI gắn cờ hoặc có giá bất thường sẽ bị ẩn cho tới khi duyệt.', 'Listings flagged by AI or with unusual prices stay hidden until reviewed.')} action={<button type="button" className="admin-button" onClick={() => pending.refetch()}>{t('Làm mới', 'Refresh')}</button>}>
+ [2m42[0m |       {pending.isLoading && <LoadingState />}
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/dashboard/violations/page.tsx
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ ./src/app/dashboard/violations/page.tsx
+Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+    ,-[[36;1;4mD:\Eshop\apps\admin-ui\src\app\dashboard\violations\page.tsx[0m:40:1]
+ [2m37[0m |   const label = (key: string) => vi ? ({ Pending: 'Chờ duyệt', Confirmed: 'Đã xác nhận', Dismissed: 'Không vi phạm', Customer: 'Khách báo cáo', Admin: 'Admin', Moderator: 'Moderator', AI: 'AI', Hide: 'Ẩn sản phẩm', Remove: 'Gỡ khỏi sàn', Warn: 'Cảnh cáo', Suspend: 'Khóa bán hàng', Low: 'Nhẹ', Medium: 'Vừa', High: 'Nặng', Critical: 'Nghiêm trọng' } as Record<string, string>)[key] || key : key;
+ [2m38[0m |   const error = (e: any) => e?.response?.data?.message || t('Không thể xử lý. Thử lại.', 'Could not process this request. Retry.');
+ [2m39[0m |   const Pagination = ({ current, total, onChange }: { current: number; total: number; onChange: (page: number) => void }) => <div className="flex items-center justify-between p-4 text-xs"><button type="button" className="admin-button" disabled={current <= 1} onClick={() => onChange(current - 1)}>←</button><span>{current} / {Math.max(1, Math.ceil(total / 20))}</span><button type="button" className="admin-button" disabled={current * 20 >= total} onClick={() => onChange(current + 1)}>→</button></div>;
+ [2m40[0m |   return <div className="admin-page space-y-6">
+    : [35;1m          ^^^[0m
+ [2m41[0m |     <PageHeading title={t('Vi phạm sản phẩm', 'Product violations')} description={t('Tiếp nhận báo cáo, kiểm tra, xử lý và theo dõi tái phạm. Admin không được xem đơn hàng.', 'Review reports, enforce decisions and track repeat violations. Order records are not accessible to administrators.')} />
+ [2m42[0m |     <Panel title={t('Sản phẩm chờ duyệt', 'Listings awaiting approval')} subtitle={t('Sản phẩm bị AI gắn cờ hoặc có giá bất thường sẽ bị ẩn cho tới khi duyệt.', 'Listings flagged by AI or with unusual prices stay hidden until reviewed.')} action={<button type="button" className="admin-button" onClick={() => pending.refetch()}>{t('Làm mới', 'Refresh')}</button>}>
+ [2m43[0m |       {pending.isLoading && <LoadingState />}
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/dashboard/violations/page.tsx
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⨯ ./src/app/dashboard/violations/page.tsx
+Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+    ,-[[36;1;4mD:\Eshop\apps\admin-ui\src\app\dashboard\violations\page.tsx[0m:40:1]
+ [2m37[0m |   const label = (key: string) => vi ? ({ Pending: 'Chờ duyệt', Confirmed: 'Đã xác nhận', Dismissed: 'Không vi phạm', Customer: 'Khách báo cáo', Admin: 'Admin', Moderator: 'Moderator', AI: 'AI', Hide: 'Ẩn sản phẩm', Remove: 'Gỡ khỏi sàn', Warn: 'Cảnh cáo', Suspend: 'Khóa bán hàng', Low: 'Nhẹ', Medium: 'Vừa', High: 'Nặng', Critical: 'Nghiêm trọng' } as Record<string, string>)[key] || key : key;
+ [2m38[0m |   const error = (e: any) => e?.response?.data?.message || t('Không thể xử lý. Thử lại.', 'Could not process this request. Retry.');
+ [2m39[0m |   const Pagination = ({ current, total, onChange }: { current: number; total: number; onChange: (page: number) => void }) => <div className="flex items-center justify-between p-4 text-xs"><button type="button" className="admin-button" disabled={current <= 1} onClick={() => onChange(current - 1)}>←</button><span>{current} / {Math.max(1, Math.ceil(total / 20))}</span><button type="button" className="admin-button" disabled={current * 20 >= total} onClick={() => onChange(current + 1)}>→</button></div>;
+ [2m40[0m |   return <div className="admin-page space-y-6">
+    : [35;1m          ^^^[0m
+ [2m41[0m |     <PageHeading title={t('Vi phạm sản phẩm', 'Product violations')} description={t('Tiếp nhận báo cáo, kiểm tra, xử lý và theo dõi tái phạm. Admin không được xem đơn hàng.', 'Review reports, enforce decisions and track repeat violations. Order records are not accessible to administrators.')} />
+ [2m42[0m |     <Panel title={t('Sản phẩm chờ duyệt', 'Listings awaiting approval')} subtitle={t('Sản phẩm bị AI gắn cờ hoặc có giá bất thường sẽ bị ẩn cho tới khi duyệt.', 'Listings flagged by AI or with unusual prices stay hidden until reviewed.')} action={<button type="button" className="admin-button" onClick={() => pending.refetch()}>{t('Làm mới', 'Refresh')}</button>}>
+ [2m43[0m |       {pending.isLoading && <LoadingState />}
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/dashboard/violations/page.tsx
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⨯ ./src/app/dashboard/violations/page.tsx
+Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+    ,-[[36;1;4mD:\Eshop\apps\admin-ui\src\app\dashboard\violations\page.tsx[0m:48:1]
+ [2m45[0m |       </div>
+ [2m46[0m |     );
+ [2m47[0m |   }
+ [2m48[0m |   return <div className="admin-page space-y-6">
+    : [35;1m          ^^^[0m
+ [2m49[0m |     <PageHeading title={t('Vi phạm sản phẩm', 'Product violations')} description={t('Tiếp nhận báo cáo, kiểm tra, xử lý và theo dõi tái phạm. Admin không được xem đơn hàng.', 'Review reports, enforce decisions and track repeat violations. Order records are not accessible to administrators.')} />
+ [2m50[0m |     <Panel title={t('Sản phẩm chờ duyệt', 'Listings awaiting approval')} subtitle={t('Sản phẩm bị AI gắn cờ hoặc có giá bất thường sẽ bị ẩn cho tới khi duyệt.', 'Listings flagged by AI or with unusual prices stay hidden until reviewed.')} action={<button type="button" className="admin-button" onClick={() => pending.refetch()}>{t('Làm mới', 'Refresh')}</button>}>
+ [2m51[0m |       {pending.isLoading && <LoadingState />}
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/dashboard/violations/page.tsx
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ ./src/app/dashboard/violations/page.tsx
+Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+    ,-[[36;1;4mD:\Eshop\apps\admin-ui\src\app\dashboard\violations\page.tsx[0m:42:1]
+ [2m39[0m |   const listingDecision = useMutation({ mutationFn: async ({ id, decision }: { id: string; decision: string }) => axios.patch(`/admin/pending-products/${id}`, { decision, reason: listingReason.trim() }), onSuccess: () => { setListingReason(''); if (pending.data?.rows.length === 1 && pendingPage > 1) setPendingPage(value => value - 1); client.invalidateQueries({ queryKey: ['pending-products'] }); client.invalidateQueries({ queryKey: ['admin-catalog'] }); } });
+ [2m40[0m |   const label = (key: string) => vi ? ({ Pending: 'Chờ duyệt', Confirmed: 'Đã xác nhận', Dismissed: 'Không vi phạm', Customer: 'Khách báo cáo', Admin: 'Admin', Moderator: 'Moderator', AI: 'AI', Hide: 'Ẩn sản phẩm', Remove: 'Gỡ khỏi sàn', Warn: 'Cảnh cáo', Suspend: 'Khóa bán hàng', Low: 'Nhẹ', Medium: 'Vừa', High: 'Nặng', Critical: 'Nghiêm trọng' } as Record<string, string>)[key] || key : key;
+ [2m41[0m |   const error = (e: any) => e?.response?.data?.message || t('Không thể xử lý. Thử lại.', 'Could not process this request. Retry.');
+ [2m42[0m |   return <div className="admin-page space-y-6">
+    : [35;1m          ^^^[0m
+ [2m43[0m |     <PageHeading title={t('Vi phạm sản phẩm', 'Product violations')} description={t('Tiếp nhận báo cáo, kiểm tra, xử lý và theo dõi tái phạm. Admin không được xem đơn hàng.', 'Review reports, enforce decisions and track repeat violations. Order records are not accessible to administrators.')} />
+ [2m44[0m |     <Panel title={t('Sản phẩm chờ duyệt', 'Listings awaiting approval')} subtitle={t('Sản phẩm bị AI gắn cờ hoặc có giá bất thường sẽ bị ẩn cho tới khi duyệt.', 'Listings flagged by AI or with unusual prices stay hidden until reviewed.')} action={<button type="button" className="admin-button" onClick={() => pending.refetch()}>{t('Làm mới', 'Refresh')}</button>}>
+ [2m45[0m |       {pending.isLoading && <LoadingState />}
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/dashboard/violations/page.tsx
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ ./src/app/dashboard/violations/page.tsx
+Error:   [31mx[0m Unexpected token `div`. Expected jsx identifier
+    ,-[[36;1;4mD:\Eshop\apps\admin-ui\src\app\dashboard\violations\page.tsx[0m:43:1]
+ [2m40[0m |   const label = (key: string) => vi ? ({ Pending: 'Chờ duyệt', Confirmed: 'Đã xác nhận', Dismissed: 'Không vi phạm', Customer: 'Khách báo cáo', Admin: 'Admin', Moderator: 'Moderator', AI: 'AI', Hide: 'Ẩn sản phẩm', Remove: 'Gỡ khỏi sàn', Warn: 'Cảnh cáo', Suspend: 'Khóa bán hàng', Low: 'Nhẹ', Medium: 'Vừa', High: 'Nặng', Critical: 'Nghiêm trọng' } as Record<string, string>)[key] || key : key;
+ [2m41[0m |   const error = (e: any) => e?.response?.data?.message || t('Không thể xử lý. Thử lại.', 'Could not process this request. Retry.');
+ [2m42[0m |   return (
+ [2m43[0m |   <div className="admin-page space-y-6">
+    : [35;1m   ^^^[0m
+ [2m44[0m |     <PageHeading title={t('Vi phạm sản phẩm', 'Product violations')} description={t('Tiếp nhận báo cáo, kiểm tra, xử lý và theo dõi tái phạm. Admin không được xem đơn hàng.', 'Review reports, enforce decisions and track repeat violations. Order records are not accessible to administrators.')} />
+ [2m45[0m |     <Panel title={t('Sản phẩm chờ duyệt', 'Listings awaiting approval')} subtitle={t('Sản phẩm bị AI gắn cờ hoặc có giá bất thường sẽ bị ẩn cho tới khi duyệt.', 'Listings flagged by AI or with unusual prices stay hidden until reviewed.')} action={<button type="button" className="admin-button" onClick={() => pending.refetch()}>{t('Làm mới', 'Refresh')}</button>}>
+ [2m46[0m |       {pending.isLoading && <LoadingState />}
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/dashboard/violations/page.tsx
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+Failed to proxy http://localhost:8080/api/logged-in-admin [AggregateError: ] { code: 'ECONNREFUSED' }
+[AggregateError: ] { code: 'ECONNREFUSED' }
+Failed to proxy http://localhost:8080/api/logged-in-admin [AggregateError: ] { code: 'ECONNREFUSED' }
+[AggregateError: ] { code: 'ECONNREFUSED' }

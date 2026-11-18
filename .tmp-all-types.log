@@ -1,0 +1,17 @@
+
+> @./source@0.0.0 typecheck
+> node scripts/check-types.cjs
+
+Typechecking admin-service
+Typechecking admin-ui
+Typechecking api-gateway
+Typechecking auth-service
+Typechecking chatbot-service
+Typechecking chatting-service
+Typechecking kafka-service
+Typechecking logger-service
+Typechecking order-service
+Typechecking product-service
+Typechecking recommendation-service
+Typechecking seller-ui
+Typechecking user-ui

@@ -1,0 +1,10 @@
+apps/admin-service/src/controllers/admin.controller.ts(5,31): error TS7030: Not all code paths return a value.
+apps/admin-service/src/controllers/admin.controller.ts(58,29): error TS7030: Not all code paths return a value.
+apps/admin-service/src/controllers/admin.controller.ts(113,28): error TS7030: Not all code paths return a value.
+apps/admin-service/src/controllers/admin.controller.ts(135,25): error TS7030: Not all code paths return a value.
+apps/admin-service/src/controllers/admin.controller.ts(180,30): error TS7030: Not all code paths return a value.
+apps/admin-service/src/controllers/admin.controller.ts(199,33): error TS7030: Not all code paths return a value.
+apps/admin-service/src/controllers/admin.controller.ts(234,28): error TS7030: Not all code paths return a value.
+apps/admin-service/src/controllers/admin.controller.ts(286,30): error TS7030: Not all code paths return a value.
+apps/admin-service/src/controllers/operations.controller.ts(104,33): error TS2345: Argument of type '{ orderBy: { createdAt: "desc"; }; skip: number; take: number; where: behaviorLogWhereInput; } | { orderBy: { createdAt: "desc"; }; take: number; where: behaviorLogWhereInput; }' is not assignable to parameter of type '{ orderBy: { createdAt: "desc"; }; skip: number; take: number; where: behaviorLogWhereInput; } | undefined'.
+  Property 'skip' is missing in type '{ orderBy: { createdAt: "desc"; }; take: number; where: Prisma.behaviorLogWhereInput; }' but required in type '{ orderBy: { createdAt: "desc"; }; skip: number; take: number; where: behaviorLogWhereInput; }'.

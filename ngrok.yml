@@ -1,0 +1,12 @@
+version: 2
+authtoken: 2KoqPR1nMrAwKZ1fSPzaUcT5KVa_3ZSQZ97WpkQg4XD9kJi8i
+tunnels:
+  user:
+    addr: 3000
+    proto: http
+  admin:
+    addr: 3001
+    proto: http
+  seller:
+    addr: 3002
+    proto: http

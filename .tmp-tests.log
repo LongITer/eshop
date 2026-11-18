@@ -1,0 +1,254 @@
+
+> @./source@0.0.0 test:implementation
+> jest --config jest.implementation.config.cjs --runInBand
+
+PASS tests/implementation/log-export.test.ts
+PASS tests/implementation/consumers.test.ts
+PASS tests/implementation/google.test.ts
+  ● Console
+
+    console.log
+      Error GET - /api/auth/google/callback?state=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&code=code - Invalid Google sign-in state
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error GET - /api/auth/google/callback?state=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&code=code - Google sign-in expired or was cancelled
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error GET - /api/auth/google/callback?state=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&code=code - Google identity could not be verified
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error GET - /api/auth/google/callback?state=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&code=code - Google identity could not be verified
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error GET - /api/auth/google/callback?state=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&code=code - Sign in with your existing password to use this account
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+PASS tests/implementation/orders.test.ts
+  ● Console
+
+    console.log
+      Error POST - /222222222222222222222222 - Resource not found
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error POST - /pi_other - Payment/order not found
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error POST - /pi_1 - Cancel or return the paid order before refunding
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+PASS tests/implementation/product.test.ts
+  ● Console
+
+    console.log
+      Error PUT - /333333333333333333333333 - Invalid stock
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error PUT - /333333333333333333333333 - Invalid stock
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error PUT - /333333333333333333333333 - Invalid sale_price
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error PUT - /333333333333333333333333 - Invalid colors
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error PUT - /333333333333333333333333 - Provide 1–10 uploaded images
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error PUT - /333333333333333333333333 - Invalid status
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error PUT - /333333333333333333333333 - Resource not found
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error PUT - /333333333333333333333333 - Sale price cannot exceed regular price
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error POST - / - Only buyers with a delivered order can review this product
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error POST - / - Rating must be 1–5
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error POST - / - Rating must be 1–5
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error POST - / - Rating must be 1–5
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error POST - / - Rating must be 1–5
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+PASS tests/implementation/chat.test.ts
+  ● Console
+
+    console.log
+      Error POST - / - Forbidden access
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error POST - / - Choose an image, PDF or text file under 5 MB
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error POST - / - Invalid push subscription
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error POST - / - Invalid push subscription
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error POST - / - Invalid push subscription
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+PASS tests/implementation/account.test.ts
+  ● Console
+
+    console.log
+      Error PATCH - /222222222222222222222222 - Resource not found
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error PUT - /222222222222222222222222 - Resource not found
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error PUT - /222222222222222222222222 - Invalid label
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error PUT - /222222222222222222222222 - isDefault must be boolean
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error PUT - /222222222222222222222222 - Invalid city
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error PUT - /444444444444444444444444 - Resource not found
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error PUT - /444444444444444444444444 - Invalid website URL
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.log
+      Error POST - / - Choose a PNG, JPEG or WebP image under 5 MB
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+PASS tests/implementation/auth.test.ts
+  ● Console
+
+    console.log
+      Error GET - /admin - Access denied: Admin only
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+    console.error
+      jwt malformed
+
+      55 |         return next();
+      56 |     } catch (error: any) {
+    > 57 |         console.error(error.message);
+         |                 ^
+      58 |         return res.status(401).json({
+      59 |             message: "Unauthorized! Token is invalid or expired!"
+      60 |         })
+
+      at error (packages/middleware/isAuthenticated.ts:57:17)
+      at Layer.handle [as handle_request] (node_modules/express/lib/router/layer.js:95:5)
+      at next (node_modules/express/lib/router/route.js:149:13)
+      at Route.dispatch (node_modules/express/lib/router/route.js:119:3)
+      at Layer.handle [as handle_request] (node_modules/express/lib/router/layer.js:95:5)
+      at node_modules/express/lib/router/index.js:284:15
+      at Function.process_params (node_modules/express/lib/router/index.js:346:12)
+      at next (node_modules/express/lib/router/index.js:280:10)
+      at cookieParser (node_modules/cookie-parser/index.js:57:14)
+      at Layer.handle [as handle_request] (node_modules/express/lib/router/layer.js:95:5)
+      at trim_prefix (node_modules/express/lib/router/index.js:328:13)
+      at node_modules/express/lib/router/index.js:286:9
+      at Function.process_params (node_modules/express/lib/router/index.js:346:12)
+      at next (node_modules/express/lib/router/index.js:280:10)
+      at expressInit (node_modules/express/lib/middleware/init.js:40:5)
+      at Layer.handle [as handle_request] (node_modules/express/lib/router/layer.js:95:5)
+      at trim_prefix (node_modules/express/lib/router/index.js:328:13)
+      at node_modules/express/lib/router/index.js:286:9
+      at Function.process_params (node_modules/express/lib/router/index.js:346:12)
+      at next (node_modules/express/lib/router/index.js:280:10)
+      at query (node_modules/express/lib/middleware/query.js:45:5)
+      at Layer.handle [as handle_request] (node_modules/express/lib/router/layer.js:95:5)
+      at trim_prefix (node_modules/express/lib/router/index.js:328:13)
+      at node_modules/express/lib/router/index.js:286:9
+      at Function.process_params (node_modules/express/lib/router/index.js:346:12)
+      at next (node_modules/express/lib/router/index.js:280:10)
+      at Function.handle (node_modules/express/lib/router/index.js:175:3)
+      at Function.handle (node_modules/express/lib/application.js:181:10)
+      at Server.app (node_modules/express/lib/express.js:39:9)
+
+PASS tests/implementation/recommendation-reporting.test.ts
+  ● Console
+
+    console.log
+      Error GET - /222222222222222222222222 - Forbidden access
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+
+Test Suites: 9 passed, 9 total
+Tests:       77 passed, 77 total
+Snapshots:   0 total
+Time:        2.127 s, estimated 10 s
+Ran all test suites.

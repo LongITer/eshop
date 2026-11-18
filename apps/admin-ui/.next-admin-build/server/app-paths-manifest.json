@@ -1,0 +1,23 @@
+{
+  "/api/hello/route": "app/api/hello/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/order/[id]/page": "app/order/[id]/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/dashboard/audit/page": "app/dashboard/audit/page.js",
+  "/dashboard/customization/page": "app/dashboard/customization/page.js",
+  "/dashboard/loggers/page": "app/dashboard/loggers/page.js",
+  "/dashboard/management/page": "app/dashboard/management/page.js",
+  "/dashboard/events/page": "app/dashboard/events/page.js",
+  "/dashboard/notification-jobs/page": "app/dashboard/notification-jobs/page.js",
+  "/dashboard/orders/page": "app/dashboard/orders/page.js",
+  "/dashboard/payments/page": "app/dashboard/payments/page.js",
+  "/dashboard/products/page": "app/dashboard/products/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/dashboard/notifications/page": "app/dashboard/notifications/page.js",
+  "/dashboard/log-settings/page": "app/dashboard/log-settings/page.js",
+  "/dashboard/returns/page": "app/dashboard/returns/page.js",
+  "/dashboard/users/page": "app/dashboard/users/page.js",
+  "/dashboard/sellers/page": "app/dashboard/sellers/page.js",
+  "/dashboard/templates/page": "app/dashboard/templates/page.js"
+}

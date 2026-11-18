@@ -1,0 +1,246 @@
+<html>
+
+<head>
+    <title>Eshop Order Confirmation</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <style type="text/css">
+        /* Base */
+        body {
+            margin: 0;
+            padding: 0;
+            min-width: 100%;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            background-color: #fafafa;
+            color: #222222;
+        }
+
+        a {
+            color: #000;
+            text-decoration: none;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.25;
+            margin-top: 0;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+
+        p {
+            margin-top: 0;
+            margin-bottom: 24px;
+        }
+
+        table td {
+            vertical-align: top;
+        }
+
+        /* Layout */
+        .email-wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .email-header {
+            background-color: #0070f3;
+            padding: 24px;
+            color: #ffffff;
+        }
+
+        .email-body {
+            background-color: #ffffff;
+            padding: 24px;
+        }
+
+        .email-footer {
+            background-color: #f6f6f6;
+            padding: 24px;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #0070f3;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+        }
+
+        /* Order Table */
+        .order-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+        }
+
+        .order-table th {
+            text-align: left;
+            padding: 10px 8px;
+            border-bottom: 2px solid #e5e5e5;
+            font-size: 13px;
+            text-transform: uppercase;
+            color: #666666;
+            letter-spacing: 0.5px;
+        }
+
+        .order-table td {
+            padding: 12px 8px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+
+        .order-table .item-image {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+
+        .order-table .item-name {
+            font-weight: 600;
+            color: #222222;
+        }
+
+        .order-table .item-qty {
+            text-align: center;
+            color: #555555;
+        }
+
+        .order-table .item-price {
+            text-align: right;
+            font-weight: 600;
+            color: #222222;
+        }
+
+        /* Summary */
+        .order-summary {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+        }
+
+        .order-summary td {
+            padding: 6px 8px;
+            font-size: 14px;
+        }
+
+        .order-summary .label {
+            text-align: left;
+            color: #666666;
+        }
+
+        .order-summary .value {
+            text-align: right;
+            font-weight: 600;
+            color: #222222;
+        }
+
+        .order-summary .total-row .label,
+        .order-summary .total-row .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0070f3;
+            padding-top: 12px;
+            border-top: 2px solid #e5e5e5;
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px solid #e5e5e5;
+            margin: 24px 0;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-muted {
+            color: #888888;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="email-wrapper">
+        <div class="email-header">
+            <h1>🛍️ Order Confirmed!</h1>
+        </div>
+
+        <div class="email-body">
+            <p>Hello <strong><%= name %></strong>,</p>
+            <p>
+                Thank you for your purchase! Your order has been confirmed and is being processed.
+                Here's a summary of what you ordered:
+            </p>
+
+            <h2>Order Items</h2>
+
+            <table class="order-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Product</th>
+                        <th style="text-align: center;">Qty</th>
+                        <th style="text-align: right;">Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% cart.forEach(function(item) { %>
+                    <tr>
+                        <td>
+                            <% if (item.image) { %>
+                            <img src="<%= item.image %>" alt="<%= item.name %>" class="item-image" />
+                            <% } %>
+                        </td>
+                        <td class="item-name"><%= item.name %></td>
+                        <td class="item-qty"><%= item.quantity %></td>
+                        <td class="item-price">$<%= (item.quantity * item.sale_price).toFixed(2) %></td>
+                    </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+
+            <table class="order-summary">
+                <tr class="total-row">
+                    <td class="label">Total</td>
+                    <td class="value">$<%= totalAmount.toFixed(2) %></td>
+                </tr>
+            </table>
+
+            <hr class="divider" />
+
+            <p class="text-center">
+                <a href="<%= trackingUrl %>" class="button">Track Your Order</a>
+            </p>
+
+            <p class="text-center text-muted" style="margin-top: 16px;">
+                You can track your order status anytime by clicking the button above.
+            </p>
+        </div>
+
+        <div class="email-footer">
+            <p>If you have any questions, please don't hesitate to contact us at</p>
+            <a href="mailto:longiter04@gmail.com">longiter04@gmail.com</a>
+            <p>&copy; 2026 Eshop. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+
+</html>

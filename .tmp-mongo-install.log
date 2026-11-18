@@ -1,0 +1,61 @@
+npm warn ERESOLVE overriding peer dependency
+npm warn While resolving: @swc-node/core@1.14.1
+npm warn Found: @swc/core@1.5.29
+npm warn node_modules/@swc/core
+npm warn   peer @swc/core@">= 1.4.13" from @swc-node/register@1.9.2
+npm warn   node_modules/@swc-node/register
+npm warn     peerOptional @swc-node/register@"^1.8.0" from nx@20.8.4
+npm warn     node_modules/nx
+npm warn     1 more (the root project)
+npm warn   5 more (@swc/cli, @swc/jest, nx, ts-node, the root project)
+npm warn
+npm warn Could not resolve dependency:
+npm warn peer @swc/core@">= 1.13.3" from @swc-node/core@1.14.1
+npm warn node_modules/@swc-node/core
+npm warn   @swc-node/core@"^1.13.1" from @swc-node/register@1.9.2
+npm warn   node_modules/@swc-node/register
+npm warn
+npm warn Conflicting peer dependency: @swc/core@1.16.13
+npm warn node_modules/@swc/core
+npm warn   peer @swc/core@">= 1.13.3" from @swc-node/core@1.14.1
+npm warn   node_modules/@swc-node/core
+npm warn     @swc-node/core@"^1.13.1" from @swc-node/register@1.9.2
+npm warn     node_modules/@swc-node/register
+npm warn ERESOLVE overriding peer dependency
+npm warn While resolving: @module-federation/sdk@2.3.3
+npm warn Found: node-fetch@2.7.0
+npm warn node_modules/node-fetch
+npm warn   node-fetch@"2.7.0" from @module-federation/node@2.7.41
+npm warn   node_modules/@module-federation/node
+npm warn     @module-federation/node@"^2.6.26" from @nx/module-federation@20.8.4
+npm warn     node_modules/@nx/module-federation
+npm warn
+npm warn Could not resolve dependency:
+npm warn peerOptional node-fetch@"^3.3.2" from @module-federation/sdk@2.3.3
+npm warn node_modules/@module-federation/node/node_modules/@module-federation/sdk
+npm warn   @module-federation/sdk@"2.3.3" from @module-federation/node@2.7.41
+npm warn   node_modules/@module-federation/node
+npm warn   10 more (@module-federation/bridge-react-webpack-plugin, ...)
+npm warn
+npm warn Conflicting peer dependency: node-fetch@3.3.2
+npm warn node_modules/node-fetch
+npm warn   peerOptional node-fetch@"^3.3.2" from @module-federation/sdk@2.3.3
+npm warn   node_modules/@module-federation/node/node_modules/@module-federation/sdk
+npm warn     @module-federation/sdk@"2.3.3" from @module-federation/node@2.7.41
+npm warn     node_modules/@module-federation/node
+npm warn     10 more (@module-federation/bridge-react-webpack-plugin, ...)
+
+added 23 packages, removed 1 package, changed 4 packages, and audited 1562 packages in 2m
+
+278 packages are looking for funding
+  run `npm fund` for details
+
+113 vulnerabilities (6 low, 20 moderate, 83 high, 4 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.

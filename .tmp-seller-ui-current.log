@@ -1,0 +1,170 @@
+
+> @./source@0.0.0 seller-ui
+> next dev apps/seller-ui --port 3002
+
+   ▲ Next.js 15.2.9
+   - Local:        http://localhost:3002
+   - Network:      http://192.168.1.9:3002
+   - Environments: .env
+   - Experiments (use with caution):
+     · cpus: 2
+
+ ✓ Starting...
+ ✓ Ready in 2s
+ ○ Compiling /dashboard/statistics ...
+ ✓ Compiled /dashboard/statistics in 1878ms (1119 modules)
+ GET /dashboard/statistics 200 in 3918ms
+ ✓ Compiled in 1698ms (485 modules)
+ ○ Compiling /dashboard/create-product ...
+ ✓ Compiled /dashboard/create-product in 1606ms (2589 modules)
+ GET /dashboard/create-product 200 in 2845ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 675ms (1824 modules)
+ GET /login 200 in 2422ms
+ ✓ Compiled /dashboard in 293ms (1880 modules)
+ GET /dashboard 200 in 387ms
+ ✓ Compiled /dashboard/create-product in 195ms (1395 modules)
+ GET /dashboard/create-product 200 in 1996ms
+ ○ Compiling /dashboard/all-products ...
+ ✓ Compiled /dashboard/all-products in 1048ms (2647 modules)
+ GET /dashboard/all-products 200 in 1156ms
+ GET /dashboard/create-product 200 in 27ms
+ GET /dashboard/all-products 200 in 25ms
+ GET /dashboard/create-product 200 in 24ms
+ GET /dashboard/all-products 200 in 20ms
+ GET /dashboard/create-product 200 in 15ms
+ GET /dashboard/all-products 200 in 16ms
+ ○ Compiling /dashboard/violations ...
+ ✓ Compiled /dashboard/violations in 679ms (2654 modules)
+ GET /dashboard/violations 200 in 765ms
+ GET /dashboard/violations 200 in 137ms
+ GET /dashboard/violations 200 in 38ms
+ ○ Compiling /dashboard/payment ...
+ ✓ Compiled /dashboard/payment in 768ms (2663 modules)
+ GET /dashboard/payment 200 in 834ms
+ GET /dashboard/violations 200 in 20ms
+ ○ Compiling /_error ...
+ GET /dashboard/violations 500 in 7972ms
+ GET /dashboard/violations 500 in 18ms
+ GET /dashboard/violations 500 in 16ms
+ GET /dashboard/violations 500 in 15ms
+ GET /dashboard/violations 500 in 14ms
+ GET /dashboard/violations 500 in 14ms
+ GET /dashboard/violations 500 in 14ms
+ GET /dashboard/violations 500 in 13ms
+ GET /dashboard/violations 500 in 19ms
+ GET /dashboard/violations 500 in 14ms
+ GET /dashboard 500 in 15ms
+ GET /_next/static/webpack/9091736f4481eef3.webpack.hot-update.json 500 in 1426ms
+ GET / 500 in 1456ms
+ ✓ Compiled /_not-found in 2.4s (3013 modules)
+ ✓ Compiled / in 288ms (1507 modules)
+ GET /_next/static/webpack/9091736f4481eef3.webpack.hot-update.json 404 in 2418ms
+ GET / 200 in 598ms
+ GET /dashboard 200 in 36ms
+ GET /dashboard/violations 200 in 38ms
+ GET /dashboard/violations 200 in 17ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 53ms
+ GET /dashboard/violations 200 in 74ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 36ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 37ms
+ GET /dashboard/violations 200 in 36ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 40ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 35ms
+ ✓ Compiled in 2s (3009 modules)
+ GET /dashboard/violations 200 in 154ms
+ ✓ Compiled /_not-found in 404ms (2999 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 517ms
+ GET /dashboard/violations 200 in 118ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 30ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 50ms
+ GET /dashboard/violations 500 in 16ms
+ GET /dashboard/violations 500 in 16ms
+ ○ Compiling /_not-found ...
+ GET /.well-known/appspecific/com.chrome.devtools.json 500 in 517ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 500 in 8ms
+ GET /dashboard/violations 500 in 8ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 500 in 7ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 500 in 8ms
+ GET /_next/static/webpack/9091736f4481eef3.webpack.hot-update.json 500 in 941ms
+ GET / 500 in 964ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 500 in 6ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 500 in 7ms
+ ✓ Compiled / in 2.5s (3018 modules)
+ ✓ Compiled (3004 modules)
+ GET / 200 in 359ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 128ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 51ms
+ GET /dashboard 200 in 34ms
+ GET /dashboard/violations 200 in 48ms
+ GET /dashboard/violations 200 in 33ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 40ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 37ms
+ ✓ Compiled in 2.7s (3009 modules)
+ GET /dashboard/violations 200 in 88ms
+ ✓ Compiled /_not-found in 414ms (2999 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 540ms
+ GET /dashboard/violations 200 in 104ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 39ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 44ms
+ GET /dashboard/violations 200 in 50ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 47ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 54ms
+ GET /login 200 in 85ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 41ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 115ms
+ GET /dashboard 200 in 21ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 34ms
+ GET /dashboard/violations 200 in 17ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 45ms
+ GET /dashboard/violations 200 in 42ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 48ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 154ms
+ GET /login 200 in 73ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 56ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 55ms
+ GET /dashboard 200 in 15ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 39ms
+ GET /dashboard/violations 200 in 15ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 53ms
+ GET /login 200 in 75ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 43ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 58ms
+ GET /dashboard 200 in 15ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 49ms
+ GET /dashboard/violations 200 in 18ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 44ms
+ GET /dashboard/violations 200 in 38ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 39ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 67ms
+ GET /login 200 in 83ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 105ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 47ms
+ ✓ Compiled in 1253ms (3013 modules)
+ GET /login 200 in 101ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 78ms
+ GET /dashboard/violations 200 in 112ms
+ GET /dashboard 200 in 16ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 44ms
+ GET /dashboard/violations 200 in 13ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 32ms
+ GET /login 200 in 88ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 127ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 42ms
+ ✓ Compiled in 1843ms (3013 modules)
+ GET /login 200 in 60ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 47ms
+ GET /dashboard 200 in 24ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 31ms
+ GET /dashboard/violations 200 in 20ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 37ms
+ GET /login 200 in 15ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 51ms
+ GET /dashboard 200 in 15ms
+ GET /dashboard/violations 200 in 21ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 36ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 42ms
+ ✓ Compiled in 1279ms (3013 modules)
+ GET /dashboard/violations 200 in 123ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 76ms
+ GET /dashboard/violations 200 in 111ms

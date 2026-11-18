@@ -1,0 +1,37 @@
+{"t":"2026-11-03T18:16:01+0700","lvl":"info","msg":"open config file","path":"D:\\Eshop\\ngrok.yml","err":null}
+{"t":"2026-11-03T18:16:01+0700","lvl":"info","msg":"FIPS 140 mode","enabled":false}
+{"t":"2026-11-03T18:16:01+0700","lvl":"info","msg":"starting web service","obj":"web","addr":"127.0.0.1:4040","allow_hosts":null}
+{"t":"2026-11-03T18:16:01+0700","lvl":"info","msg":"client session established","obj":"tunnels.session"}
+{"t":"2026-11-03T18:16:01+0700","lvl":"info","msg":"tunnel session started","obj":"tunnels.session"}
+{"t":"2026-11-03T18:16:01+0700","lvl":"info","msg":"started tunnel","obj":"tunnels","name":"user","addr":{"Scheme":"http","Opaque":"","User":null,"Host":"localhost:3000","Path":"","Fragment":"","RawQuery":"","RawPath":"","RawFragment":"","ForceQuery":false,"OmitHost":false},"url":"https://b6d2-116-103-249-126.ngrok-free.app"}
+{"t":"2026-11-03T18:16:01+0700","lvl":"info","msg":"started tunnel","obj":"tunnels","name":"admin","addr":{"Scheme":"http","Opaque":"","User":null,"Host":"localhost:3001","Path":"","Fragment":"","RawQuery":"","RawPath":"","RawFragment":"","ForceQuery":false,"OmitHost":false},"url":"https://02bd-116-103-249-126.ngrok-free.app"}
+{"t":"2026-11-03T18:16:01+0700","lvl":"info","msg":"started tunnel","obj":"tunnels","name":"seller","addr":{"Scheme":"http","Opaque":"","User":null,"Host":"localhost:3002","Path":"","Fragment":"","RawQuery":"","RawPath":"","RawFragment":"","ForceQuery":false,"OmitHost":false},"url":"https://5e35-116-103-249-126.ngrok-free.app"}
+{"t":"2026-11-03T18:16:06+0700","lvl":"info","msg":"start","pg":"/api/tunnels","id":"b03dc58f70f5878b"}
+{"t":"2026-11-03T18:16:06+0700","lvl":"info","msg":"end","pg":"/api/tunnels","id":"b03dc58f70f5878b","status":200,"dur":2239400}
+{"t":"2026-11-03T18:16:11+0700","lvl":"info","msg":"start","pg":"/api/tunnels","id":"b3062956f4939b06"}
+{"t":"2026-11-03T18:16:11+0700","lvl":"info","msg":"end","pg":"/api/tunnels","id":"b3062956f4939b06","status":200,"dur":0}
+{"t":"2026-11-03T18:16:19+0700","lvl":"info","msg":"start","pg":"/api/tunnels","id":"70c52ab450e582b7"}
+{"t":"2026-11-03T18:16:19+0700","lvl":"info","msg":"end","pg":"/api/tunnels","id":"70c52ab450e582b7","status":200,"dur":783800}
+{"t":"2026-11-03T18:16:19+0700","lvl":"info","msg":"join connections","obj":"join","id":"44a375d22e66","l":{"IP":"::1","Port":3001,"Zone":""},"r":{"IP":"116.103.249.126","Port":62280,"Zone":""}}
+{"t":"2026-11-03T18:16:19+0700","lvl":"info","msg":"join connections","obj":"join","id":"bd9a434d492e","l":{"IP":"::1","Port":3002,"Zone":""},"r":{"IP":"116.103.249.126","Port":62284,"Zone":""}}
+{"t":"2026-11-03T18:16:21+0700","lvl":"info","msg":"join connections","obj":"join","id":"e77a1cd50ae5","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":62288,"Zone":""}}
+{"t":"2026-11-03T18:16:49+0700","lvl":"info","msg":"join connections","obj":"join","id":"474b80a31efd","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":65224,"Zone":""}}
+{"t":"2026-11-03T18:16:49+0700","lvl":"info","msg":"join connections","obj":"join","id":"82d49ccbd1f5","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":65224,"Zone":""}}
+{"t":"2026-11-03T18:16:49+0700","lvl":"info","msg":"join connections","obj":"join","id":"327e018e24bb","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":65224,"Zone":""}}
+{"t":"2026-11-03T18:16:49+0700","lvl":"info","msg":"join connections","obj":"join","id":"6049ec3b4cb5","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":65224,"Zone":""}}
+{"t":"2026-11-03T18:16:50+0700","lvl":"info","msg":"join connections","obj":"join","id":"3b666372e4e5","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":65224,"Zone":""}}
+{"t":"2026-11-03T18:16:50+0700","lvl":"info","msg":"join connections","obj":"join","id":"c648d28b9f3f","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":59567,"Zone":""}}
+{"t":"2026-11-03T18:16:50+0700","lvl":"info","msg":"join connections","obj":"join","id":"48048197ee82","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":65224,"Zone":""}}
+{"t":"2026-11-03T18:16:50+0700","lvl":"info","msg":"join connections","obj":"join","id":"cc2b47ba0ca9","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":65224,"Zone":""}}
+{"t":"2026-11-03T18:16:50+0700","lvl":"info","msg":"join connections","obj":"join","id":"708895b33133","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":65224,"Zone":""}}
+{"t":"2026-11-03T18:16:50+0700","lvl":"info","msg":"join connections","obj":"join","id":"470c1755a375","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":65224,"Zone":""}}
+{"t":"2026-11-03T18:16:50+0700","lvl":"info","msg":"join connections","obj":"join","id":"63147ff1cd57","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":65224,"Zone":""}}
+{"t":"2026-11-03T18:16:50+0700","lvl":"info","msg":"join connections","obj":"join","id":"d71dfa719207","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":65224,"Zone":""}}
+{"t":"2026-11-03T18:16:50+0700","lvl":"info","msg":"join connections","obj":"join","id":"278f374f09ce","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":65224,"Zone":""}}
+{"t":"2026-11-03T18:16:50+0700","lvl":"info","msg":"join connections","obj":"join","id":"a38f6afcd235","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":65224,"Zone":""}}
+{"t":"2026-11-03T18:16:50+0700","lvl":"info","msg":"join connections","obj":"join","id":"f3fa253b7a7f","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":65224,"Zone":""}}
+{"t":"2026-11-03T18:19:05+0700","lvl":"info","msg":"join connections","obj":"join","id":"dca5f16bb0b3","l":{"IP":"::1","Port":3000,"Zone":""},"r":{"IP":"116.103.249.126","Port":56972,"Zone":""}}
+{"t":"2026-11-03T21:51:09+0700","lvl":"info","msg":"INFO received stop request obj=app stopReq=\"{err:<nil> restart:false}\""}
+{"t":"2026-11-03T21:51:09+0700","lvl":"info","msg":"session closing","obj":"tunnels.session","err":null}
+{"t":"2026-11-03T21:51:09+0700","lvl":"info","msg":"no more state changes","obj":"tunnels.session"}
+{"t":"2026-11-03T21:51:09+0700","lvl":"info","msg":"accept failed","obj":"tunnels.session","obj":"csess","id":"19826ad4389f","err":"reconnecting session closed"}

@@ -1,0 +1,112 @@
+
+> @./source@0.0.0 seller-ui
+> next dev apps/seller-ui --port 3002
+
+   ▲ Next.js 15.2.9
+   - Local:        http://localhost:3002
+   - Network:      http://192.168.1.9:3002
+   - Environments: .env
+   - Experiments (use with caution):
+     · cpus: 2
+
+ ✓ Starting...
+ ✓ Ready in 2.5s
+ ○ Compiling / ...
+ ✓ Compiled / in 2.8s (940 modules)
+ GET / 200 in 4619ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 2.6s (1057 modules)
+ GET /login 200 in 3924ms
+ ✓ Compiled in 1353ms (447 modules)
+ GET /login?email=longiter2004%40gmail.com&password=admin123 200 in 85ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 788ms (1131 modules)
+ GET /dashboard 200 in 915ms
+ ○ Compiling /dashboard/violations ...
+ ✓ Compiled /dashboard/violations in 691ms (1138 modules)
+ GET /dashboard/violations 200 in 758ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 659ms (1137 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 791ms
+ ✓ Compiled in 631ms (490 modules)
+ GET /dashboard/violations 200 in 62ms
+ ✓ Compiled /_not-found in 1964ms (1125 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 715ms
+ GET /dashboard/violations 200 in 53ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 58ms
+ ✓ Compiled in 2.1s (1135 modules)
+ GET /dashboard/violations 200 in 119ms
+ ✓ Compiled /_not-found in 235ms (1125 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 353ms
+ GET /login 200 in 48ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 1032ms (657 modules)
+ GET /dashboard 200 in 1459ms
+ GET /dashboard/violations 200 in 157ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 796ms (1137 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 1027ms
+ ✓ Compiled in 1392ms (1135 modules)
+ GET /dashboard/violations 200 in 191ms
+ ✓ Compiled /_not-found in 378ms (1125 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 473ms
+ GET /login 200 in 28ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 65ms
+ ✓ Compiled /dashboard in 337ms (658 modules)
+ GET /dashboard 200 in 410ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 61ms
+ GET /dashboard/violations 200 in 30ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 67ms
+ GET /dashboard/violations 200 in 166ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 46ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 53ms
+ GET /dashboard/violations 200 in 72ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 49ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 44ms
+ ✓ Compiled in 669ms (490 modules)
+ GET /dashboard/violations 200 in 29ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 523ms (1125 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 681ms
+ ○ Compiling /dashboard/create-product ...
+ ✓ Compiled /dashboard/create-product in 3.5s (2627 modules)
+ GET /dashboard/create-product 200 in 4858ms
+ GET /dashboard/create-product 200 in 121ms
+ ○ Compiling /dashboard/all-products ...
+ ✓ Compiled /dashboard/all-products in 3.2s (2653 modules)
+ GET /dashboard/all-products 200 in 3541ms
+ GET /dashboard/all-products 200 in 51ms
+ GET /dashboard/violations 200 in 41ms
+ ✓ Compiled in 1721ms (2653 modules)
+ GET /dashboard/violations 200 in 186ms
+ GET /dashboard/all-products 200 in 31ms
+ GET /dashboard/create-product 200 in 33ms
+ GET /dashboard/all-products 200 in 35ms
+ ✓ Compiled in 1660ms (2653 modules)
+ GET /dashboard/all-products 200 in 164ms
+ GET /dashboard/create-product 200 in 42ms
+ GET /dashboard/all-products 200 in 47ms
+ ✓ Compiled in 822ms (1247 modules)
+ GET /dashboard/all-products 200 in 41ms
+ ✓ Compiled in 706ms (1247 modules)
+ GET /dashboard/all-products 200 in 42ms
+ ✓ Compiled in 1651ms (2639 modules)
+ ○ Compiling /dashboard/inventory ...
+ ✓ Compiled /dashboard/inventory in 1160ms (2655 modules)
+ GET /dashboard/inventory 200 in 1284ms
+ GET /dashboard/violations 200 in 37ms
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 1233ms (2981 modules)
+ GET /dashboard/violations 200 in 1031ms
+ GET /dashboard/violations 200 in 42ms
+ ○ Compiling /dashboard/orders ...
+ ✓ Compiled /dashboard/orders in 2.1s (2965 modules)
+ GET /dashboard/orders 200 in 2465ms
+ GET /dashboard/orders 200 in 29ms
+ ○ Compiling /dashboard/orders/[id] ...
+ ✓ Compiled /dashboard/orders/[id] in 1709ms (2974 modules)
+ GET /dashboard/orders/6aeefed0dcc3f5aac8825ed5 200 in 2745ms
+ GET /dashboard/orders/6acf4b18d60cc3828386a13a 200 in 34ms
+ ○ Compiling /dashboard/shop-settings ...
+ ✓ Compiled /dashboard/shop-settings in 855ms (2978 modules)
+ GET /dashboard/shop-settings 200 in 996ms

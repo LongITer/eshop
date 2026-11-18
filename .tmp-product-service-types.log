@@ -1,0 +1,31 @@
+apps/product-service/src/controllers/product.controller.ts(9,30): error TS7030: Not all code paths return a value.
+apps/product-service/src/controllers/product.controller.ts(31,35): error TS7030: Not all code paths return a value.
+apps/product-service/src/controllers/product.controller.ts(100,36): error TS7030: Not all code paths return a value.
+apps/product-service/src/controllers/product.controller.ts(328,32): error TS7030: Not all code paths return a value.
+apps/product-service/src/controllers/product.controller.ts(745,28): error TS7030: Not all code paths return a value.
+apps/product-service/src/controllers/product.controller.ts(782,22): error TS2339: Property 'avatar' does not exist on type '{ sellers: { id: string; name: string; country: string; }; products: ({ shop: { id: string; createdAt: Date; updatedAt: Date; name: string; sellerId: string; address: string | null; bio: string | null; ... 5 more ...; ratings: number | null; }; images: { ...; }[]; } & { ...; })[]; } & { ...; }'.
+apps/product-service/src/controllers/product.controller.ts(858,31): error TS7030: Not all code paths return a value.
+apps/product-service/src/routes/product.router.ts(50,3): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(req: SellerRequest, res: Response, next: NextFunction) => Promise<void | Response<any, Record<string, any>>>' is not assignable to parameter of type 'RequestHandlerParams<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+      Type '(req: SellerRequest, res: Response, next: NextFunction) => Promise<void | Response<any, Record<string, any>>>' is not assignable to type 'RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+        Types of parameters 'req' and 'req' are incompatible.
+          Type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' is not assignable to type 'SellerRequest'.
+            Type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' is not assignable to type '{ seller: { id: string; }; }'.
+              Property 'seller' is optional in type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' but required in type '{ seller: { id: string; }; }'.
+apps/product-service/src/routes/product.router.ts(56,3): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(req: SellerRequest, res: Response, next: NextFunction) => Promise<void | Response<any, Record<string, any>>>' is not assignable to parameter of type 'RequestHandlerParams<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+      Type '(req: SellerRequest, res: Response, next: NextFunction) => Promise<void | Response<any, Record<string, any>>>' is not assignable to type 'RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+        Types of parameters 'req' and 'req' are incompatible.
+          Type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' is not assignable to type 'SellerRequest'.
+            Type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' is not assignable to type '{ seller: { id: string; }; }'.
+              Property 'seller' is optional in type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' but required in type '{ seller: { id: string; }; }'.
+apps/product-service/src/routes/product.router.ts(62,3): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '(req: SellerRequest, res: Response, next: NextFunction) => Promise<void | Response<any, Record<string, any>>>' is not assignable to parameter of type 'RequestHandlerParams<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+      Type '(req: SellerRequest, res: Response, next: NextFunction) => Promise<void | Response<any, Record<string, any>>>' is not assignable to type 'RequestHandler<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+        Types of parameters 'req' and 'req' are incompatible.
+          Type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' is not assignable to type 'SellerRequest'.
+            Type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' is not assignable to type '{ seller: { id: string; }; }'.
+              Property 'seller' is optional in type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>' but required in type '{ seller: { id: string; }; }'.

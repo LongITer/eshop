@@ -1,0 +1,147 @@
+
+> @./source@0.0.0 user-ui
+> npx nx run user-ui:dev
+
+
+> nx run user-ui:dev:development
+
+(node:9152) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17220) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:27308) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+   ▲ Next.js 15.2.9
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.10:3000
+   - Environments: .env
+ ✓ Starting...
+ ✓ Ready in 15.3s
+ ○ Compiling / ...
+ ✓ Compiled / in 3.8s (1239 modules)
+ GET / 200 in 5907ms
+(node:27308) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+ GET / 200 in 86ms
+ HEAD / 200 in 277ms
+ HEAD / 200 in 163ms
+ GET /?utm_source=zalo&utm_medium=zalo&utm_campaign=zalo 200 in 85ms
+ ⚠ Cross origin request detected from 823b-2001-ee1-fc25-8f90-3df6-e996-ae8-9572.ngrok-free.app to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ ○ Compiling /login ...
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled /login in 13s (1268 modules)
+ GET /login 200 in 15515ms
+ GET / 200 in 2987ms
+ ✓ Compiled in 3.1s (552 modules)
+ GET /login 200 in 726ms
+ GET /login 200 in 192ms
+ GET / 200 in 223ms
+ GET /?utm_source=zalo&utm_medium=zalo&utm_campaign=zalo 200 in 1891ms
+ GET /login 200 in 70ms
+ GET /login 200 in 102ms
+ ○ Compiling /signup ...
+ ✓ Compiled /signup in 789ms (1261 modules)
+ GET /signup 200 in 941ms
+ GET /login 200 in 22ms
+ GET / 200 in 26ms
+ ○ Compiling /pc-builder ...
+ ✓ Compiled /pc-builder in 9.8s (1342 modules)
+ GET /pc-builder 200 in 10446ms
+ GET /pc-builder 200 in 65ms
+ GET /?utm_source=zalo&utm_medium=zalo&utm_campaign=zalo 200 in 321ms
+ GET /login 200 in 31ms
+ GET / 200 in 17ms
+ GET /pc-builder 200 in 22ms
+ ○ Compiling /product/[slug] ...
+ ✓ Compiled /product/[slug] in 10.8s (1509 modules)
+(node:20548) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ GET /product/intel-core-i7-14700k 200 in 42278ms
+ ○ Compiling /cart ...
+ ✓ Compiled /cart in 3.2s (1526 modules)
+ GET /cart 200 in 3820ms
+ ○ Compiling /products ...
+ ✓ Compiled /products in 2.8s (1543 modules)
+ GET /products 200 in 3213ms
+ GET /products 200 in 95ms
+ GET /products 200 in 87ms
+(node:14132) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ GET /product/asrock-radeon-rx-7600-phantom-gaming 200 in 2494ms
+ GET /cart 200 in 38ms
+[TypeError: fetch failed] {
+  [cause]: [AggregateError: ] { code: [32m'EACCES'[39m }
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 1931ms (1874 modules)
+ GET /_next/image?url=https%3A%2F%2Fik.imagekit.io%2Flongiter%2Fproducts%2Fproduct-1790667781472_xcA_9Nx4p.jpg&w=256&q=75 500 in 5850ms
+ GET /_next/image?url=https%3A%2F%2Fik.imagekit.io%2Flongiter%2Fproducts%2Fproduct-1790667781472_xcA_9Nx4p.jpg&w=256&q=75 500 in 5745ms
+ GET / 200 in 4885ms
+ GET /pc-builder 200 in 4481ms
+ GET /cart 200 in 4831ms
+ GET / 200 in 89ms
+ GET /cart 200 in 82ms
+ GET /pc-builder 200 in 61ms
+ ○ Compiling /checkout ...
+ ✓ Compiled /checkout in 2.1s (1916 modules)
+ GET /checkout?sessionId=ad2f0827-3a21-49e6-be43-ac2367e191c8 200 in 2682ms
+ GET /cart 200 in 164ms
+[TypeError: fetch failed] {
+  [cause]: [AggregateError: ] { code: [32m'EACCES'[39m }
+}
+ GET /_next/image?url=https%3A%2F%2Fik.imagekit.io%2Flongiter%2Fproducts%2Fproduct-1790667781472_xcA_9Nx4p.jpg&w=256&q=75 500 in 786ms
+ GET /_next/image?url=https%3A%2F%2Fik.imagekit.io%2Flongiter%2Fproducts%2Fproduct-1790667781472_xcA_9Nx4p.jpg&w=256&q=75 500 in 476ms
+ GET /products 200 in 38ms
+(node:22148) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ GET /product/acer-predator-bifrost-intel-arc-a770 200 in 1901ms
+ GET /products 200 in 18ms
+(node:16996) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ GET /product/acer-predator-bifrost-intel-arc-a770 200 in 1418ms
+ GET /cart 200 in 17ms
+[TypeError: fetch failed] {
+  [cause]: [AggregateError: ] { code: [32m'EACCES'[39m }
+}
+ GET /_next/image?url=https%3A%2F%2Fik.imagekit.io%2Flongiter%2Fproducts%2Fproduct-1790667940348_2ikGEgzdI.jpg&w=96&q=75 500 in 252ms
+ GET /_next/image?url=https%3A%2F%2Fik.imagekit.io%2Flongiter%2Fproducts%2Fproduct-1790667940348_2ikGEgzdI.jpg&w=96&q=75 500 in 218ms
+ GET /checkout?sessionId=59af0683-e6ae-4902-8b9d-f53fc88d5d15 200 in 23ms
+ GET /cart 200 in 35ms
+[TypeError: fetch failed] {
+  [cause]: [AggregateError: ] { code: [32m'EACCES'[39m }
+}
+[TypeError: fetch failed] {
+  [cause]: [AggregateError: ] { code: [32m'EACCES'[39m }
+}
+ GET /_next/image?url=https%3A%2F%2Fik.imagekit.io%2Flongiter%2Fproducts%2Fproduct-1790667781472_xcA_9Nx4p.jpg&w=256&q=75 500 in 400ms
+ GET /_next/image?url=https%3A%2F%2Fik.imagekit.io%2Flongiter%2Fproducts%2Fproduct-1790667781472_xcA_9Nx4p.jpg&w=256&q=75 500 in 323ms
+ GET /_next/image?url=https%3A%2F%2Fik.imagekit.io%2Flongiter%2Fproducts%2Fproduct-1790667940348_2ikGEgzdI.jpg&w=256&q=75 500 in 380ms
+ GET /_next/image?url=https%3A%2F%2Fik.imagekit.io%2Flongiter%2Fproducts%2Fproduct-1790667940348_2ikGEgzdI.jpg&w=256&q=75 500 in 277ms
+ GET /checkout?sessionId=71bd5416-351b-42b0-8554-b8a075b75264 200 in 19ms
+ GET / 200 in 30ms
+ GET /pc-builder 200 in 43ms
+ GET /pc-builder 200 in 16ms
+(node:27292) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ GET /product/msi-pro-b760m-a-wifi-ddr4 200 in 1645ms
+(node:24288) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ GET /product/intel-core-i7-14700k 200 in 1316ms
+(node:18872) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ GET /product/intel-core-i7-14700k 200 in 1558ms
+[0m[7m[1m[31m NX [39m[22m[27m[0m  [31mNext.js app exited with code 1073807364[39m
+Pass --verbose to see the stacktrace.
+
+
+
+ NX   Running target dev for project user-ui failed
+
+Failed tasks:
+
+- user-ui:dev:development
+
+Hint: run the command with --verbose for more details.
+

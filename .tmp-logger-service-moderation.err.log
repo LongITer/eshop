@@ -1,0 +1,13 @@
+KafkaJSConnectionClosedError: Closed connection
+    at TLSSocket.onEnd (D:\Eshop\node_modules\kafkajs\src\network\connection.js:197:13)
+    at TLSSocket.emit (node:events:536:35)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  retriable: true,
+  helpUrl: undefined,
+  broker: 'pkc-ldvr1.asia-southeast1.gcp.confluent.cloud:9092',
+  code: undefined,
+  host: 'pkc-ldvr1.asia-southeast1.gcp.confluent.cloud',
+  port: 9092,
+  [cause]: undefined
+}

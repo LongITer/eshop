@@ -1,0 +1,3 @@
+Product service is listening at http://localhost:6002/
+Swagger json available at http://localhost:6002/docs-json
+Swagger docs available at http://localhost:6002/api-docs

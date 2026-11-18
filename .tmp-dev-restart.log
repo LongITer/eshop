@@ -1,0 +1,9 @@
+
+> @./source@0.0.0 dev
+> npx nx run-many --target=serve --all --parallel=10
+
+
+ NX   Cannot read properties of undefined (reading 'allWorkspaceFiles')
+
+Pass --verbose to see the stacktrace.
+

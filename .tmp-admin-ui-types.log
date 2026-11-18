@@ -1,0 +1,6 @@
+apps/admin-ui/src/app/dashboard/users/page.tsx(89,45): error TS7006: Parameter 'u' implicitly has an 'any' type.
+apps/admin-ui/src/app/dashboard/users/page.tsx(162,36): error TS7006: Parameter 'user' implicitly has an 'any' type.
+apps/admin-ui/src/app/hooks/useAdmin.tsx(1,1): error TS6133: 'useRouter' is declared but its value is never read.
+apps/admin-ui/src/app/hooks/useAdmin.tsx(3,1): error TS6133: 'useEffect' is declared but its value is never read.
+apps/admin-ui/src/app/shared/component/charts/geographicalMap.tsx(94,9): error TS6133: 'maxUsers' is declared but its value is never read.
+apps/admin-ui/src/shared/operations.tsx(4,29): error TS2307: Cannot find module '@packages/components/analytics' or its corresponding type declarations.

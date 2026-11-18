@@ -1,0 +1,4 @@
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+Auth service is listening at http://localhost:6001/
+Swagger json available at http://localhost:6001/docs-json
+Swagger docs available at http://localhost:6001/api-docs

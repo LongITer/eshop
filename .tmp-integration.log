@@ -1,0 +1,42 @@
+
+> @./source@0.0.0 test:integration
+> jest --config jest.integration.config.cjs --runInBand
+
+  console.log
+    Error PATCH - /6ac2644a2f780025839e718f - Resource not found
+
+      at log (packages/error-handler/error-middleware.ts:9:17)
+
+  console.error
+    Payment fulfillment failed Paid product is no longer available; fulfillment requires intervention
+
+      65 |     res.json({ received: true });
+      66 |   } catch (error) {
+    > 67 |     console.error('Payment fulfillment failed', error instanceof Error ? error.message : 'Unknown error');
+         |             ^
+      68 |     // A non-2xx response keeps Stripe retries active. The transaction rolls back all writes.
+      69 |     res.status(503).json({ message: 'Payment processing failed; retry required' });
+      70 |   }
+
+      at error (apps/order-service/src/routes/payment-webhook.controller.ts:67:13)
+
+PASS tests/integration/database.test.ts
+  √ real MongoDB notification ownership and read-all isolation (63 ms)
+  √ concurrent follows do not duplicate shop IDs (30 ms)
+  √ concurrent default-address edits and creation keep one default (116 ms)
+  √ profile avatar relation is replaced correctly (22 ms)
+  √ product update persists variants, images, stock history and low-stock notification (20 ms)
+  √ a full prefilled product payload can save nullable optional fields (16 ms)
+  √ shop settings accepts untouched optional nulls and persists social links (14 ms)
+  √ concurrent delivered-buyer reviews keep the correct aggregate rating (66 ms)
+  √ concurrent cancellation restores inventory exactly once (37 ms)
+  √ revenue reports and admin charts exclude cancelled revenue (33 ms)
+  √ real content recommendations omit deleted and out-of-stock products (15 ms)
+  √ paid webhook commits order, coupon usage, stock history and receipt atomically and is replay-safe (69 ms)
+  √ stock failure rolls back paid fulfillment and leaves webhook eligible for retry (33 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       13 passed, 13 total
+Snapshots:   0 total
+Time:        3.279 s, estimated 7 s
+Ran all test suites.

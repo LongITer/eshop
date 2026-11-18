@@ -1,0 +1,4 @@
+apps/order-service/src/main.ts(5,1): error TS6133: 'errorMiddleware' is declared but its value is never read.
+apps/order-service/src/routes/order.controller.ts(850,7): error TS2322: Type '{ discountCode: any; }' is not assignable to type 'discountCodesWhereUniqueInput'.
+  Type '{ discountCode: any; }' is not assignable to type '{ id: string; } & { id?: string | undefined; AND?: discountCodesWhereInput | discountCodesWhereInput[] | undefined; OR?: discountCodesWhereInput[] | undefined; ... 7 more ...; updatedAt?: string | ... 2 more ... | undefined; }'.
+    Property 'id' is missing in type '{ discountCode: any; }' but required in type '{ id: string; }'.

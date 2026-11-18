@@ -1,0 +1,21 @@
+(node:24064) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13720) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1m[31m(node:14436) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.[39m[22m
+[1m[31m(Use `node --trace-warnings ...` to show where the warning was created)[39m[22m
+[1m[31m[39m[22m
+[1m[31m(node:15968) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.[39m[22m
+[1m[31m(Use `node --trace-warnings ...` to show where the warning was created)[39m[22m
+[1m[31m[39m[22m
+[1m[31mGemini model unavailable; trying fallback { model: [32m'gemini-3.8-flash'[39m[31m, status: [33m429[39m[31m }[39m[22m
+[1m[31m[39m[22m
+[1m[31mGemini request failed; trying fallback { model: [32m'gemini-3.5-flash-lite'[39m[31m, reason: [32m'TimeoutError'[39m[31m }[39m[22m
+[1m[31m[39m[22m
+[1m[31mAI Service error: DOMException [TimeoutError]: The operation was aborted due to timeout[39m[22m
+[1m[31m[90m    at node:internal/deps/undici/undici:13510:13[39m[31m[39m[22m
+[1m[31m[90m    at processTicksAndRejections (node:internal/process/task_queues:95:5)[39m[31m[39m[22m
+[1m[31m    at requestGemini [90m(D:\Eshop\[39m[31mapps\chatbot-service\dist\webpack:\chatbot-service\apps\chatbot-service\src\services\ai.service.ts:63:1[90m)[39m[31m[39m[22m
+[1m[31m    at getAIResponse [90m(D:\Eshop\[39m[31mapps\chatbot-service\dist\webpack:\chatbot-service\apps\chatbot-service\src\services\ai.service.ts:125:1[90m)[39m[31m[39m[22m
+[1m[31m    at createConversation [90m(D:\Eshop\[39m[31mapps\chatbot-service\dist\webpack:\chatbot-service\apps\chatbot-service\src\controllers\chatbot.controller.ts:171:1[90m)[39m[31m[39m[22m
+[1m[31m[39m[22m

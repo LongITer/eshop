@@ -1,0 +1,28 @@
+
+ NX   Running target serve for project order-service and 1 task it depends on:
+
+
+
+> nx run order-service:build
+
+assets by path *.json 37.5 KiB
+  asset package-lock.json 36.1 KiB [emitted]
+  asset package.json 1.36 KiB [emitted]
+asset main.js 58.2 KiB [emitted] (name: main)
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/order-service/src/assets/.gitkeep] [copied]
+cacheable modules 54.6 KiB 19 modules
++ 16 modules
+webpack 5.98.0 compiled successfully in 876 ms
+
+> nx run order-service:serve:development --runBuildTargetDependencies=false --watch=true
+
+assets by path *.json 37.5 KiB
+  asset package-lock.json 36.1 KiB [emitted]
+  asset package.json 1.36 KiB [emitted]
+asset main.js 58.3 KiB [emitted] (name: main) 1 related asset
+asset assets/.gitkeep 0 bytes [emitted] [from: apps/order-service/src/assets/.gitkeep] [copied]
+cacheable modules 54.6 KiB 19 modules
++ 16 modules
+webpack 5.98.0 compiled successfully in 1052 ms
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+Listening at http://localhost:6004/api
